@@ -1,4 +1,4 @@
-' Port of Lib\Form\frmViewerLarge.frm: the full-screen viewer for screens 1280 wide or more -- a picture
+﻿' Port of Lib\Form\frmViewerLarge.frm: the full-screen viewer for screens 1280 wide or more -- a picture
 ' with simple editing (rotate, crop, red eye, sepia, grey, soften, sharpen, brightness / contrast, undo),
 ' or a video with play / pause, position and volume.
 '
@@ -85,6 +85,7 @@ Public Class frmViewerLarge
         imbNext.Enabled = False
 
         HideFaceBar()
+        HideInfo()   ' frmViewerLarge.Info.vb
         picPage.Visible = False
         picImageBar1.Visible = False
         picImageBar2.Visible = False
@@ -118,6 +119,7 @@ Public Class frmViewerLarge
         picPage.Visible = True
         imgPhoto.Visible = True
         ShowFacesForPicture()   ' frmViewerLarge.Faces.vb
+        ShowInfoForPicture()    ' frmViewerLarge.Info.vb
     End Sub
 
     Public Sub ShowVideo(ByVal FileName As String, ByVal FirstPhoto As Boolean, ByVal LastPhoto As Boolean) Implements IPhotoViewer.ShowVideo

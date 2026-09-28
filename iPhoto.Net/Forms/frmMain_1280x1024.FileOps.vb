@@ -25,6 +25,9 @@ Partial Class frmMain_1280x1024
             Next
             Dim explorer As New Aqua.MenuItem("mnuExplorer", "以檔案總管開啟", 1, Nothing, Nothing)
             If info >= 0 Then .Insert(info + 1, explorer) Else .Add(explorer)
+            Dim at As Integer = .IndexOf(explorer) + 1
+            .Insert(at, New Aqua.MenuItem("mnuMap", "在地圖上看拍攝地點", 1, Nothing, Nothing))
+            .Insert(at + 1, New Aqua.MenuItem("mnuNearby", "拍攝地點附近的照片", 1, Nothing, Nothing))
             .Add(New Aqua.MenuItem("mnuDockSep", "-", 1, Nothing, Nothing))
             .Add(New Aqua.MenuItem("mnuDockAdd", "加入 Dock", 1, Nothing, Nothing))
             .Add(New Aqua.MenuItem("mnuDockRemove", "移出 Dock", 1, Nothing, Nothing))
@@ -54,6 +57,9 @@ Partial Class frmMain_1280x1024
         Dim docked As Integer = Targets(mlList.SelectedIndex).Where(Function(i) mlList.Item(i).Marked).Count()
         With AquaMenu1
             .Item("mnuExplorer").Enabled = True
+            Dim shot As ShotInfo.Shot = If(m_lpCurrentPhoto Is Nothing, Nothing, ShotInfo.Read(m_lpCurrentPhoto.FileDesc))
+            .Item("mnuMap").Enabled = shot IsNot Nothing AndAlso shot.HasPlace
+            .Item("mnuNearby").Enabled = shot IsNot Nothing AndAlso shot.HasPlace
             .Item("mnuDockAdd").Text = "加入 Dock" & many
             .Item("mnuDockAdd").Enabled = docked < n
             .Item("mnuDockRemove").Text = "移出 Dock" & many
@@ -71,6 +77,14 @@ Partial Class frmMain_1280x1024
             .Item("mnuDeleteForever").Text = "永久刪除" & many & "…"
             .Item("mnuDeleteForever").Enabled = Not ro
             .Item("mnuMyRanking").Text = "我的評價" & many
+            .Item("mnuRotateClockwise").Text = "左轉 90°" & many
+            .Item("mnuRotateCounterClockwise").Text = "右轉 90°" & many
+            If n > 1 Then
+                ' several: turnable when any of them is a picture (the one right-clicked may be a video)
+                Dim anyPicture As Boolean = Targets(mlList.SelectedIndex).Any(Function(i) GetMediaType(g_lpFileSystem, mlList.Item(i).FileName) = enumPhotoMediaType.mdImage)
+                .Item("mnuRotateClockwise").Enabled = anyPicture AndAlso Not ro
+                .Item("mnuRotateCounterClockwise").Enabled = anyPicture AndAlso Not ro
+            End If
         End With
     End Sub
 
@@ -78,6 +92,8 @@ Partial Class frmMain_1280x1024
     Private Function FileOpsMenuSelected(ByVal name As String, ByVal index As Integer) As Boolean
         Select Case name.ToUpperInvariant()
             Case "MNUEXPLORER" : ShowInExplorer(m_lpCurrentPhoto.FileDesc)
+            Case "MNUMAP" : ShowOnMap(m_lpCurrentPhoto.FileDesc)
+            Case "MNUNEARBY" : ShowNearby(m_lpCurrentPhoto.FileDesc)
             Case "MNUDOCKADD" : SetDocked(Targets(index), True)
             Case "MNUDOCKREMOVE" : SetDocked(Targets(index), False)
             Case "MNUMOVETO" : MovePhotos(Targets(index))
@@ -85,6 +101,11 @@ Partial Class frmMain_1280x1024
             Case "MNUDELETEFILE" : DeletePhotoFiles(Targets(index))
             Case "MNUDELETEFOREVER" : DeletePhotoFiles(Targets(index), permanent:=True)
             Case "MNUREMOVEFROMBOOK" : RemoveFromBook(Targets(index))
+            Case "MNUROTATECLOCKWISE", "MNUROTATECOUNTERCLOCKWISE"
+                Dim many As List(Of Integer) = Targets(index)
+                If many.Count <= 1 Then Return False   ' one photo: AquaMenu1_MenuSelected as before
+                ' VB6: the "左轉 90°" item (mnuRotateClockwise) turns by -90, "右轉 90°" by +90
+                RotatePhotos(many, If(name.Equals("mnuRotateClockwise", StringComparison.OrdinalIgnoreCase), -90, 90))
             Case "MNURANKINGNONE", "MNURANKINGLV1", "MNURANKINGLV2", "MNURANKINGLV3", "MNURANKINGLV4", "MNURANKINGLV5"
                 Dim many As List(Of Integer) = Targets(index)
                 If many.Count <= 1 Then Return False   ' one photo: AquaMenu1_MenuSelected as before
@@ -100,6 +121,36 @@ Partial Class frmMain_1280x1024
         End Select
         Return True
     End Function
+
+    ''' <summary>左轉 / 右轉 on every selected photo (videos are passed over): each keeps its Restore\ copy
+    ''' first, as for one photo, so 恢復到最初狀態 still works.</summary>
+    Private Sub RotatePhotos(ByVal indexes As List(Of Integer), ByVal angle As Long)
+        If g_lpConfig.ReadOnly Then Return
+        If m_frmViewer IsNot Nothing Then m_frmViewer.Clear()   ' the viewer may hold the focused one
+        Dim failed As New List(Of String)
+        SetBusy(True)
+        Try
+            For Each i In indexes
+                Dim p As New Photo
+                p.Construct(mlList.Item(i).FileName)
+                If p.MediaType <> enumPhotoMediaType.mdImage Then Continue For
+                If Not p.Backup() OrElse Not RotatePicture(p.FileDesc, angle) Then
+                    failed.Add(p.FileDesc)
+                    Continue For
+                End If
+                mlList.Item(i).FileName = ""
+                mlList.Item(i).FileName = p.FileDesc   ' the thumbnail again
+            Next
+        Finally
+            SetBusy(False)
+        End Try
+        If failed.Count > 0 Then frmMsgBox.ShowCriticalMessage(failed.Count & " 張旋轉失敗" & vbCrLf & IO.Path.GetFileName(failed(0)), "旋轉照片")
+        ' the focused photo in the viewer, as after rotating one
+        Dim cur As Integer = mlList.SelectedIndex
+        If cur >= 0 AndAlso m_lpCurrentPhoto IsNot Nothing AndAlso m_lpCurrentPhoto.MediaType = enumPhotoMediaType.mdImage Then
+            ShowPictureInViewer(m_lpCurrentPhoto.FileDesc, cur = 0, cur = mlList.Count - 1)
+        End If
+    End Sub
 
     ''' <summary>「已選取 N 張」 while more than one photo is selected.</summary>
     Private Sub FileOps_SelectionChanged(sender As Object, e As EventArgs) Handles mlList.SelectionChanged
@@ -123,6 +174,55 @@ Partial Class frmMain_1280x1024
         Catch ex As Exception When TypeOf ex Is ComponentModel.Win32Exception OrElse TypeOf ex Is InvalidOperationException
             frmMsgBox.ShowCriticalMessage("無法開啟檔案總管" & vbCrLf & ex.Message, "以檔案總管開啟")
         End Try
+    End Sub
+
+    '==================================================================================================
+    ' 拍攝地點 (ShotInfo / GeoIndex)
+    '==================================================================================================
+    Private Sub ShowOnMap(ByVal file As String)
+        Dim s As ShotInfo.Shot = ShotInfo.Read(file)
+        If s Is Nothing OrElse Not s.HasPlace Then Return
+        Try
+            Process.Start(New ProcessStartInfo(s.MapUrl()) With {.UseShellExecute = True})
+        Catch ex As ComponentModel.Win32Exception
+            frmMsgBox.ShowCriticalMessage("無法開啟瀏覽器" & vbCrLf & ex.Message, "在地圖上看拍攝地點")
+        End Try
+    End Sub
+
+    Private Const NearbyKm As Double = 1.0
+    Private m_intNearbyRun As Integer
+
+    ''' <summary>The album photos taken within NearbyKm of this one, nearest first. Every photo's place is
+    ''' read once (GeoIndex, cached): the first time takes a while, with the progress below the list.</summary>
+    Private Sub ShowNearby(ByVal file As String)
+        Dim s As ShotInfo.Shot = ShotInfo.Read(file)
+        If s Is Nothing OrElse Not s.HasPlace Then Return
+        Dim roots As New List(Of String)
+        For i = 0 To g_lpConfig.AlbumCount - 1
+            roots.Add(g_lpConfig.AlbumPath(i))
+        Next
+        Dim run As Integer = Threading.Interlocked.Increment(m_intNearbyRun)
+        lblPhotoCounts.Text = "讀取照片的拍攝地點…"
+        Threading.Tasks.Task.Run(Function() GeoIndex.Places(roots, Sub(done, total)
+                                                                     If run = m_intNearbyRun AndAlso IsHandleCreated Then BeginInvoke(Sub() lblPhotoCounts.Text = $"讀取拍攝地點… {done:#,0} / {total:#,0}")
+                                                                 End Sub)).
+            ContinueWith(Sub(t)
+                             If run <> m_intNearbyRun OrElse IsDisposed OrElse Not IsHandleCreated OrElse t.IsFaulted Then Return
+                             BeginInvoke(Sub() NearbyReady(s, GeoIndex.Nearby(t.Result, s.Latitude.Value, s.Longitude.Value, NearbyKm), t.Result.Count))
+                         End Sub)
+    End Sub
+
+    Private Sub NearbyReady(ByVal s As ShotInfo.Shot, ByVal files As List(Of String), ByVal withPlace As Integer)
+        With m_lpAppEnv
+            .ExeMode = enumExeMode.exeFace   ' a list of files from anywhere (as the face / search lists)
+            .SectionIndex = -1
+            .KeyIndex = -1
+        End With
+        ClearScreenAlbum()
+        MoveFilesToMediaList(files.ToArray(), files.Count)
+        txtTitle.Text = "拍攝地點附近的照片"
+        txtRemark.Text = $"{s.PlaceText()} 方圓 {NearbyKm:0.#} 公里內：{files.Count} 張（{withPlace:#,0} 張照片有拍攝地點）"
+        If mlList.Visible Then mlList.Focus()
     End Sub
 
     '==================================================================================================
