@@ -123,6 +123,21 @@ Public MustInherit Class PhotoSet
         End Set
     End Property
 
+    ''' <summary>The photo chosen for the album's cover (設為相本封面, new in the .NET port): its full path,
+    ''' kept as [Note] Cover in the note ini / .Alm; "" when none was chosen.</summary>
+    Public Property CoverPhoto As String
+        Get
+            If Not CheckCreate() Then Return ""
+            Dim ini As New Carbon.IniFile With {.FileName = NoteFile}
+            Return If(ini.SimpleGetValue("Note", "Cover"), "").Trim()
+        End Get
+        Set(value As String)
+            If Not CheckCreate() Then Return
+            Dim ini As New Carbon.IniFile With {.FileName = NoteFile}
+            ini.SimpleSetValue("Note", "Cover", If(value, ""))
+        End Set
+    End Property
+
     Public Sub Clear()
         m_lpPhoto.Clear()
     End Sub

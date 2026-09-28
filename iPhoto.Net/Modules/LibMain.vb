@@ -27,6 +27,9 @@ Friend Module LibMain
             g_intMonitorCount = g_lpMonitors.MonitorCount
         End If
 
+        ' a copy of iPhoto.mdb before it is opened (Maintenance: Backup\, the newest 10 kept)
+        If Not g_lpConfig.ReadOnly Then Maintenance.BackupDatabase(g_lpConfig.Attached(Config.enumAttachedFile.filDatabase))
+
         g_lpDatabase = New Database
         g_lpDatabase.Construct(g_lpConfig.Attached(Config.enumAttachedFile.filDatabase))
 

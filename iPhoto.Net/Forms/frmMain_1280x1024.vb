@@ -345,6 +345,7 @@ Friend Class frmMain_1280x1024
         Dim bolFirst As Boolean = (Index = 0)
         Dim bolLast As Boolean = (Index = mlList.Count - 1)
 
+        If FileOpsMenuSelected(Menu.Name, Index) Then Return   ' frmMain_1280x1024.FileOps.vb
         Select Case Menu.Name.ToUpperInvariant()
             Case "MNUCOPY"
                 If m_lpCurrentPhoto.MediaType = enumPhotoMediaType.mdImage Then
@@ -424,6 +425,7 @@ Friend Class frmMain_1280x1024
                 .Item("mnuRevertToOriginal").Enabled = g_lpFileSystem.FileExists(objPhoto.RestoreFile)
             End If
         End With
+        SetFileOpsMenu()   ' frmMain_1280x1024.FileOps.vb
     End Sub
 
     '==================================================================================================
@@ -452,8 +454,22 @@ Friend Class frmMain_1280x1024
         If e.Button <> MouseButtons.Left Then Return
         If (tvList.HitTest(e.Location).Location And TreeViewHitTestLocations.PlusMinus) <> 0 Then Return
         tvList.SelectedNode = e.Node
+        ' the list already shows this node (and nothing replaced it since): nothing to load again
+        If m_strShownKey IsNot Nothing AndAlso m_strShownKey = NodeKey(e.Node) Then Return
         tvList_Click()
     End Sub
+
+    ''' <summary>What the list shows, as NodeKey of its tree node; Nothing when it shows something else
+    ''' (search results, a face group, ...). Cleared by ClearScreenAlbum, set once a node's content is up.</summary>
+    Private m_strShownKey As String
+
+    ''' <summary>A tree node's identity: the 面孔 keys, else the mode and the node's path.</summary>
+    Private Function NodeKey(ByVal node As TreeNode) As String
+        If node Is Nothing Then Return ""
+        Dim tag As String = TryCast(node.Tag, String)
+        If tag IsNot Nothing Then Return tag
+        Return butMode.SelectedIndex & "|" & node.FullPath
+    End Function
 
     Private Sub tvList_Click()
         If tvList.SelectedNode Is Nothing Then Return
@@ -491,7 +507,10 @@ Friend Class frmMain_1280x1024
         End With
         '清除畫面的資料
         ClearScreenAlbum()
-        If tvList.SelectedNode.Parent Is Nothing Then Return
+        If tvList.SelectedNode.Parent Is Nothing Then
+            ShowCoverWall(tvList.SelectedNode)   ' frmMain_1280x1024.Covers.vb: open it, one cover per album
+            Return
+        End If
 
         '搬相片至畫面上
         SetBusy(True)
@@ -520,6 +539,7 @@ Friend Class frmMain_1280x1024
                 mlList.ScrollValue = mlList.ScrollMin
                 mlList.SelectedIndex = 0
             End If
+            m_strShownKey = NodeKey(tvList.SelectedNode)
             Enabled = True
             If mlList.Visible Then mlList.Focus()
         Finally
@@ -958,6 +978,7 @@ Friend Class frmMain_1280x1024
     ' Media list
     '==================================================================================================
     Private Sub mlList_BeforeSelectedChanged(sender As Object, e As EventArgs) Handles mlList.BeforeSelectedChanged
+        If ListShowsCards Then Return   ' face tiles / covers: no photo of the list is being edited
         If mlList.Count <= 0 Then Return
         If m_frmViewer Is Nothing Then Return
         If Not m_frmViewer.Changed Then Return
@@ -992,19 +1013,22 @@ Friend Class frmMain_1280x1024
     End Sub
 
     Private Sub mlList_ItemDblClick(index As Integer) Handles mlList.ItemDblClick
-        If FaceViewActive Then Return   ' face wall: FaceWall_ItemDblClick
+        If ListShowsCards Then Return   ' face wall: FaceWall_ItemDblClick
         If mlList.SelectedItem Is Nothing Then Return
         mlList.SelectedItem.Marked = Not mlList.SelectedItem.Marked
     End Sub
 
     Private Sub mlList_ItemKeyDown(Index As Integer, e As KeyEventArgs) Handles mlList.ItemKeyDown
-        If FaceViewActive Then Return
+        If ListShowsCards Then Return
         If e.KeyCode <> Keys.Delete Then Return
         '移除 Photo
         Select Case m_lpAppEnv.ExeMode
             Case enumExeMode.exeAlbums
+                ' VB6 only took the photo off the list (the file stayed): now it goes to the Recycle Bin,
+                ' as 右鍵 刪除檔案 (which asks); the key still needs 設定's DeleteAlbumPhotos
                 If Not g_lpConfig.Privilege(Config.enumPrivilege.privDeleteAlbumPhotos) Then Return
-                If Not frmQueryMsgBox.ShowMessage("是否確定刪除相片庫的相片？", "") Then Return
+                DeletePhotoFiles(Targets(Index))   ' frmMain_1280x1024.FileOps.vb (all selected ones)
+                Return
             Case enumExeMode.exeFavorites
                 If Not frmQueryMsgBox.ShowMessage("是否確定刪除攝影集的相片？", "") Then Return
             Case Else
@@ -1023,7 +1047,7 @@ Friend Class frmMain_1280x1024
     End Sub
 
     Private Sub mlList_ItemMarkChanged(Index As Integer) Handles mlList.ItemMarkChanged
-        If FaceViewActive Then Return   ' face cards are not photos: never docked
+        If ListShowsCards Then Return   ' face cards are not photos: never docked
         If mlList.Count <= 0 Then Return
         If mlList.Item(Index).FileName.Trim() = "" Then Return
 
@@ -1045,10 +1069,10 @@ Friend Class frmMain_1280x1024
     End Sub
 
     Private Sub mlList_ItemMouseDown(Index As Integer, e As MouseEventArgs) Handles mlList.ItemMouseDown
-        If FaceViewActive Then Return   ' face wall: FaceWall_ItemMouseDown
+        If ListShowsCards Then Return   ' face wall: FaceWall_ItemMouseDown
         If m_lpCurrentPhoto Is Nothing Then Return
         If e.Button = MouseButtons.Right Then
-            If mlList.SelectedIndex <> Index Then mlList.SelectedIndex = Index
+            If Not mlList.IsSelected(Index) Then mlList.SelectedIndex = Index   ' inside a multi-selection it stays
             SetMediaListPopupMenu(m_lpCurrentPhoto)
             mlList.PopupMenu(Index, AquaMenu1)
         Else
@@ -1057,13 +1081,13 @@ Friend Class frmMain_1280x1024
     End Sub
 
     Private Sub mlList_ItemSelected(Index As Integer) Handles mlList.ItemSelected
-        If FaceViewActive Then Return
+        If ListShowsCards Then Return
         m_lpCurrentPhoto = New Photo
         m_lpCurrentPhoto.Construct(mlList.Item(Index).FileName)
     End Sub
 
     Private Sub mlList_SelectedChanged(sender As Object, e As EventArgs) Handles mlList.SelectedChanged
-        If FaceViewActive Then Return
+        If ListShowsCards Then Return
         Dim bolFirst As Boolean = (mlList.SelectedIndex = 0)
         Dim bolLast As Boolean = (mlList.SelectedIndex = mlList.Count - 1)
 
@@ -1124,7 +1148,9 @@ Friend Class frmMain_1280x1024
     ' Class / book notes (title, date, place, remark, subject icon)
     '==================================================================================================
     Private Sub ClearScreenAlbum()
+        m_strShownKey = Nothing
         EndFaceView()   ' frmMain_1280x1024.Faces.vb
+        EndCoverWall()  ' frmMain_1280x1024.Covers.vb
         mlList.Clear()
 
         txtTitle.Text = ""

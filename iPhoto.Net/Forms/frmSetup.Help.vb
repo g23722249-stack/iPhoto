@@ -1,4 +1,4 @@
-' Help windows for 設定 (HelpTip; texts in PhotoLib HelpTexts, keys "setup.*"). Registered once the
+﻿' Help windows for 設定 (HelpTip; texts in PhotoLib HelpTexts, keys "setup.*"). Registered once the
 ' window is up: the 面孔 page is made in Load (frmSetup.Faces.vb). A field's caption and its box share
 ' the help; the browse icons show it too.
 Partial Class frmSetup
@@ -41,6 +41,7 @@ Partial Class frmSetup
             .SetHelp("setup.face.strict", rbFaceStrict)
             .SetHelp("setup.face.clear", lblFaceClear)
             .SetHelp("setup.face.guide", lblFaceGuide)
+            .SetHelp("setup.face.strangers", lblFaceStrangers)
 
             .SetHelp("setup.save", butSave)
             .SetHelp("setup.cancel", butExit)

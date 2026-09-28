@@ -83,6 +83,7 @@ Public Class Book
         Dim icon As String = Note(enumNote.ntIcon)
         Dim music As String = Note(enumNote.ntMusic)
         Dim remark As String = Note(enumNote.ntRemark)
+        Dim cover As String = CoverPhoto
 
         If Not fs.DeleteFile(m_szFavoriteAlbumFile) Then
             MsgBox("刪除攝影集設定檔 " & m_szFavoriteAlbumFile & " 失敗...", MsgBoxStyle.Critical, "錯誤")
@@ -104,6 +105,7 @@ Public Class Book
             w.WriteLine("Icon=" & icon)
             w.WriteLine("Music=" & music)
             w.WriteLine("Remark=" & remark)
+            If cover <> "" Then w.WriteLine("Cover=" & cover)   ' 設為相本封面 (new in the .NET port)
             w.WriteLine(" ")
             w.WriteLine("//相片")
             w.WriteLine("[Photos]")

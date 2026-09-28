@@ -36,6 +36,9 @@
     </EmbeddedResource>
     <!-- VB6 read iPhoto.Ini from App.Path -->
     <None Update="iPhoto.Ini" CopyToOutputDirectory="PreserveNewest" />
+    <!-- 華康細圓體 (the forms' font): next to iPhoto.exe, installed for the user at start when missing
+         (Modules\FontSetup.vb). Optional: a checkout without the file still builds. -->
+    <None Include="Fonts\細圓體.TTC" Condition="Exists('Fonts\細圓體.TTC')" Link="細圓體.TTC" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

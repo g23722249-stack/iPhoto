@@ -125,6 +125,7 @@ Partial Class frmMain_1280x1024
     '==================================================================================================
     Private Const FaceNodeKey As String = "FACE"
     Private Const FaceGroupsKey As String = "FACE:GROUPS"
+    Private Const FaceHiddenKey As String = "FACE:HIDDEN"
     Private Const FacePersonPrefix As String = "FACE:P"
     ''' <summary>Unnamed groups shown on the wall (the biggest; the rest wait until these are named).</summary>
     Private Const MaxGroupsShown As Integer = 60
@@ -153,6 +154,8 @@ Partial Class frmMain_1280x1024
                 AddFaceChild(n, FacePersonPrefix & p.PersonID, p.Name & " (" & p.PhotoCount & ")")
             Next
             If cat.Clusters.Count > 0 Then AddFaceChild(n, FaceGroupsKey, "未命名的臉 (" & cat.Clusters.Count & " 群)")
+            Dim hidden As Integer = cat.Persons.Where(Function(p) p.Hidden).Count()
+            If hidden > 0 Then AddFaceChild(n, FaceHiddenKey, "已隱藏的人 (" & hidden & ")")
         End If
         tvList.EndUpdate()
         If selectedKey IsNot Nothing Then
@@ -171,7 +174,13 @@ Partial Class frmMain_1280x1024
     Private Sub m_lpFaceScan_Organized(sender As Object, e As EventArgs) Handles m_lpFaceScan.Organized
         Dim n() As TreeNode = tvList.Nodes.Find(FaceNodeKey, False)
         If n.Length > 0 Then FillFaceNode(n(0))
-        If m_enumFaceView = FaceView.fvWall Then ShowFaceWall(m_bolWallGroupsOnly)   ' group / confirm views are left alone: the user is ticking faces
+        If m_enumFaceView = FaceView.fvWall Then ShowFaceWall(m_enumWallKind)   ' group / confirm views are left alone: the user is ticking faces
+        ' a 面孔 node clicked before the first sort was done: show it now
+        If m_strFacePending IsNot Nothing AndAlso tvList.SelectedNode IsNot Nothing AndAlso
+           String.Equals(TryCast(tvList.SelectedNode.Tag, String), m_strFacePending, StringComparison.Ordinal) Then
+            m_strFacePending = Nothing
+            FaceNodeClick(tvList.SelectedNode)
+        End If
         Dim cat As FaceCatalog = g_lpFaces?.Catalog
         If lblFaceScan IsNot Nothing AndAlso cat IsNot Nothing AndAlso Not lblFaceScan.Text.StartsWith("分析面孔") Then
             lblFaceScan.Text = "面孔：" & cat.VisiblePersons.Count & " 人 · " & cat.Clusters.Count & " 群未命名"
@@ -179,15 +188,30 @@ Partial Class frmMain_1280x1024
         End If
     End Sub
 
+    ''' <summary>The 面孔 node clicked while the first sort after starting was still running (no catalog
+    ''' yet): Organized shows it when the sort is done, if it is still the selected node.</summary>
+    Private m_strFacePending As String
+
     ''' <summary>Called first by tvList_Click: True when the node is 面孔 or one of its children.</summary>
     Private Function FaceNodeClick(ByVal node As TreeNode) As Boolean
         Dim key As String = TryCast(node.Tag, String)
         ShowFaceGuideLink(node)
+        m_strFacePending = Nothing
         If key Is Nothing OrElse Not key.StartsWith(FaceNodeKey) Then Return False
-        If g_lpFaces Is Nothing OrElse g_lpFaces.Catalog Is Nothing Then Return True
+        If g_lpFaces Is Nothing Then Return True
+        If g_lpFaces.Catalog Is Nothing Then
+            ' the first sort after starting iPhoto isn't done: say so, and show the wall when it is
+            ClearScreenAlbum()
+            m_strFacePending = key
+            txtTitle.Text = "面孔"
+            lblPhotoCounts.Text = "整理面孔中…完成後自動顯示"
+            If Not g_lpFaces.IsRunning Then g_lpFaces.RequestOrganize()   ' a running scan sorts when it ends
+            Return True
+        End If
         Select Case True
-            Case key = FaceNodeKey : ShowFaceWall(False)
-            Case key = FaceGroupsKey : ShowFaceWall(True)
+            Case key = FaceNodeKey : ShowFaceWall(WallKind.wkAll)
+            Case key = FaceGroupsKey : ShowFaceWall(WallKind.wkGroups)
+            Case key = FaceHiddenKey : ShowFaceWall(WallKind.wkHidden)
             Case key.StartsWith(FacePersonPrefix)
                 Dim p As FaceCatalog.PersonEntry = g_lpFaces.Catalog.Person(CInt(Val(key.Substring(FacePersonPrefix.Length))))
                 If p IsNot Nothing Then ShowPersonPhotos(p)
@@ -230,14 +254,22 @@ Partial Class frmMain_1280x1024
     End Enum
 
     Private m_enumFaceView As FaceView = FaceView.fvNone
-    Private m_bolWallGroupsOnly As Boolean
+    ''' <summary>What the face wall shows: everybody and the unnamed groups, only the groups, or the hidden people.</summary>
+    Private Enum WallKind
+        wkAll = 0
+        wkGroups = 1
+        wkHidden = 2
+    End Enum
+    Private m_enumWallKind As WallKind
     Private ReadOnly m_lpWallItems As New List(Of Object)    ' PersonEntry or List(Of FaceRegion), by mlList index
     Private m_lpGroup As List(Of FaceRegion)
     Private m_lpGroupFaces As New List(Of FaceRegion)          ' by mlList index in the group view
     Private WithEvents mnuFacePerson As ContextMenuStrip
+    Private mnuFaceHide As ToolStripMenuItem
     Private WithEvents mnuFaceGroupCard As ContextMenuStrip
     Private WithEvents mnuFaceGroup As ContextMenuStrip
     Private WithEvents mnuFaceConfirm As ContextMenuStrip
+    Private mnuFaceConfirmYes As ToolStripMenuItem
     Private m_lpConfirmPerson As FaceCatalog.PersonEntry
     Private m_intFaceMenuIndex As Integer
 
@@ -276,33 +308,38 @@ Partial Class frmMain_1280x1024
         Return item
     End Function
 
-    Private Sub ShowFaceWall(ByVal bolGroupsOnly As Boolean)
+    Private Sub ShowFaceWall(ByVal kind As WallKind)
         Dim cat As FaceCatalog = g_lpFaces.Catalog
         If cat Is Nothing Then Return
         SetBusy(True)
         Try
             BeginFaceList(FaceView.fvWall)
-            m_bolWallGroupsOnly = bolGroupsOnly
+            m_enumWallKind = kind
             Dim cache As String = g_lpFaces.CacheFolder
-            If Not bolGroupsOnly Then
-                For Each p In cat.VisiblePersons
+            If kind <> WallKind.wkGroups Then
+                For Each p In If(kind = WallKind.wkHidden, cat.Persons.Where(Function(x) x.Hidden).ToList(), cat.VisiblePersons)
                     Dim card As String = g_lpDatabase.LoadFaceCover(p.Name)   ' a name card made with frmCover wins
                     If card = "" OrElse Not IO.File.Exists(card) Then card = FaceCards.PersonCard(cache, p)
                     If card = "" Then Continue For
                     Dim pending As Integer = p.ToConfirm.Count
                     AddFaceItem(card, p.Name & "：" & p.PhotoCount & " 張照片" & If(pending > 0, "，" & pending & " 張待確認", "") & vbCrLf &
-                                      "按兩下看照片，按右鍵確認更多照片 / 改名 / 合併", False)
+                                      If(p.Hidden, "已隱藏：按右鍵「取消隱藏」", "按兩下看照片，按右鍵確認更多照片 / 改名 / 合併 / 找合照"), False)
                     m_lpWallItems.Add(p)
                 Next
             End If
-            For Each g In cat.Clusters.Take(MaxGroupsShown)
+            For Each g In If(kind = WallKind.wkHidden, Enumerable.Empty(Of List(Of FaceRegion))(), cat.Clusters.Take(MaxGroupsShown))
                 Dim card As String = FaceCards.GroupCard(cache, g)
                 If card = "" Then Continue For
                 AddFaceItem(card, g.Count & " 張可能是同一人的臉" & vbCrLf & "按兩下逐張確認後命名", False)
                 m_lpWallItems.Add(g)
             Next
-            txtTitle.Text = If(bolGroupsOnly, "未命名的臉", "面孔")
-            lblPhotoCounts.Text = cat.VisiblePersons.Count & " 人 · " & cat.Clusters.Count & " 群未命名"
+            Select Case kind
+                Case WallKind.wkGroups : txtTitle.Text = "未命名的臉" : m_strShownKey = FaceGroupsKey
+                Case WallKind.wkHidden : txtTitle.Text = "已隱藏的人" : m_strShownKey = FaceHiddenKey
+                Case Else : txtTitle.Text = "面孔" : m_strShownKey = FaceNodeKey
+            End Select
+            lblPhotoCounts.Text = If(kind = WallKind.wkHidden, m_lpWallItems.Count & " 人已隱藏",
+                                     cat.VisiblePersons.Count & " 人 · " & cat.Clusters.Count & " 群未命名")
             If mlList.Count > 0 Then mlList.ScrollValue = mlList.ScrollMin
         Finally
             SetBusy(False)
@@ -321,6 +358,7 @@ Partial Class frmMain_1280x1024
             ClearScreenAlbum()
             If files.Length > 0 Then MoveFilesToMediaList(files, files.Length)
             txtTitle.Text = p.Name
+            m_strShownKey = FacePersonPrefix & p.PersonID
             Dim pending As Integer = p.ToConfirm.Count
             txtRemark.Text = files.Length & " 張照片" & If(p.BirthYear > 0, "，" & p.BirthYear & " 年出生", "") &
                              If(pending > 0, "；" & pending & " 張臉待確認（面孔牆右鍵「確認更多照片」）", "")
@@ -381,6 +419,7 @@ Partial Class frmMain_1280x1024
                 Dim pending As Integer = p.ToConfirm.Count
                 mnuFacePerson.Items(1).Text = "確認更多照片" & If(pending > 0, "（" & pending & "）…", "")
                 mnuFacePerson.Items(1).Enabled = pending > 0
+                mnuFaceHide.Text = If(p.Hidden, "取消隱藏", "隱藏")
             End If
             mlList.PopupMenu(index, If(p IsNot Nothing, mnuFacePerson, mnuFaceGroupCard))
         End If
@@ -394,21 +433,30 @@ Partial Class frmMain_1280x1024
         mnuFacePerson.Items.Add("改名／合併…", Nothing, Sub() RenameWallPerson())
         mnuFacePerson.Items.Add("設定出生年…", Nothing, Sub() SetWallBirthYear())
         mnuFacePerson.Items.Add("更換封面…", Nothing, Sub() ChangeWallCover())
+        mnuFacePerson.Items.Add("找合照…", Nothing, Sub() FindTogether(WallPerson))
         mnuFacePerson.Items.Add(New ToolStripSeparator())
-        mnuFacePerson.Items.Add("隱藏", Nothing, Sub() HideWallPerson())
+        mnuFaceHide = New ToolStripMenuItem("隱藏", Nothing, Sub() HideWallPerson())
+        mnuFacePerson.Items.Add(mnuFaceHide)
 
         mnuFaceGroupCard = New ContextMenuStrip()
         mnuFaceGroupCard.Items.Add("逐張確認…", Nothing, Sub() FaceWall_ItemDblClick(m_intFaceMenuIndex))
         mnuFaceGroupCard.Items.Add("全部命名為…", Nothing, Sub() NameGroup(CType(m_lpWallItems(m_intFaceMenuIndex), List(Of FaceRegion))))
+        mnuFaceGroupCard.Items.Add(New ToolStripSeparator())
+        mnuFaceGroupCard.Items.Add("我不認識…", Nothing, Sub() MarkStrangers(CType(m_lpWallItems(m_intFaceMenuIndex), List(Of FaceRegion))))
 
         mnuFaceGroup = New ContextMenuStrip()
+        mnuFaceGroup.Items.Add("全圖瀏覽", Nothing, Sub() ShowFaceFullView(m_intFaceMenuIndex))
+        mnuFaceGroup.Items.Add("以檔案總管開啟", Nothing, Sub() ShowFaceInExplorer(m_intFaceMenuIndex))
+        mnuFaceGroup.Items.Add(New ToolStripSeparator())
         mnuFaceGroup.Items.Add("將勾選的臉命名為…", Nothing, Sub() NameCheckedFaces())
+        mnuFaceGroup.Items.Add("勾選的臉我不認識…", Nothing, Sub() MarkCheckedStrangers())
+        mnuFaceGroup.Items.Add(New ToolStripSeparator())
         mnuFaceGroup.Items.Add("全部勾選", Nothing, Sub() mlList.CheckAll(True))
         mnuFaceGroup.Items.Add("全部取消勾選", Nothing, Sub() mlList.CheckAll(False))
         mnuFaceGroup.Items.Add(New ToolStripSeparator())
         mnuFaceGroup.Items.Add("回到面孔牆", Nothing, Sub()
                                                      SelectFaceTreeNode(FaceNodeKey)
-                                                     ShowFaceWall(False)
+                                                     ShowFaceWall(WallKind.wkAll)
                                                  End Sub)
     End Sub
 
@@ -425,7 +473,7 @@ Partial Class frmMain_1280x1024
         If todo.Count = 0 Then
             frmMsgBox.ShowSmileMessage("「" & p.Name & "」沒有待確認的臉了", "確認更多照片")
             SelectFaceTreeNode(FaceNodeKey)
-            ShowFaceWall(False)
+            ShowFaceWall(WallKind.wkAll)
             Return
         End If
         SetBusy(True)
@@ -440,7 +488,8 @@ Partial Class frmMain_1280x1024
                 AddFaceItem(crop, how & vbCrLf & IO.Path.GetFileName(f.FileName) & If(f.ShotYear > 0, "，" & f.ShotYear & " 年", ""), True)
                 m_lpGroupFaces.Add(f)
             Next
-            txtTitle.Text = p.Name & " — 確認更多照片"
+            txtTitle.Text = p.Name
+            m_strShownKey = FacePersonPrefix & p.PersonID & " — 確認更多照片"
             txtRemark.Text = "不是「" & p.Name & "」的臉請取消勾選（或按兩下），再按右鍵「勾選的是 " & p.Name & "、其餘不是」"
             lblPhotoCounts.Text = "這一批 " & m_lpGroupFaces.Count & " 張 · 共 " & todo.Count & " 張待確認"
             If mlList.Count > 0 Then mlList.ScrollValue = mlList.ScrollMin
@@ -458,7 +507,11 @@ Partial Class frmMain_1280x1024
     Private Sub EnsureConfirmMenu()
         If mnuFaceConfirm IsNot Nothing Then Return
         mnuFaceConfirm = New ContextMenuStrip()
-        mnuFaceConfirm.Items.Add("勾選的是這個人、其餘不是", Nothing, Sub() ApplyConfirm(True))
+        mnuFaceConfirmYes = New ToolStripMenuItem("勾選的是這個人、其餘不是", Nothing, Sub() ApplyConfirm(True))
+        mnuFaceConfirm.Items.Add("全圖瀏覽", Nothing, Sub() ShowFaceFullView(m_intFaceMenuIndex))
+        mnuFaceConfirm.Items.Add("以檔案總管開啟", Nothing, Sub() ShowFaceInExplorer(m_intFaceMenuIndex))
+        mnuFaceConfirm.Items.Add(New ToolStripSeparator())
+        mnuFaceConfirm.Items.Add(mnuFaceConfirmYes)
         mnuFaceConfirm.Items.Add("只確認勾選的（其餘之後再說）", Nothing, Sub() ApplyConfirm(False))
         mnuFaceConfirm.Items.Add(New ToolStripSeparator())
         mnuFaceConfirm.Items.Add("全部勾選", Nothing, Sub() mlList.CheckAll(True))
@@ -466,13 +519,13 @@ Partial Class frmMain_1280x1024
         mnuFaceConfirm.Items.Add(New ToolStripSeparator())
         mnuFaceConfirm.Items.Add("回到面孔牆", Nothing, Sub()
                                                        SelectFaceTreeNode(FaceNodeKey)
-                                                       ShowFaceWall(False)
+                                                       ShowFaceWall(WallKind.wkAll)
                                                    End Sub)
     End Sub
 
     Private Sub mnuFaceConfirm_Opening(sender As Object, e As System.ComponentModel.CancelEventArgs) Handles mnuFaceConfirm.Opening
         If m_lpConfirmPerson Is Nothing Then Return
-        mnuFaceConfirm.Items(0).Text = "勾選的是「" & m_lpConfirmPerson.Name & "」、其餘不是"
+        mnuFaceConfirmYes.Text = "勾選的是「" & m_lpConfirmPerson.Name & "」、其餘不是"
     End Sub
 
     ''' <summary>Ticked faces are the person (confirmed, name into the people field); with
@@ -532,7 +585,7 @@ Partial Class frmMain_1280x1024
             SetBusy(False)
         End Try
         SelectFaceTreeNode(FaceNodeKey)
-        ShowFaceWall(False)
+        ShowFaceWall(WallKind.wkAll)
     End Sub
 
     Private Sub NameCheckedFaces()
@@ -583,18 +636,182 @@ Partial Class frmMain_1280x1024
         Using f As New frmCover
             f.Text1.Text = p.Name
             f.SetCover(p.Cover.FileName)
-            If f.Result Then ShowFaceWall(m_bolWallGroupsOnly)
+            If f.Result Then ShowFaceWall(m_enumWallKind)
         End Using
     End Sub
 
+    ''' <summary>隱藏 / 取消隱藏 (on the 已隱藏的人 wall).</summary>
     Private Sub HideWallPerson()
         Dim p As FaceCatalog.PersonEntry = WallPerson
         If p Is Nothing Then Return
-        If Not frmQueryMsgBox.ShowMessage("隱藏「" & p.Name & "」？照片的人物欄不會改，之後也不會再自動認出這個人。", "隱藏") Then Return
-        g_lpFaces.HidePerson(p)
-        ShowFaceWall(m_bolWallGroupsOnly)
+        If p.Hidden Then
+            g_lpFaces.UnhidePerson(p)
+        Else
+            If Not frmQueryMsgBox.ShowMessage("隱藏「" & p.Name & "」？照片的人物欄不會改，之後也不會再自動認出這個人。" & vbCrLf &
+                                              "可以在「面孔 › 已隱藏的人」取消隱藏。", "隱藏") Then Return
+            g_lpFaces.HidePerson(p)
+        End If
+        Dim kind As WallKind = m_enumWallKind
+        If kind = WallKind.wkHidden AndAlso Not g_lpFaces.Catalog.Persons.Any(Function(x) x.Hidden) Then kind = WallKind.wkAll   ' nobody hidden any more
         Dim n() As TreeNode = tvList.Nodes.Find(FaceNodeKey, False)
         If n.Length > 0 Then FillFaceNode(n(0))
+        SelectFaceTreeNode(If(kind = WallKind.wkHidden, FaceHiddenKey, If(kind = WallKind.wkGroups, FaceGroupsKey, FaceNodeKey)))
+        ShowFaceWall(kind)
+    End Sub
+
+    '==================================================================================================
+    ' 找合照 -- the photos two or more people are all in (faces or people field: FaceLibrary.PhotosOf)
+    '==================================================================================================
+    Private Sub FindTogether(ByVal first As FaceCatalog.PersonEntry)
+        If first Is Nothing OrElse g_lpFaces?.Catalog Is Nothing Then Return
+        Dim others = g_lpFaces.Catalog.VisiblePersons.Where(Function(x) x IsNot first).ToList()
+        If others.Count = 0 Then Return
+        Dim picked As List(Of FaceCatalog.PersonEntry)
+        Using f As New frmPickPeople
+            picked = f.Pick("找「" & first.Name & "」和誰的合照？", others)
+        End Using
+        If picked Is Nothing OrElse picked.Count = 0 Then Return
+        Dim people As New List(Of FaceCatalog.PersonEntry) From {first}
+        people.AddRange(picked)
+        SetBusy(True)
+        Dim files() As String
+        Try
+            Dim together As IEnumerable(Of String) = g_lpFaces.PhotosOf(first)
+            For Each p In picked
+                together = together.Intersect(g_lpFaces.PhotosOf(p), StringComparer.OrdinalIgnoreCase)
+            Next
+            files = together.ToArray()
+        Finally
+            SetBusy(False)
+        End Try
+        Dim names As String = String.Join("、", people.Select(Function(x) x.Name))
+        If files.Length = 0 Then
+            frmMsgBox.ShowSmileMessage("沒有找到 " & names & " 的合照", "找合照")
+            Return
+        End If
+        With m_lpAppEnv
+            .ExeMode = enumExeMode.exeFace
+            .SectionIndex = -1
+            .KeyIndex = -1
+        End With
+        ClearScreenAlbum()
+        MoveFilesToMediaList(files, files.Length)   ' PhotosOf gives them oldest first
+        txtTitle.Text = names & " 的合照"
+        txtRemark.Text = files.Length & " 張照片"
+        If mlList.Visible Then mlList.Focus()
+    End Sub
+
+    '==================================================================================================
+    ' 我不認識 -- faces of people the user doesn't know (a stranger in a group photo, a poster): kept,
+    ' but never grouped or matched again (FaceLibrary.MarkStrangers, state 8). Photos and people
+    ' fields don't change. 設定 › 面孔 brings them all back; naming one in the viewer brings that one.
+    '==================================================================================================
+    Private Sub MarkStrangers(ByVal faces As List(Of FaceRegion))
+        If faces Is Nothing OrElse faces.Count = 0 Then Return
+        If Not frmQueryMsgBox.ShowMessage("這 " & faces.Count & " 張臉都標成「我不認識」？" & vbCrLf &
+                                          "之後不會再出現在「未命名的臉」，程式也不會再拿它們認人；照片和人物欄不變。" & vbCrLf &
+                                          "標錯了可以在 設定 › 面孔 恢復，或在全圖瀏覽點臉直接輸入名字。", "我不認識") Then Return
+        SetBusy(True)
+        Try
+            g_lpFaces.MarkStrangers(faces)
+        Finally
+            SetBusy(False)
+        End Try
+        Dim n() As TreeNode = tvList.Nodes.Find(FaceNodeKey, False)
+        If n.Length > 0 Then FillFaceNode(n(0))
+        If m_enumFaceView = FaceView.fvGroup AndAlso m_lpGroup IsNot Nothing Then
+            ' what is left of the group (the unticked faces), else back to the wall
+            m_lpGroup.RemoveAll(Function(f) f.State = FaceRegion.enumFaceState.fsStranger)
+            If m_lpGroup.Count > 0 Then
+                ShowGroupFaces(m_lpGroup)
+                Return
+            End If
+        End If
+        SelectFaceTreeNode(FaceNodeKey)
+        ShowFaceWall(m_enumWallKind)
+    End Sub
+
+    Private Sub MarkCheckedStrangers()
+        Dim picked As New List(Of FaceRegion)
+        For i = 0 To Math.Min(mlList.Count, m_lpGroupFaces.Count) - 1
+            If mlList.Item(i).Checked Then picked.Add(m_lpGroupFaces(i))
+        Next
+        If picked.Count = 0 Then
+            frmMsgBox.ShowCriticalMessage("請先勾選不認識的臉", "注意")
+            Return
+        End If
+        MarkStrangers(picked)
+    End Sub
+
+    '==================================================================================================
+    ' 全圖瀏覽 from the group / confirm views: the whole photo of a face, face mode on and the face
+    ' selected (frmViewerLarge.ShowFace); the viewer's prior / next go through the faces of the view.
+    ' Faces named / confirmed / rejected in the viewer drop out of the view when it closes.
+    '==================================================================================================
+    Private Sub ShowFaceFullView(ByVal index As Integer)
+        If m_frmViewer Is Nothing OrElse index < 0 OrElse index >= m_lpGroupFaces.Count Then Return
+        If mlList.SelectedIndex <> index Then mlList.SelectedIndex = index
+        ShowFaceInViewer(index)
+        If m_frmViewerForm.Visible Then Return   ' two screens: the viewer is already up on the other one
+        m_frmViewerForm.ShowDialog(Me)
+        RefreshFaceViewAfterViewer()
+    End Sub
+
+    Private Sub ShowFaceInViewer(ByVal index As Integer)
+        If m_frmViewer Is Nothing OrElse index < 0 OrElse index >= m_lpGroupFaces.Count Then Return
+        Dim f As FaceRegion = m_lpGroupFaces(index)
+        If Not IO.File.Exists(f.FileName) Then
+            m_frmViewer.Clear()
+            Return
+        End If
+        ShowPictureInViewer(f.FileName, index = 0, index = m_lpGroupFaces.Count - 1)
+        TryCast(m_frmViewer, frmViewerLarge)?.ShowFace(f.FaceID)
+    End Sub
+
+    ''' <summary>The photo the face is in, selected in Explorer.</summary>
+    Private Sub ShowFaceInExplorer(ByVal index As Integer)
+        If index < 0 OrElse index >= m_lpGroupFaces.Count Then Return
+        ShowInExplorer(m_lpGroupFaces(index).FileName)   ' frmMain_1280x1024.FileOps.vb
+    End Sub
+    ''' <summary>The viewer's prior / next move the selection; with two screens a click on a face does too.</summary>
+    Private Sub FaceView_SelectedChanged(sender As Object, e As EventArgs) Handles mlList.SelectedChanged
+        If m_enumFaceView <> FaceView.fvGroup AndAlso m_enumFaceView <> FaceView.fvConfirm Then Return
+        If m_frmViewerForm Is Nothing OrElse Not m_frmViewerForm.Visible Then Return
+        ShowFaceInViewer(mlList.SelectedIndex)
+    End Sub
+
+    ''' <summary>After the viewer: faces whose state changed there (named, ✓, ✕, 不是此人, 這不是臉) take
+    ''' their new state and leave the view.</summary>
+    Private Sub RefreshFaceViewAfterViewer()
+        If m_enumFaceView <> FaceView.fvGroup AndAlso m_enumFaceView <> FaceView.fvConfirm Then Return
+        Dim changed As Boolean = False
+        For Each file In m_lpGroupFaces.Select(Function(f) f.FileName).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+            Dim now As Dictionary(Of Integer, FaceRegion) = g_lpFaces.FacesOf(file).ToDictionary(Function(f) f.FaceID)
+            For Each f In m_lpGroupFaces.Where(Function(x) String.Equals(x.FileName, file, StringComparison.OrdinalIgnoreCase))
+                Dim cur As FaceRegion = Nothing
+                Dim state As FaceRegion.enumFaceState = If(now.TryGetValue(f.FaceID, cur), cur.State, FaceRegion.enumFaceState.fsNotFace)
+                Dim person As Integer = If(cur Is Nothing, 0, cur.PersonID)
+                If state <> f.State OrElse person <> f.PersonID Then
+                    f.State = state
+                    f.PersonID = person
+                    f.PersonName = If(cur Is Nothing, "", cur.PersonName)
+                    changed = True
+                End If
+            Next
+        Next
+        If Not changed Then Return
+        g_lpFaces.RequestOrganizeSoon()
+        If m_enumFaceView = FaceView.fvConfirm Then
+            ShowConfirmFaces(m_lpConfirmPerson)   ' ToConfirm drops what no longer needs confirming
+        ElseIf m_lpGroup IsNot Nothing Then
+            m_lpGroup.RemoveAll(Function(f) f.PersonID <> 0 OrElse f.State = FaceRegion.enumFaceState.fsStranger OrElse f.State = FaceRegion.enumFaceState.fsNotFace)
+            If m_lpGroup.Count > 0 Then
+                ShowGroupFaces(m_lpGroup)
+            Else
+                SelectFaceTreeNode(FaceNodeKey)
+                ShowFaceWall(m_enumWallKind)
+            End If
+        End If
     End Sub
 
 End Class

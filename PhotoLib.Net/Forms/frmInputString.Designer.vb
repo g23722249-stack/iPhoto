@@ -25,12 +25,13 @@ Partial Class frmInputString
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(frmInputString))
         Me.lblMessage = New System.Windows.Forms.Label()
         Me.butOk = New Aqua.FlashButton()
+        Me.butCancel = New Aqua.FlashButton()
         Me.TextBox1 = New Aqua.TextBox()
         Me.SuspendLayout()
         '
         'lblMessage
         '
-        Me.lblMessage.Location = New System.Drawing.Point(16, 16)
+        Me.lblMessage.Location = New System.Drawing.Point(16, 32)
         Me.lblMessage.Size = New System.Drawing.Size(100, 19)
         Me.lblMessage.Name = "lblMessage"
         Me.lblMessage.TabIndex = 2
@@ -42,16 +43,25 @@ Partial Class frmInputString
         '
         'butOk
         '
-        Me.butOk.Location = New System.Drawing.Point(124, 82)
+        Me.butOk.Location = New System.Drawing.Point(70, 100)
         Me.butOk.Size = New System.Drawing.Size(95, 27)
         Me.butOk.Name = "butOk"
         Me.butOk.TabIndex = 1
         Me.butOk.Text = "確定"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
+        'butCancel
+        '
+        Me.butCancel.Location = New System.Drawing.Point(186, 100)
+        Me.butCancel.Size = New System.Drawing.Size(95, 27)
+        Me.butCancel.Name = "butCancel"
+        Me.butCancel.TabIndex = 4
+        Me.butCancel.Text = "放棄"
+        Me.butCancel.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        '
         'TextBox1
         '
-        Me.TextBox1.Location = New System.Drawing.Point(16, 40)
+        Me.TextBox1.Location = New System.Drawing.Point(16, 58)
         Me.TextBox1.Size = New System.Drawing.Size(313, 29)
         Me.TextBox1.Name = "TextBox1"
         Me.TextBox1.TabIndex = 3
@@ -65,7 +75,7 @@ Partial Class frmInputString
         'frmInputString
         '
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None
-        Me.ClientSize = New System.Drawing.Size(351, 123)
+        Me.ClientSize = New System.Drawing.Size(351, 141)
         Me.TopMost = True
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent
         Me.MaximizeBox = False
@@ -82,6 +92,7 @@ Partial Class frmInputString
         Me.TitleFont = New System.Drawing.Font("新細明體", 9!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         Me.Name = "frmInputString"
         Me.Controls.Add(Me.butOk)
+        Me.Controls.Add(Me.butCancel)
         Me.Controls.Add(Me.TextBox1)
         Me.Controls.Add(Me.lblMessage)
         Me.ResumeLayout(False)
@@ -90,5 +101,6 @@ Partial Class frmInputString
 
     Friend WithEvents lblMessage As System.Windows.Forms.Label
     Friend WithEvents butOk As Aqua.FlashButton
+    Friend WithEvents butCancel As Aqua.FlashButton
     Friend WithEvents TextBox1 As Aqua.TextBox
 End Class

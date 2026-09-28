@@ -1,4 +1,4 @@
-' 設定 › 面孔 (face recognition P4, new in the .NET port): the page is made in code so the designer file
+﻿' 設定 › 面孔 (face recognition P4, new in the .NET port): the page is made in code so the designer file
 ' stays as ported; its check boxes and radio buttons borrow the pictures of the ported ones
 ' (chkPrivilege, rbStyle) so they look the same. Saved into iPhoto.Ini [Faces] with the rest (butSave).
 '   啟用人物辨識             Config.FaceEnabled    (next start)
@@ -15,6 +15,7 @@ Partial Class frmSetup
     Private lblFaceCounts As Label
     Private WithEvents lblFaceClear As Label
     Private WithEvents lblFaceGuide As Label
+    Private WithEvents lblFaceStrangers As Label
 
     Private Sub FacePage_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         pageFaces = New Aqua.TabPage With {.Title = "面孔", .BackColor = Color.White, .Font = pageGeneral.Font, .ForeColor = pageGeneral.ForeColor}
@@ -56,6 +57,11 @@ Partial Class frmSetup
             .Cursor = Cursors.Hand, .Location = New Point(x + 330, 320), .BackColor = Color.Transparent,
             .Text = "面孔功能使用說明…"}
         pageFaces.Controls.Add(lblFaceGuide)
+        lblFaceStrangers = New Label With {
+            .AutoSize = True, .Font = New Font(big.FontFamily, 12.0F, FontStyle.Underline), .ForeColor = Color.FromArgb(42, 116, 208),
+            .Cursor = Cursors.Hand, .Location = New Point(x, 356), .BackColor = Color.Transparent,
+            .Text = "恢復標成「我不認識」的臉…"}
+        pageFaces.Controls.Add(lblFaceStrangers)
 
         tabSetup.TabPages.Add(pageFaces)
         MoveFacesToScreen()
@@ -79,6 +85,7 @@ Partial Class frmSetup
         ShowFaceCounts()
         Dim ready As Boolean = g_lpDatabase IsNot Nothing AndAlso g_lpDatabase.FaceTablesReady
         lblFaceClear.Enabled = ready AndAlso Not g_lpConfig.ReadOnly
+        ShowStrangerCount()
         If Not ready Then lblFaceCounts.Text = "資料庫沒有面孔資料表，無法使用人物辨識"
     End Sub
 
@@ -86,6 +93,24 @@ Partial Class frmSetup
         If g_lpDatabase Is Nothing OrElse Not g_lpDatabase.FaceTablesReady Then Return
         Dim c = g_lpDatabase.FaceCounts()
         lblFaceCounts.Text = $"已分析 {c.Photos:#,0} 張照片，找到 {c.Faces:#,0} 張臉，{c.Persons:#,0} 人"
+    End Sub
+
+    ''' <summary>「恢復標成我不認識的臉（N）」, disabled when there are none.</summary>
+    Private Sub ShowStrangerCount()
+        Dim n As Integer = If(g_lpDatabase IsNot Nothing AndAlso g_lpDatabase.FaceTablesReady, g_lpDatabase.StrangerCount(), 0)
+        lblFaceStrangers.Text = "恢復標成「我不認識」的臉" & If(n > 0, "（" & n.ToString("#,0") & " 張）…", "")
+        lblFaceStrangers.Enabled = n > 0 AndAlso Not g_lpConfig.ReadOnly
+    End Sub
+
+    ''' <summary>Every 我不認識 face back to 未命名: grouped and matched again after the next sort.</summary>
+    Private Sub lblFaceStrangers_Click(sender As Object, e As EventArgs) Handles lblFaceStrangers.Click
+        If Not lblFaceStrangers.Enabled Then Return
+        If Not frmQueryMsgBox.ShowMessage("所有標成「我不認識」的臉都恢復成未命名？" & vbCrLf &
+                                          "它們會重新出現在「未命名的臉」，程式也會再拿它們認人。", "恢復我不認識的臉") Then Return
+        Dim n As Integer
+        If g_lpFaces IsNot Nothing Then n = g_lpFaces.RestoreStrangers() Else n = g_lpDatabase.RestoreStrangers()
+        ShowStrangerCount()
+        frmMsgBox.ShowExclamationMessage(n.ToString("#,0") & " 張臉已恢復成未命名", "")
     End Sub
 
     ''' <summary>Called by butSave_Click before g_lpConfig.Save.</summary>
@@ -107,7 +132,7 @@ Partial Class frmSetup
     Private Sub lblFaceClear_Click(sender As Object, e As EventArgs) Handles lblFaceClear.Click
         If Not lblFaceClear.Enabled Then Return
         If Not frmQueryMsgBox.ShowMessage("清除所有面孔辨識資料？" & vbCrLf &
-                                          "找到的臉、人物、確認與「不是此人」的紀錄都會刪除，照片、人物欄和面孔名片不受影響。" & vbCrLf &
+                                          "找到的臉、人物、確認、「不是此人」與「我不認識」的紀錄都會刪除，照片、人物欄和面孔名片不受影響。" & vbCrLf &
                                           "之後會重新分析全部照片。", "清除面孔辨識資料") Then Return
         Application.UseWaitCursor = True
         Try

@@ -21,6 +21,9 @@ Friend Module Program
         Application.SetHighDpiMode(HighDpiMode.DpiUnawareGdiScaled)
         Application.EnableVisualStyles()
         Application.SetCompatibleTextRenderingDefault(False)
+
+        ' 華康細圓體 before any window uses it (installed for the user from the copy next to the exe)
+        FontSetup.EnsureFont()
         Application.UseWaitCursor = True
 
         g_lpFileSystem = New Carbon.FileSystem

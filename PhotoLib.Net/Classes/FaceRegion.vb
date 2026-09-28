@@ -9,6 +9,7 @@ Public Class FaceRegion
         fsSuggested = 2     ' the program thinks it is PersonID; the user hasn't confirmed
         fsConfirmed = 3     ' named / confirmed by the user
         fsManual = 4        ' boxed by hand, nobody assigned yet
+        fsStranger = 8      ' the user doesn't know who it is (我不認識): kept, but never grouped or matched again
         fsNotFace = 9       ' the user said it isn't a face: never shown again
     End Enum
 

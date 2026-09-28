@@ -13,3 +13,6 @@ FaceSpike/
 # Jet lock files
 *.ldb
 *.laccdb
+
+# 華康細圓體 is a commercial font: copied next to iPhoto.exe at build when present, never committed
+iPhoto.Net/Fonts/

@@ -486,6 +486,35 @@ Public Class FaceLibrary
         Next
     End Sub
 
+    ''' <summary>我不認識: the faces (nobody assigned) are kept but never grouped or matched again; the
+    ''' photos and people fields don't change. Naming such a face later makes it an ordinary named face.
+    ''' Returns how many were marked (a face the background sort changed meanwhile is left alone).</summary>
+    Public Function MarkStrangers(ByVal faces As IEnumerable(Of FaceRegion)) As Integer
+        Dim list = faces.Where(Function(f) f.PersonID = 0 AndAlso
+                                          (f.State = FaceRegion.enumFaceState.fsUnnamed OrElse f.State = FaceRegion.enumFaceState.fsManual)).ToList()
+        Dim changed As HashSet(Of Integer) = g_lpDatabase.SaveFaceAssignments(list.Select(Function(f) New Database.FaceAssignment With {
+            .FaceID = f.FaceID, .ExpectedState = f.State, .PersonID = 0, .State = FaceRegion.enumFaceState.fsStranger, .Similarity = 0}))
+        For Each f In list.Where(Function(x) changed.Contains(x.FaceID))
+            f.State = FaceRegion.enumFaceState.fsStranger
+        Next
+        ' the wall drops the groups at once; the next sort agrees
+        If m_lpCatalog IsNot Nothing Then
+            For Each c In m_lpCatalog.Clusters
+                c.RemoveAll(Function(f) f.State = FaceRegion.enumFaceState.fsStranger)
+            Next
+            m_lpCatalog.Clusters.RemoveAll(Function(c) c.Count < 2)
+        End If
+        RequestOrganizeSoon()
+        Return changed.Count
+    End Function
+
+    ''' <summary>Every 我不認識 face back to unnamed (設定 › 面孔); returns how many.</summary>
+    Public Function RestoreStrangers() As Integer
+        Dim n As Integer = g_lpDatabase.RestoreStrangers()
+        If n > 0 Then RequestOrganize()
+        Return n
+    End Function
+
     ''' <summary>Renames a person; when <paramref name="strNewName"/> is another person's name the two
     ''' become one (all faces go to that person). The name changes in every photo's people field that
     ''' has it (typed by hand too) and on the FaceIndex name card.</summary>
@@ -517,6 +546,13 @@ Public Class FaceLibrary
     Public Sub HidePerson(ByVal p As FaceCatalog.PersonEntry)
         g_lpDatabase.SetFacePersonHidden(p.PersonID, True)
         p.Hidden = True
+        RequestOrganize()
+    End Sub
+
+    ''' <summary>Shows a hidden person again (face wall, matching).</summary>
+    Public Sub UnhidePerson(ByVal p As FaceCatalog.PersonEntry)
+        g_lpDatabase.SetFacePersonHidden(p.PersonID, False)
+        p.Hidden = False
         RequestOrganize()
     End Sub
 

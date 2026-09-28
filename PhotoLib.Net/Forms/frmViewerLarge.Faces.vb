@@ -132,7 +132,7 @@ Partial Class frmViewerLarge
             lblFaceInfo.Text = "沒有找到臉（可框選後按「新增面孔」）"
         Else
             Dim toConfirm As Integer = m_lpFaces.Where(Function(f) f.NeedsConfirm).Count()
-            Dim unnamed As Integer = m_lpFaces.Where(Function(f) f.PersonID = 0).Count()
+            Dim unnamed As Integer = m_lpFaces.Where(Function(f) f.PersonID = 0 AndAlso f.State <> FaceRegion.enumFaceState.fsStranger).Count()
             lblFaceInfo.Text = m_lpFaces.Count & " 張臉" & If(toConfirm > 0, " · " & toConfirm & " 張待確認", "") & If(unnamed > 0, " · " & unnamed & " 張未命名", "")
         End If
     End Sub
@@ -153,6 +153,20 @@ Partial Class frmViewerLarge
         End Select
     End Sub
 
+    ''' <summary>Called by the main window after ShowPicture, from the face wall's group / confirm views:
+    ''' face mode on, the faces of the photo boxed, face <paramref name="intFaceID"/> selected.</summary>
+    Public Sub ShowFace(ByVal intFaceID As Integer)
+        ' (called before the viewer is shown: the bar's Visible reads False until then)
+        If g_lpFaces Is Nothing OrElse picFaceBar Is Nothing OrElse Not FaceLibrary.IsPicture(m_strFileName) Then Return
+        CloseNameBox()
+        m_bolFaceMode = True
+        LoadFaces()
+        m_lpSelFace = m_lpFaces.FirstOrDefault(Function(f) f.FaceID = intFaceID)
+        UpdateFaceBar()
+        lblFaceInfo.Visible = True
+        imgPhoto.Invalidate()
+    End Sub
+
     '==================================================================================================
     ' Drawing and hit-testing (imgPhoto shows the whole picture fitted, so fractions x its size)
     '==================================================================================================
@@ -171,17 +185,20 @@ Partial Class frmViewerLarge
     ' as 「名字？」 and a suggestion as 「這是 名字 嗎？」, both with ✓ / ✕ buttons; nobody as 「這是誰？」.
     Private Const ConfirmButtonWidth As Integer = 24
     Private Shared ReadOnly MatchedPen As Color = Color.FromArgb(135, 190, 245)
+    Private Shared ReadOnly StrangerPen As Color = Color.FromArgb(160, 164, 170)   ' 我不認識: grey, still clickable to name
 
     Private Function FaceLabel(ByVal f As FaceRegion) As String
         If f.IsCertain Then Return f.PersonName
         If f.PersonID <> 0 AndAlso f.State = FaceRegion.enumFaceState.fsAuto Then Return f.PersonName & "？"
         If f.PersonID <> 0 AndAlso f.State = FaceRegion.enumFaceState.fsSuggested Then Return "這是 " & f.PersonName & " 嗎？"
+        If f.State = FaceRegion.enumFaceState.fsStranger Then Return "不認識"
         Return "這是誰？"
     End Function
 
     Private Function FaceColor(ByVal f As FaceRegion) As Color
         If f.IsCertain Then Return NamedPen
         If f.PersonID <> 0 AndAlso f.State = FaceRegion.enumFaceState.fsAuto Then Return MatchedPen
+        If f.State = FaceRegion.enumFaceState.fsStranger Then Return StrangerPen
         Return UnnamedPen
     End Function
 
@@ -376,7 +393,7 @@ Partial Class frmViewerLarge
         Dim i As Integer = m_lpFaces.IndexOf(f)
         For k = 1 To m_lpFaces.Count - 1
             Dim c As FaceRegion = m_lpFaces((i + k) Mod m_lpFaces.Count)
-            If Not c.IsCertain Then Return c
+            If Not c.IsCertain AndAlso c.State <> FaceRegion.enumFaceState.fsStranger Then Return c
         Next
         Return Nothing
     End Function

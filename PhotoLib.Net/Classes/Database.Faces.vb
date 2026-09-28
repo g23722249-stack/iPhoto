@@ -381,6 +381,72 @@ Partial Public Class Database
         Return (n("Select Count(*) From FacePhoto"), n("Select Count(*) From FaceRegion Where State <> 9"), n("Select Count(*) From FacePerson Where Hidden = False"))
     End Function
 
+    ''' <summary>A photo moved to another folder: its face rows follow it.</summary>
+    Public Sub RenameFacePhoto(ByVal strOld As String, ByVal strNew As String)
+        If Not FaceTablesReady Then Return
+        WithRetry(Sub()
+                      ' FaceRegion.FileName must name a FacePhoto row (relationship without cascading
+                      ' updates): the new row first, then the faces, then the old row
+                      Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+                          Exec(tx, "Insert Into FacePhoto (FileName, FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer)" &
+                                   " Select ?, FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer From FacePhoto Where FileName = ?",
+                               Txt(strNew), Txt(strOld))
+                          Exec(tx, "Update FaceRegion Set FileName = ? Where FileName = ?", Txt(strNew), Txt(strOld))
+                          Exec(tx, "Delete From FacePhoto Where FileName = ?", Txt(strOld))
+                          tx.Commit()
+                      End Using
+                  End Sub)
+    End Sub
+
+    ''' <summary>Forgets a photo that was deleted: its faces, their 不是此人 records and its FacePhoto row.</summary>
+    Public Sub DeleteFacePhoto(ByVal strFileDesc As String)
+        If Not FaceTablesReady Then Return
+        WithRetry(Sub()
+                      Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+                          Exec(tx, "Delete From FaceReject Where FaceID In (Select FaceID From FaceRegion Where FileName = ?)", Txt(strFileDesc))
+                          Exec(tx, "Delete From FaceRegion Where FileName = ?", Txt(strFileDesc))
+                          Exec(tx, "Delete From FacePhoto Where FileName = ?", Txt(strFileDesc))
+                          tx.Commit()
+                      End Using
+                  End Sub)
+    End Sub
+
+    ''' <summary>Every person's templates (age-bucket averages), by PersonID.</summary>
+    Public Function LoadTemplateFeatures() As Dictionary(Of Integer, List(Of Single()))
+        Dim result As New Dictionary(Of Integer, List(Of Single()))
+        If Not FaceTablesReady Then Return result
+        Using cmd As New OleDbCommand("Select PersonID, Embedding From FaceTemplate", m_lpConnection)
+            Using r As OleDbDataReader = cmd.ExecuteReader()
+                While r.Read()
+                    If IsDBNull(r(0)) OrElse IsDBNull(r(1)) Then Continue While
+                    Dim id As Integer = CInt(r(0))
+                    If Not result.ContainsKey(id) Then result(id) = New List(Of Single())
+                    result(id).Add(Quartz.FaceEngine.BytesToFeature(CType(r(1), Byte())))
+                End While
+            End Using
+        End Using
+        Return result
+    End Function
+
+    ''' <summary>Faces marked 我不認識 (State 8).</summary>
+    Public Function StrangerCount() As Integer
+        If Not FaceTablesReady Then Return 0
+        Using cmd As New OleDbCommand("Select Count(*) From FaceRegion Where State = 8", m_lpConnection)
+            Return CInt(cmd.ExecuteScalar())
+        End Using
+    End Function
+
+    ''' <summary>Every 我不認識 face back to unnamed (grouped and matched again); returns how many.</summary>
+    Public Function RestoreStrangers() As Integer
+        If Not FaceTablesReady Then Return 0
+        Return WithRetry(Function()
+                             Using cmd As New OleDbCommand("Update FaceRegion Set State = 0, UpdateTime = ? Where State = 8", m_lpConnection)
+                                 cmd.Parameters.Add(P(OleDbType.Date, DateTime.Now))
+                                 Return cmd.ExecuteNonQuery()
+                             End Using
+                         End Function)
+    End Function
+
     ''' <summary>Remembers "this face is not that person" (FaceReject): never suggested again.</summary>
     Public Sub AddFaceReject(ByVal intFaceID As Integer, ByVal intPersonID As Integer)
         If Not FaceTablesReady OrElse intPersonID = 0 Then Return

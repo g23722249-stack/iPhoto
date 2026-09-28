@@ -160,8 +160,9 @@ Friend Class FaceOrganizer
     ''' <summary>The faces nobody is named on, grouped (groups of 2 or more, biggest first).</summary>
     Public Shared Function Cluster(ByVal faces As IEnumerable(Of FaceRegion)) As List(Of List(Of FaceRegion))
         ' only faces nobody is even suggested for: a suggested face is reviewed under its person
-        ' (「確認更多照片」), not in an unnamed group as well
-        Dim loose = faces.Where(Function(f) f.PersonID = 0 AndAlso f.Feature IsNot Nothing).OrderByDescending(Function(f) f.Score).ToList()
+        ' (「確認更多照片」), not in an unnamed group as well; nor faces the user doesn't know (我不認識)
+        Dim loose = faces.Where(Function(f) f.PersonID = 0 AndAlso f.Feature IsNot Nothing AndAlso f.State <> FaceRegion.enumFaceState.fsStranger).
+                          OrderByDescending(Function(f) f.Score).ToList()
         Dim centres As New List(Of Single())
         Dim sums As New List(Of Single())   ' running sum of each group's features
         Dim members As New List(Of List(Of FaceRegion))
