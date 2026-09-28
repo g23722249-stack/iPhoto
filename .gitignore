@@ -1,0 +1,15 @@
+# Build output
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# FaceSpike: the P0 test bed -- test copies of the real library (test.mdb with names, photo paths and
+# face features, FaceCache with face crops, Album photos) and a copy of the built program. Personal
+# data: never commit.
+FaceSpike/
+
+# Jet lock files
+*.ldb
+*.laccdb

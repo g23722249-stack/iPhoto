@@ -1,0 +1,62 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Port of the code shared by iPhoto / iExport / iPrint:
+         Classes\, Modules\, Forms\  <- D:\專案\電子相簿\Lib\{Class,Module,Form}
+         Common\                     <- D:\專案\Lib (shared by every TechnoSoft app)
+       Also holds the application globals (g_lpConfig, g_lpFileSystem ...): VB6 declared them in
+       each app's LibMain.bas, but the Lib code uses them, and a library can't reach into the app. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>PhotoLib</RootNamespace>
+    <AssemblyName>PhotoLib.Net</AssemblyName>
+    <!-- Ported VB6 code leans on late binding (As Object, Variant); tighten per file as it's cleaned up. -->
+    <OptionStrict>Off</OptionStrict>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionInfer>On</OptionInfer>
+    <OptionCompare>Binary</OptionCompare>
+    <!-- Default form instances (frmMsgBox.Show ... as in VB6) -->
+    <MyType>WindowsForms</MyType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Import Include="System.Drawing" />
+    <Import Include="System.Windows.Forms" />
+    <Import Include="Carbon.AnalyseFileConstants" />
+  </ItemGroup>
+
+  <!-- Images carved from the VB6 .frx files (Tools\Export-FrxImages.ps1), one folder per form. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Forms\**\*.*">
+      <LogicalName>PhotoLib.Forms.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Techno.Net\Techno.Net.vbproj" />
+    <ProjectReference Include="C:\專案\RunTime\Aqua.Net\Aqua.Net.vbproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- iPhoto.mdb is Jet 4.0 (Provider=Microsoft.Jet.OLEDB.4.0), which exists only as 32-bit:
+         the app is built x86 so it runs without installing the ACE driver. -->
+    <PackageReference Include="System.Data.OleDb" Version="8.0.1" />
+  </ItemGroup>
+
+  <!-- The converter's *.Vb6.vb files are the second half of a form's partial class (Sub New, control
+       arrays): open them as code, not in the form designer: opening one in the designer makes Visual
+       Studio add an empty <form>.Vb6.resx, which compiles to the same resource name as <form>.resx
+       (error MSB3577). Such a file is also left out of the build if it ever appears again. -->
+  <ItemGroup>
+    <Compile Update="**\*.Vb6.vb" SubType="Code" />
+    <EmbeddedResource Remove="**\*.Vb6.resx" />
+  </ItemGroup>
+  <!-- Visual Studio may still add an Include for such a file further down this project file (after the
+       Remove above, which then no longer applies): this drops it again right before the resources are built. -->
+  <Target Name="DropVb6Resx" BeforeTargets="PrepareResources">
+    <ItemGroup>
+      <EmbeddedResource Remove="**\*.Vb6.resx" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -1,0 +1,78 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Port of D:\專案\電子相簿\iPhoto\iPhoto.vbp (VB6). Forms\ and Modules\ mirror iPhoto\Form and
+       iPhoto\Module; shared code lives in PhotoLib.Net, the TechnoSoft runtime in Techno.Net and the
+       Aqua controls in Aqua.Net. frmMain_1440X900_NEW is intentionally not ported. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- Jet 4.0 (iPhoto.mdb) is 32-bit only -->
+    <PlatformTarget>x86</PlatformTarget>
+    <RootNamespace>iPhoto</RootNamespace>
+    <AssemblyName>iPhoto</AssemblyName>
+    <StartupObject>iPhoto.Program</StartupObject>
+    <MyType>WindowsFormsWithCustomSubMain</MyType>
+    <ApplicationIcon>Resources\iPhoto.ico</ApplicationIcon>
+    <OptionStrict>Off</OptionStrict>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionInfer>On</OptionInfer>
+    <OptionCompare>Binary</OptionCompare>
+    <Company>TechnoSoft</Company>
+    <Product>iPhoto</Product>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Import Include="System.Drawing" />
+    <Import Include="System.Windows.Forms" />
+    <Import Include="PhotoLib" />
+    <Import Include="Carbon.AnalyseFileConstants" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Forms\**\*.*">
+      <LogicalName>iPhoto.Forms.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <!-- VB6 read iPhoto.Ini from App.Path -->
+    <None Update="iPhoto.Ini" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PhotoLib.Net\PhotoLib.Net.vbproj" />
+    <ProjectReference Include="..\Techno.Net\Techno.Net.vbproj" />
+    <ProjectReference Include="C:\專案\RunTime\Aqua.Net\Aqua.Net.vbproj" />
+  </ItemGroup>
+
+  <!-- Native LibVLC for Aqua.MediaViewerControl (video). The package copies libvlc\win-x86\ only into
+       the output of a project that references it directly (its .targets are not transitive), so the
+       app references it too. The app is x86: the 64-bit copy is left out. -->
+  <PropertyGroup>
+    <VlcWindowsX64Enabled>false</VlcWindowsX64Enabled>
+    <VlcWindowsX86Enabled>true</VlcWindowsX86Enabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+  </ItemGroup>
+  <!-- Aqua.Net (AnyCPU) still brings the 64-bit copy along with its content files; an x86 app can't use it. -->
+  <Target Name="RemoveLibVlcX64" AfterTargets="Build">
+    <RemoveDir Directories="$(OutDir)libvlc\win-x64" />
+  </Target>
+
+  <!-- The converter's *.Vb6.vb files are the second half of a form's partial class (Sub New, control
+       arrays): open them as code, not in the form designer: opening one in the designer makes Visual
+       Studio add an empty <form>.Vb6.resx, which compiles to the same resource name as <form>.resx
+       (error MSB3577). Such a file is also left out of the build if it ever appears again. -->
+  <ItemGroup>
+    <Compile Update="**\*.Vb6.vb" SubType="Code" />
+    <EmbeddedResource Remove="**\*.Vb6.resx" />
+  </ItemGroup>
+  <!-- Visual Studio may still add an Include for such a file further down this project file (after the
+       Remove above, which then no longer applies): this drops it again right before the resources are built. -->
+  <Target Name="DropVb6Resx" BeforeTargets="PrepareResources">
+    <ItemGroup>
+      <EmbeddedResource Remove="**\*.Vb6.resx" />
+    </ItemGroup>
+  </Target>
+
+</Project>

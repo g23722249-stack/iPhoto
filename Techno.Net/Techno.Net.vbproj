@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Managed replacements for the TechnoSoft VB6 runtime DLLs iPhoto referenced
+       (Heart\Runtime\Techno\Carbon.dll / CoreMedia.dll / Darwin.dll / iQuartz.dll).
+       RootNamespace is empty so the VB6 names stay: Carbon.FileSystem, CoreMedia.Monitors,
+       Darwin.Wait(...), Quartz.*, so ported code keeps calling them as it did. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace></RootNamespace>
+    <AssemblyName>Techno.Net</AssemblyName>
+    <OptionStrict>On</OptionStrict>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionInfer>On</OptionInfer>
+    <OptionCompare>Binary</OptionCompare>
+    <Company>TechnoSoft</Company>
+    <Description>TechnoSoft Carbon / CoreMedia / Darwin / Quartz, ported to .NET 8.</Description>
+  </PropertyGroup>
+
+  <!-- Quartz.FaceEngine: YuNet (detection) + SFace (recognition) ONNX models run on OpenCV's DNN module.
+       The runtime package carries win-x86 and win-x64 native DLLs; iPhoto (x86) loads the x86 one.
+       The models (OpenCV Zoo, Apache-2.0) are copied next to the app as Models\*.onnx. -->
+  <ItemGroup>
+    <PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
+    <PackageReference Include="OpenCvSharp4.Extensions" Version="4.10.0.20241108" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Models\*.onnx" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

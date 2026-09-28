@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <assembly alias="System.Drawing.Common" name="System.Drawing.Common, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" />
+  <data name="$this.Image" type="System.Drawing.Bitmap, System.Drawing.Common" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAAC8AAAAsCAYAAAD1s+ECAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACISURBVGhD1dKhDQAxEMTA67/VBwEBgffcHcxKLmAtz7tv
+        VeZ8Z1WmbyRm4dnm25GEbb4dSbPNtyMJ23w7kmabb0cStvl2JM02344kbPPtSJptvh1J2ObbkTTbfDuS
+        sM23I2m2+XYkYZtvR9Js8+1IwjbfjqTZ5tuRhG2+HUmzzbcjCdt8O5L2A/j0V2bpCHU5AAAAAElFTkSu
+        QmCC
+</value>
+  </data>
+  <data name="MyButtonDefSkin.Image" type="System.Drawing.Bitmap, System.Drawing.Common" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAAJYAAAAVCAYAAACkJReUAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAVHSURBVGhD7ZrbTxxVHMf3jzD+ASbGR/kDfFZrJL5oqk8m
+        PqgYqzbRGC/4UFqlqRijaTRtbCjtQxutBiolmhIgtiVdrgX2wu7C3odlL7N3WJfL1/zOzMBwzs7DhnN2
+        N7Ekn+ww/DLfcOYzvzMze1xwAe/2X8VTr56B67mPlfLEy714o/cSKNPIHWxZ7usdkPv5xRt4+mSfUCeb
+        J7u/wjv9gwe5C3OTeDj9t3oe/IU59zjLdJFUr/UOYXJhDap/POEUy+rpH2In95nuc5jfQEugLPpfKXfg
+        ylXkU0tAYUEptdwyy6Jckur5U9/hlxu/YXFmAo9mJ/FodkoJw2NjOPHRD/ji4k0mld/rRnpzHdVKWil6
+        LsayKNNFV+7EfAj7+/stYA8T80HWLYi7K1stxcrVQ7ewu/QZ9vznlUIZlEWZ1KkGfx2Gd/EBYtFVpYRW
+        F3FzdJxlUidphVQWlEWZLmqde3u7jN1dYkcZOzt1bFVKBy37wh9JhupcK8fK3XX3sJOuOpfluHsOcv0r
+        M8bJj/iRiIeQTKzJJR5ix6UM+p0y6STzJ181B2LV63XU6/8qpoZqpYSCnhbEEmtlUnMUS6yVSU0QK+Bf
+        YCc9kViDpoWhaRElUIamRdsvVq22jVptSynb21WUizpyaU0Qi6+VCeU2FMvdI9TKhHIFsXymWKxbrSuD
+        iZWMtF+sra2KSVkZ1WoJxUIGmVRMEIuvlQnlOonF1x5SarCvOSiXF2vVO8dOejwWZHKpYc2YCpPrnSCW
+        NSA0oGqoVosoFtLIpIwWfVQssV4WlOssllgvC8p9LBYbCGMwVFGpFFDIbyK9YbRou1h8rUwo10ksvpaw
+        i3EcKJcXy++dNW7eYwHE40FFmDfvyQ64ebcPhirK5TzyegqbmigWXysTynUSy15HMlmf1vZxoFxBLI/5
+        VMi6VkARQfOpMNR+seyD0QiSjt/XLKWSDj23gVQyLIjF18qEcp3EstfxUxl/nGahXF4sn/m6IRohuQKK
+        MMSiabEDxMozymW9IYZY4v5mKJVy0HMaUubcf1QssV4WlOss1mEdyVQs5ti29XkcKFcUy22K5T/oXPIh
+        uUisYPvFsg+GKorFLHLZJDbMF3d2sfhamVCuk1hi7dHP40C5/3uxqG0TNKCNoI7F72uWQiGLbCYJLS6K
+        xdfKhHKdxOJrZUK5gljLhliRsJ9Nh2owxKJ7rQ4Q6/Aqa4R1c2/ftsPXN6JQyCCbSUAz5/6jYon1sqBc
+        Z7HstaIc/LGagXJFsR6aYvlY11KD0bnoRr7tYtkHwwleJjt8bSPy+U1k0nEkzSvJLhZfKxPKdRKLryUO
+        O474t2agXF4s74ohVjjsRSTiU4Q5zXaCWMZgpJVCrxrSqSgSsdUGYon1sqBcZ7HEellQLi+Wz2NMhSrF
+        ikYNseidVtvFymY0ZDJJBt0H0e8yoeNuMqkCiKytHBHr/K2E8lwnsVTn8mJZX0LTDTZNVdRVZGK90acM
+        zXyt0zaxaJXjxLQbMbqK1lcQXfewbZnQMcOhJQR9c7gzPs5WVhIkVSuxcvOjJ1Ab6ULtdhdqI88an7Kg
+        41rc7kJu9AWWSas6796fhqYZXxKrJJfdwL35JZZJqzppAR5/8lVBWZTpOvnlJbx0+kdc+/1PeBfvK8Gz
+        eA+ehX8wPHYHL37wPd7suwLKpVWd3b1T6DmjK4eyrNyzX59G8idXS+g7+yHLffubQXR/8jNGpmbYE2Op
+        qMuHPd3n4V4O4JVPL+O9C0NsqXCrV5BSpovWJ58auN6yNeBvnTtci31q4NrjXAVQp3r/2+ttXfP+HwP4
+        YhEjWWaNAAAAAElFTkSuQmCC
+</value>
+  </data>
+</root>
