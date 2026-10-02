@@ -160,13 +160,15 @@ Friend Class frmMain
         MyBase.OnLocationChanged(e)
     End Sub
 
-    ''' <summary>butMode (整理 / 攝影集) stays centred under the thumbnails whatever the window size.
+    ''' <summary>butMode (整理 / 攝影集) stays centred under the thumbnails whatever the window size --
+    ''' under where the designer put them: dragging the tree / thumbnails split doesn't move it.
     ''' Done after the form's own layout pass: moving it while the anchored controls are still being
     ''' laid out makes WinForms re-anchor it against a half-updated size (it drifted up).</summary>
     Protected Overrides Sub OnLayout(levent As LayoutEventArgs)
         MyBase.OnLayout(levent)
         If butMode Is Nothing OrElse mlList Is Nothing Then Return
-        Dim x As Integer = mlList.Left + (mlList.Width - butMode.Width) \ 2
+        ApplyClassWidth()   ' tree / thumbnails split (frmMain.Splitter.vb)
+        Dim x As Integer = ListHomeLeft + (mlList.Right - ListHomeLeft - butMode.Width) \ 2
         If butMode.Left <> x Then butMode.Left = x
         FitFaceScanLabel()   ' the face label in the title bar (frmMain.Faces.vb)
     End Sub

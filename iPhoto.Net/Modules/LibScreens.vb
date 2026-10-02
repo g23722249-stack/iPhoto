@@ -45,6 +45,24 @@ Friend Module WindowPlacement
         Return GetSetting(AppName, Section, key & "Maximized", "Y") = "Y"
     End Function
 
+    ''' <summary>A whole number saved under <paramref name="key"/>; False when it is missing, not a number,
+    ''' or the registry can't be read.</summary>
+    Friend Function SavedInteger(ByVal key As String, ByRef value As Integer) As Boolean
+        Try
+            Return Integer.TryParse(GetSetting(AppName, Section, key, ""), value)
+        Catch ex As Exception
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>Saves a whole number under <paramref name="key"/>; a registry failure is ignored.</summary>
+    Friend Sub SaveInteger(ByVal key As String, ByVal value As Integer)
+        Try
+            SaveSetting(AppName, Section, key, value.ToString())
+        Catch ex As Exception
+        End Try
+    End Sub
+
     ''' <summary>Saves the screen, the normal bounds and whether the window is maximised.</summary>
     Friend Sub Save(ByVal key As String, ByVal f As Form)
         If f Is Nothing OrElse f.IsDisposed OrElse f.WindowState = FormWindowState.Minimized Then Return

@@ -39,6 +39,7 @@ Partial Class frmMain
         frmClass = New Aqua.Panel()
         tvList = New TreeView()
         mlList = New Aqua.MediaList()
+        pnlSplitter = New Panel()
         sliSize = New Aqua.Slider()
         txtTitle = New Aqua.TextBox()
         txtDate = New Aqua.TextBox()
@@ -331,6 +332,17 @@ Partial Class frmMain
         mlList.ShowCheckBox = False
         mlList.Size = New Size(939, 813)
         mlList.TabIndex = 3
+        ' 
+        ' pnlSplitter
+        ' 
+        pnlSplitter.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left
+        pnlSplitter.BackColor = Color.Transparent
+        pnlSplitter.Cursor = Cursors.VSplit
+        pnlSplitter.Location = New Point(315, 30)
+        pnlSplitter.Name = "pnlSplitter"
+        pnlSplitter.Size = New Size(7, 600)
+        pnlSplitter.TabIndex = 0
+        pnlSplitter.TabStop = False
         ' 
         ' sliSize
         ' 
@@ -1303,6 +1315,7 @@ Partial Class frmMain
         Controls.Add(imgSubject)
         Controls.Add(frmClass)
         Controls.Add(mlList)
+        Controls.Add(pnlSplitter)
         Controls.Add(sliSize)
         Controls.Add(txtTitle)
         Controls.Add(txtDate)
@@ -1381,6 +1394,7 @@ Partial Class frmMain
     Friend WithEvents frmClass As Aqua.Panel
     Friend WithEvents tvList As System.Windows.Forms.TreeView
     Friend WithEvents mlList As Aqua.MediaList
+    Friend WithEvents pnlSplitter As System.Windows.Forms.Panel
     Friend WithEvents sliSize As Aqua.Slider
     Friend WithEvents txtTitle As Aqua.TextBox
     Friend WithEvents txtDate As Aqua.TextBox
