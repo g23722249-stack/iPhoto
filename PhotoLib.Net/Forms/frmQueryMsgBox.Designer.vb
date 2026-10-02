@@ -26,8 +26,8 @@ Partial Class frmQueryMsgBox
         Me.lblInterval = New System.Windows.Forms.Label()
         Me.lblMessage = New System.Windows.Forms.Label()
         Me.imgIcon = New System.Windows.Forms.PictureBox()
-        Me.butOk = New Aqua.FlashButton()
-        Me.butExit = New Aqua.FlashButton()
+        Me.butOk = New Aqua.ThinButton()
+        Me.butExit = New Aqua.ThinButton()
         Me.SuspendLayout()
         '
         'lblInterval
@@ -64,7 +64,7 @@ Partial Class frmQueryMsgBox
         Me.butOk.Size = New System.Drawing.Size(91, 27)
         Me.butOk.Name = "butOk"
         Me.butOk.TabIndex = 0
-        Me.butOk.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butOk.ForeColor = System.Drawing.Color.Black
         Me.butOk.Text = "是"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -74,7 +74,7 @@ Partial Class frmQueryMsgBox
         Me.butExit.Size = New System.Drawing.Size(91, 27)
         Me.butExit.Name = "butExit"
         Me.butExit.TabIndex = 1
-        Me.butExit.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         Me.butExit.Text = "否"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -109,6 +109,6 @@ Partial Class frmQueryMsgBox
     Friend WithEvents lblInterval As System.Windows.Forms.Label
     Friend WithEvents lblMessage As System.Windows.Forms.Label
     Friend WithEvents imgIcon As System.Windows.Forms.PictureBox
-    Friend WithEvents butOk As Aqua.FlashButton
-    Friend WithEvents butExit As Aqua.FlashButton
+    Friend WithEvents butOk As Aqua.ThinButton
+    Friend WithEvents butExit As Aqua.ThinButton
 End Class

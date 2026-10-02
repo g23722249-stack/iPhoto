@@ -43,7 +43,7 @@ Partial Class frmShowPhoto
         Me.Label9 = New System.Windows.Forms.Label()
         Me.lblKeyWord = New System.Windows.Forms.Label()
         Me.lblFileName = New System.Windows.Forms.Label()
-        Me.butExit = New Aqua.FlashButton()
+        Me.butExit = New Aqua.ThinButton()
         Me.Panel1 = New Aqua.Panel()
         Me.MediaItem1 = New Aqua.MediaItem()
         Me.Panel1.SuspendLayout()
@@ -264,6 +264,7 @@ Partial Class frmShowPhoto
         Me.butExit.TabIndex = 1
         Me.butExit.Text = "關閉"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         '
         'MediaItem1
         '
@@ -353,7 +354,7 @@ Partial Class frmShowPhoto
     Friend WithEvents Label9 As System.Windows.Forms.Label
     Friend WithEvents lblKeyWord As System.Windows.Forms.Label
     Friend WithEvents lblFileName As System.Windows.Forms.Label
-    Friend WithEvents butExit As Aqua.FlashButton
+    Friend WithEvents butExit As Aqua.ThinButton
     Friend WithEvents Panel1 As Aqua.Panel
     Friend WithEvents MediaItem1 As Aqua.MediaItem
 End Class

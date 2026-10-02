@@ -44,11 +44,11 @@ Partial Class frmPrint
         txtPrintCount = New Aqua.TextBox()
         UpDown1 = New Aqua.UpDown()
         chkPrintOuputDateTime = New Aqua.CheckBox()
-        butSave = New Aqua.FlashButton()
-        butPrint = New Aqua.FlashButton()
-        butPaper = New Aqua.FlashButton()
-        butExit = New Aqua.FlashButton()
-        butAdviance = New Aqua.FlashButton()
+        butSave = New Aqua.ThinButton()
+        butPrint = New Aqua.ThinButton()
+        butPaper = New Aqua.ThinButton()
+        butExit = New Aqua.ThinButton()
+        butAdviance = New Aqua.ThinButton()
         Timer1 = New Timer(components)
         udPage = New Aqua.UpDown()
         txtPage = New Aqua.TextBox()
@@ -378,80 +378,50 @@ Partial Class frmPrint
         ' butSave
         ' 
         butSave.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
-        butSave.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
+        butSave.ForeColor = Color.Black
         butSave.Location = New Point(600, 940)
         butSave.Name = "butSave"
         butSave.Size = New Size(111, 27)
-        butSave.SoundFileOfClick = Nothing
-        butSave.SoundFileOfEnterFocus = Nothing
-        butSave.SoundFileOfExitFocus = Nothing
-        butSave.SoundFileOfMouseEnter = Nothing
-        butSave.SoundFileOfMouseHover = Nothing
-        butSave.SoundFileOfMouseLeave = Nothing
         butSave.TabIndex = 3
         butSave.Text = "存檔"
         ' 
         ' butPrint
         ' 
         butPrint.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
-        butPrint.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
+        butPrint.ForeColor = Color.Black
         butPrint.Location = New Point(874, 942)
         butPrint.Name = "butPrint"
         butPrint.Size = New Size(111, 27)
-        butPrint.SoundFileOfClick = Nothing
-        butPrint.SoundFileOfEnterFocus = Nothing
-        butPrint.SoundFileOfExitFocus = Nothing
-        butPrint.SoundFileOfMouseEnter = Nothing
-        butPrint.SoundFileOfMouseHover = Nothing
-        butPrint.SoundFileOfMouseLeave = Nothing
         butPrint.TabIndex = 5
         butPrint.Text = "列印"
         ' 
         ' butPaper
         ' 
         butPaper.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
-        butPaper.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
+        butPaper.ForeColor = Color.Black
         butPaper.Location = New Point(237, 942)
         butPaper.Name = "butPaper"
         butPaper.Size = New Size(155, 27)
-        butPaper.SoundFileOfClick = Nothing
-        butPaper.SoundFileOfEnterFocus = Nothing
-        butPaper.SoundFileOfExitFocus = Nothing
-        butPaper.SoundFileOfMouseEnter = Nothing
-        butPaper.SoundFileOfMouseHover = Nothing
-        butPaper.SoundFileOfMouseLeave = Nothing
         butPaper.TabIndex = 1
         butPaper.Text = "紙張設定"
         ' 
         ' butExit
         ' 
         butExit.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
-        butExit.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
+        butExit.ForeColor = Color.Black
         butExit.Location = New Point(737, 942)
         butExit.Name = "butExit"
         butExit.Size = New Size(111, 27)
-        butExit.SoundFileOfClick = Nothing
-        butExit.SoundFileOfEnterFocus = Nothing
-        butExit.SoundFileOfExitFocus = Nothing
-        butExit.SoundFileOfMouseEnter = Nothing
-        butExit.SoundFileOfMouseHover = Nothing
-        butExit.SoundFileOfMouseLeave = Nothing
         butExit.TabIndex = 4
         butExit.Text = "結束"
         ' 
         ' butAdviance
         ' 
         butAdviance.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
-        butAdviance.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
+        butAdviance.ForeColor = Color.Black
         butAdviance.Location = New Point(419, 942)
         butAdviance.Name = "butAdviance"
         butAdviance.Size = New Size(155, 27)
-        butAdviance.SoundFileOfClick = Nothing
-        butAdviance.SoundFileOfEnterFocus = Nothing
-        butAdviance.SoundFileOfExitFocus = Nothing
-        butAdviance.SoundFileOfMouseEnter = Nothing
-        butAdviance.SoundFileOfMouseHover = Nothing
-        butAdviance.SoundFileOfMouseLeave = Nothing
         butAdviance.TabIndex = 2
         butAdviance.Text = "進階選項"
         ' 
@@ -649,11 +619,11 @@ Partial Class frmPrint
     Friend WithEvents txtPrintCount As Aqua.TextBox
     Friend WithEvents UpDown1 As Aqua.UpDown
     Friend WithEvents chkPrintOuputDateTime As Aqua.CheckBox
-    Friend WithEvents butSave As Aqua.FlashButton
-    Friend WithEvents butPrint As Aqua.FlashButton
-    Friend WithEvents butPaper As Aqua.FlashButton
-    Friend WithEvents butExit As Aqua.FlashButton
-    Friend WithEvents butAdviance As Aqua.FlashButton
+    Friend WithEvents butSave As Aqua.ThinButton
+    Friend WithEvents butPrint As Aqua.ThinButton
+    Friend WithEvents butPaper As Aqua.ThinButton
+    Friend WithEvents butExit As Aqua.ThinButton
+    Friend WithEvents butAdviance As Aqua.ThinButton
     Friend WithEvents Timer1 As System.Windows.Forms.Timer
     Friend WithEvents udPage As Aqua.UpDown
     Friend WithEvents txtPage As Aqua.TextBox

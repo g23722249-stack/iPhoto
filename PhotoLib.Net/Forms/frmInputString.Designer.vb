@@ -24,8 +24,8 @@ Partial Class frmInputString
     Private Sub InitializeComponent()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(frmInputString))
         Me.lblMessage = New System.Windows.Forms.Label()
-        Me.butOk = New Aqua.FlashButton()
-        Me.butCancel = New Aqua.FlashButton()
+        Me.butOk = New Aqua.ThinButton()
+        Me.butCancel = New Aqua.ThinButton()
         Me.TextBox1 = New Aqua.TextBox()
         Me.SuspendLayout()
         '
@@ -49,6 +49,7 @@ Partial Class frmInputString
         Me.butOk.TabIndex = 1
         Me.butOk.Text = "確定"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butOk.ForeColor = System.Drawing.Color.Black
         '
         'butCancel
         '
@@ -58,6 +59,7 @@ Partial Class frmInputString
         Me.butCancel.TabIndex = 4
         Me.butCancel.Text = "放棄"
         Me.butCancel.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butCancel.ForeColor = System.Drawing.Color.Black
         '
         'TextBox1
         '
@@ -100,7 +102,7 @@ Partial Class frmInputString
     End Sub
 
     Friend WithEvents lblMessage As System.Windows.Forms.Label
-    Friend WithEvents butOk As Aqua.FlashButton
-    Friend WithEvents butCancel As Aqua.FlashButton
+    Friend WithEvents butOk As Aqua.ThinButton
+    Friend WithEvents butCancel As Aqua.ThinButton
     Friend WithEvents TextBox1 As Aqua.TextBox
 End Class

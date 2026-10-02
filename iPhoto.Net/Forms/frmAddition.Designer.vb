@@ -27,8 +27,8 @@ Partial Class frmAddition
         Me.frmClass = New Aqua.Panel()
         Me.tvList = New System.Windows.Forms.TreeView()
         Me.txtPath = New Aqua.TextBox()
-        Me.butExit = New Aqua.FlashButton()
-        Me.butOk = New Aqua.FlashButton()
+        Me.butExit = New Aqua.ThinButton()
+        Me.butOk = New Aqua.ThinButton()
         Me.rbMode_0 = New Aqua.RadioButton()
         Me.rbMode_1 = New Aqua.RadioButton()
         Me.frmClass.SuspendLayout()
@@ -89,7 +89,7 @@ Partial Class frmAddition
         Me.butExit.Size = New System.Drawing.Size(103, 27)
         Me.butExit.Name = "butExit"
         Me.butExit.TabIndex = 2
-        Me.butExit.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         Me.butExit.Text = "取消"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -99,7 +99,7 @@ Partial Class frmAddition
         Me.butOk.Size = New System.Drawing.Size(103, 27)
         Me.butOk.Name = "butOk"
         Me.butOk.TabIndex = 3
-        Me.butOk.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butOk.ForeColor = System.Drawing.Color.Black
         Me.butOk.Text = "好"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -157,8 +157,8 @@ Partial Class frmAddition
     Friend WithEvents frmClass As Aqua.Panel
     Friend WithEvents tvList As System.Windows.Forms.TreeView
     Friend WithEvents txtPath As Aqua.TextBox
-    Friend WithEvents butExit As Aqua.FlashButton
-    Friend WithEvents butOk As Aqua.FlashButton
+    Friend WithEvents butExit As Aqua.ThinButton
+    Friend WithEvents butOk As Aqua.ThinButton
     Friend WithEvents rbMode_0 As Aqua.RadioButton
     Friend WithEvents rbMode_1 As Aqua.RadioButton
 End Class

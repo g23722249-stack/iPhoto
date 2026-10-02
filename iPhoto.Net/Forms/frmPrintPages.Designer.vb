@@ -28,8 +28,8 @@ Partial Class frmPrintPages
         Me.rdPages_1 = New Aqua.RadioButton()
         Me.rdPages_2 = New Aqua.RadioButton()
         Me.txtPages = New Aqua.TextBox()
-        Me.butExit = New Aqua.FlashButton()
-        Me.butOk = New Aqua.FlashButton()
+        Me.butExit = New Aqua.ThinButton()
+        Me.butOk = New Aqua.ThinButton()
         Me.SuspendLayout()
         '
         'Label1
@@ -98,7 +98,7 @@ Partial Class frmPrintPages
         Me.butExit.Size = New System.Drawing.Size(103, 27)
         Me.butExit.Name = "butExit"
         Me.butExit.TabIndex = 2
-        Me.butExit.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         Me.butExit.Text = "取消"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -108,7 +108,7 @@ Partial Class frmPrintPages
         Me.butOk.Size = New System.Drawing.Size(103, 27)
         Me.butOk.Name = "butOk"
         Me.butOk.TabIndex = 0
-        Me.butOk.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butOk.ForeColor = System.Drawing.Color.Black
         Me.butOk.Text = "好"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -147,6 +147,6 @@ Partial Class frmPrintPages
     Friend WithEvents rdPages_1 As Aqua.RadioButton
     Friend WithEvents rdPages_2 As Aqua.RadioButton
     Friend WithEvents txtPages As Aqua.TextBox
-    Friend WithEvents butExit As Aqua.FlashButton
-    Friend WithEvents butOk As Aqua.FlashButton
+    Friend WithEvents butExit As Aqua.ThinButton
+    Friend WithEvents butOk As Aqua.ThinButton
 End Class

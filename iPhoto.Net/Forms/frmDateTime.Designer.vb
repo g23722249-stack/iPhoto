@@ -48,11 +48,11 @@ Partial Class frmDateTime
         Me.txtHH_2 = New Aqua.TextBox()
         Me.txtNN_2 = New Aqua.TextBox()
         Me.txtSS_2 = New Aqua.TextBox()
-        Me.butSave = New Aqua.FlashButton()
-        Me.cmdSaveToFolder = New Aqua.FlashButton()
+        Me.butSave = New Aqua.ThinButton()
+        Me.cmdSaveToFolder = New Aqua.ThinButton()
         Me.chkSaveMode_0 = New Aqua.CheckBox()
         Me.chkSaveMode_1 = New Aqua.CheckBox()
-        Me.cmdCancel = New Aqua.FlashButton()
+        Me.cmdCancel = New Aqua.ThinButton()
         Me.SuspendLayout()
         '
         'lblFileName
@@ -433,6 +433,7 @@ Partial Class frmDateTime
         Me.butSave.TabIndex = 6
         Me.butSave.Text = "存檔"
         Me.butSave.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butSave.ForeColor = System.Drawing.Color.Black
         '
         'cmdSaveToFolder
         '
@@ -442,6 +443,7 @@ Partial Class frmDateTime
         Me.cmdSaveToFolder.TabIndex = 7
         Me.cmdSaveToFolder.Text = "同步所有的相片"
         Me.cmdSaveToFolder.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.cmdSaveToFolder.ForeColor = System.Drawing.Color.Black
         '
         'chkSaveMode_0
         '
@@ -473,6 +475,7 @@ Partial Class frmDateTime
         Me.cmdCancel.TabIndex = 8
         Me.cmdCancel.Text = "關閉"
         Me.cmdCancel.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.cmdCancel.ForeColor = System.Drawing.Color.Black
         '
         'frmDateTime
         '
@@ -552,9 +555,9 @@ Partial Class frmDateTime
     Friend WithEvents txtHH_2 As Aqua.TextBox
     Friend WithEvents txtNN_2 As Aqua.TextBox
     Friend WithEvents txtSS_2 As Aqua.TextBox
-    Friend WithEvents butSave As Aqua.FlashButton
-    Friend WithEvents cmdSaveToFolder As Aqua.FlashButton
+    Friend WithEvents butSave As Aqua.ThinButton
+    Friend WithEvents cmdSaveToFolder As Aqua.ThinButton
     Friend WithEvents chkSaveMode_0 As Aqua.CheckBox
     Friend WithEvents chkSaveMode_1 As Aqua.CheckBox
-    Friend WithEvents cmdCancel As Aqua.FlashButton
+    Friend WithEvents cmdCancel As Aqua.ThinButton
 End Class

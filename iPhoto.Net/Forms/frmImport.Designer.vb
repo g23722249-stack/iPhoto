@@ -50,11 +50,11 @@ Partial Class frmImport
         txtSpot = New Aqua.TextBox()
         txtDate = New Aqua.TextBox()
         txtTitle = New Aqua.TextBox()
-        butExit = New Aqua.FlashButton()
-        butOk = New Aqua.FlashButton()
+        butExit = New Aqua.ThinButton()
+        butOk = New Aqua.ThinButton()
         txtFolder = New Aqua.TextBox()
         picSubject = New PictureBox()
-        Button1 = New Aqua.FlashButton()
+        Button1 = New Aqua.ThinButton()
         chkAutoInfo = New Aqua.CheckBox()
         vb6ToolTip = New ToolTip(components)
         CType(imgSubject, ComponentModel.ISupportInitialize).BeginInit()
@@ -411,32 +411,20 @@ Partial Class frmImport
         ' butExit
         ' 
         butExit.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
-        butExit.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
+        butExit.ForeColor = Color.Black
         butExit.Location = New Point(310, 700)
         butExit.Name = "butExit"
         butExit.Size = New Size(103, 27)
-        butExit.SoundFileOfClick = Nothing
-        butExit.SoundFileOfEnterFocus = Nothing
-        butExit.SoundFileOfExitFocus = Nothing
-        butExit.SoundFileOfMouseEnter = Nothing
-        butExit.SoundFileOfMouseHover = Nothing
-        butExit.SoundFileOfMouseLeave = Nothing
         butExit.TabIndex = 7
         butExit.Text = "取消"
         ' 
         ' butOk
         ' 
         butOk.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
-        butOk.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
+        butOk.ForeColor = Color.Black
         butOk.Location = New Point(682, 700)
         butOk.Name = "butOk"
         butOk.Size = New Size(103, 27)
-        butOk.SoundFileOfClick = Nothing
-        butOk.SoundFileOfEnterFocus = Nothing
-        butOk.SoundFileOfExitFocus = Nothing
-        butOk.SoundFileOfMouseEnter = Nothing
-        butOk.SoundFileOfMouseHover = Nothing
-        butOk.SoundFileOfMouseLeave = Nothing
         butOk.TabIndex = 9
         butOk.Text = "好"
         ' 
@@ -475,16 +463,10 @@ Partial Class frmImport
         ' Button1
         ' 
         Button1.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
-        Button1.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
+        Button1.ForeColor = Color.Black
         Button1.Location = New Point(430, 700)
         Button1.Name = "Button1"
         Button1.Size = New Size(235, 27)
-        Button1.SoundFileOfClick = Nothing
-        Button1.SoundFileOfEnterFocus = Nothing
-        Button1.SoundFileOfExitFocus = Nothing
-        Button1.SoundFileOfMouseEnter = Nothing
-        Button1.SoundFileOfMouseHover = Nothing
-        Button1.SoundFileOfMouseLeave = Nothing
         Button1.TabIndex = 8
         Button1.Text = "輸入預設的相片資訊"
         ' 
@@ -588,11 +570,11 @@ Partial Class frmImport
     Friend WithEvents txtSpot As Aqua.TextBox
     Friend WithEvents txtDate As Aqua.TextBox
     Friend WithEvents txtTitle As Aqua.TextBox
-    Friend WithEvents butExit As Aqua.FlashButton
-    Friend WithEvents butOk As Aqua.FlashButton
+    Friend WithEvents butExit As Aqua.ThinButton
+    Friend WithEvents butOk As Aqua.ThinButton
     Friend WithEvents txtFolder As Aqua.TextBox
     Friend WithEvents picSubject As System.Windows.Forms.PictureBox
-    Friend WithEvents Button1 As Aqua.FlashButton
+    Friend WithEvents Button1 As Aqua.ThinButton
     Friend WithEvents chkAutoInfo As Aqua.CheckBox
     Friend WithEvents vb6ToolTip As System.Windows.Forms.ToolTip
 End Class

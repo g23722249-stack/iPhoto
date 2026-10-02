@@ -10,9 +10,9 @@ Friend Class frmNameCheck
     Private ReadOnly lstGroups As New ListBox
     Private ReadOnly lblReason As New Label
     Private ReadOnly pnlNames As New FlowLayoutPanel
-    Private ReadOnly butUnify As New Aqua.FlashButton
-    Private ReadOnly butSkip As New Aqua.FlashButton
-    Private ReadOnly butClose As New Aqua.FlashButton
+    Private ReadOnly butUnify As New Aqua.ThinButton
+    Private ReadOnly butSkip As New Aqua.ThinButton
+    Private ReadOnly butClose As New Aqua.ThinButton
     Private m_lpUses As Dictionary(Of String, NameCheck.NameUse)
     Private m_bolBackedUp As Boolean
     Private m_intChanged As Integer
@@ -35,11 +35,12 @@ Friend Class frmNameCheck
         pnlNames.FlowDirection = FlowDirection.TopDown
         pnlNames.WrapContents = False
         pnlNames.AutoScroll = True
-        butUnify.SetBounds(362, 392, 220, 34) : butUnify.Text = "統一成選取的名字"
-        butSkip.SetBounds(594, 392, 150, 34) : butSkip.Text = "略過這組"
-        butClose.SetBounds(644, 450, 100, 34) : butClose.Text = "關閉"
+        butUnify.SetBounds(362, 392, 220, 27) : butUnify.Text = "統一成選取的名字"
+        butSkip.SetBounds(594, 392, 150, 27) : butSkip.Text = "略過這組"
+        butClose.SetBounds(644, 450, 100, 27) : butClose.Text = "關閉"
         For Each b In {butUnify, butSkip, butClose}
             b.Font = New Font("華康細圓體", 13.0F)
+            b.ForeColor = Color.Black
         Next
         Controls.AddRange({lblStatus, lstGroups, lblReason, pnlNames, butUnify, butSkip, butClose})
         SetButtons()

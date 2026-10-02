@@ -28,8 +28,8 @@ Partial Class frmBuildBook
         Me.frmClass = New Aqua.Panel()
         Me.tvList = New System.Windows.Forms.TreeView()
         Me.txtFolder = New Aqua.TextBox()
-        Me.butOk = New Aqua.FlashButton()
-        Me.butExit = New Aqua.FlashButton()
+        Me.butOk = New Aqua.ThinButton()
+        Me.butExit = New Aqua.ThinButton()
         Me.frmClass.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -98,7 +98,7 @@ Partial Class frmBuildBook
         Me.butOk.Size = New System.Drawing.Size(103, 27)
         Me.butOk.Name = "butOk"
         Me.butOk.TabIndex = 4
-        Me.butOk.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butOk.ForeColor = System.Drawing.Color.Black
         Me.butOk.Text = "好"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -108,7 +108,7 @@ Partial Class frmBuildBook
         Me.butExit.Size = New System.Drawing.Size(103, 27)
         Me.butExit.Name = "butExit"
         Me.butExit.TabIndex = 3
-        Me.butExit.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         Me.butExit.Text = "取消"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -145,6 +145,6 @@ Partial Class frmBuildBook
     Friend WithEvents frmClass As Aqua.Panel
     Friend WithEvents tvList As System.Windows.Forms.TreeView
     Friend WithEvents txtFolder As Aqua.TextBox
-    Friend WithEvents butOk As Aqua.FlashButton
-    Friend WithEvents butExit As Aqua.FlashButton
+    Friend WithEvents butOk As Aqua.ThinButton
+    Friend WithEvents butExit As Aqua.ThinButton
 End Class

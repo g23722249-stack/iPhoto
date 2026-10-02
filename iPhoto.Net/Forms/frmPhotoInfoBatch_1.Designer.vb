@@ -27,8 +27,8 @@ Partial Class frmPhotoInfoBatch_1
         Me.frmClass = New Aqua.Panel()
         Me.tvList = New System.Windows.Forms.TreeView()
         Me.mlList = New Aqua.MediaList()
-        Me.butExit = New Aqua.FlashButton()
-        Me.butNext = New Aqua.FlashButton()
+        Me.butExit = New Aqua.ThinButton()
+        Me.butNext = New Aqua.ThinButton()
         Me.frmClass.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -98,6 +98,7 @@ Partial Class frmPhotoInfoBatch_1
         Me.butExit.TabStop = False
         Me.butExit.Text = "取消"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 15.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         '
         'butNext
         '
@@ -109,6 +110,7 @@ Partial Class frmPhotoInfoBatch_1
         Me.butNext.Enabled = False
         Me.butNext.Text = "下一步"
         Me.butNext.Font = New System.Drawing.Font("華康細圓體", 15.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butNext.ForeColor = System.Drawing.Color.Black
         '
         'frmPhotoInfoBatch_1
         '
@@ -140,6 +142,6 @@ Partial Class frmPhotoInfoBatch_1
     Friend WithEvents frmClass As Aqua.Panel
     Friend WithEvents tvList As System.Windows.Forms.TreeView
     Friend WithEvents mlList As Aqua.MediaList
-    Friend WithEvents butExit As Aqua.FlashButton
-    Friend WithEvents butNext As Aqua.FlashButton
+    Friend WithEvents butExit As Aqua.ThinButton
+    Friend WithEvents butNext As Aqua.ThinButton
 End Class

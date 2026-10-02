@@ -6,8 +6,8 @@ Friend Class frmPickPeople
     Private ReadOnly lblPrompt As New Label
     Private ReadOnly txtFilter As New TextBox
     Private ReadOnly lstPeople As New CheckedListBox
-    Private ReadOnly butOk As New Aqua.FlashButton
-    Private ReadOnly butCancel As New Aqua.FlashButton
+    Private ReadOnly butOk As New Aqua.ThinButton
+    Private ReadOnly butCancel As New Aqua.ThinButton
     Private m_lpAll As List(Of FaceCatalog.PersonEntry)
     Private ReadOnly m_lpTicked As New HashSet(Of FaceCatalog.PersonEntry)
     Private m_bolFilling As Boolean
@@ -29,10 +29,11 @@ Friend Class frmPickPeople
         lstPeople.CheckOnClick = True
         lstPeople.IntegralHeight = False
         ' wide enough for 「找合照（12）」 in 華康細圓體 13
-        butOk.SetBounds(40, 418, 170, 36) : butOk.Text = "找合照"
-        butCancel.SetBounds(226, 418, 114, 36) : butCancel.Text = "放棄"
+        butOk.SetBounds(40, 418, 170, 27) : butOk.Text = "找合照"
+        butCancel.SetBounds(226, 418, 114, 27) : butCancel.Text = "放棄"
         For Each b In {butOk, butCancel}
             b.Font = New Font("華康細圓體", 13.0F)
+            b.ForeColor = Color.Black
         Next
         Controls.AddRange({lblPrompt, txtFilter, lstPeople, butOk, butCancel})
 

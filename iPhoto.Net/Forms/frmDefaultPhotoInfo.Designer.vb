@@ -38,8 +38,8 @@ Partial Class frmDefaultPhotoInfo
         Me.txtKeyWord = New Aqua.TextBox()
         Me.txtTitle = New Aqua.TextBox()
         Me.txtCharacter = New Aqua.TextBox()
-        Me.butOk = New Aqua.FlashButton()
-        Me.butExit = New Aqua.FlashButton()
+        Me.butOk = New Aqua.ThinButton()
+        Me.butExit = New Aqua.ThinButton()
         Me.SuspendLayout()
         '
         'Label10
@@ -230,6 +230,7 @@ Partial Class frmDefaultPhotoInfo
         Me.butOk.TabIndex = 11
         Me.butOk.Text = "好"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butOk.ForeColor = System.Drawing.Color.Black
         '
         'butExit
         '
@@ -239,6 +240,7 @@ Partial Class frmDefaultPhotoInfo
         Me.butExit.TabIndex = 10
         Me.butExit.Text = "取消"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         '
         'frmDefaultPhotoInfo
         '
@@ -295,6 +297,6 @@ Partial Class frmDefaultPhotoInfo
     Friend WithEvents txtKeyWord As Aqua.TextBox
     Friend WithEvents txtTitle As Aqua.TextBox
     Friend WithEvents txtCharacter As Aqua.TextBox
-    Friend WithEvents butOk As Aqua.FlashButton
-    Friend WithEvents butExit As Aqua.FlashButton
+    Friend WithEvents butOk As Aqua.ThinButton
+    Friend WithEvents butExit As Aqua.ThinButton
 End Class

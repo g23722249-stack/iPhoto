@@ -25,8 +25,8 @@ Partial Class frmBrowserFolder
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(frmBrowserFolder))
         Me.DeskTop1 = New Aqua.DirListBox()
         Me.txtFolder = New Aqua.TextBox()
-        Me.butExit = New Aqua.FlashButton()
-        Me.butOk = New Aqua.FlashButton()
+        Me.butExit = New Aqua.ThinButton()
+        Me.butOk = New Aqua.ThinButton()
         Me.SuspendLayout()
         '
         'DeskTop1
@@ -57,7 +57,7 @@ Partial Class frmBrowserFolder
         Me.butExit.Size = New System.Drawing.Size(103, 27)
         Me.butExit.Name = "butExit"
         Me.butExit.TabIndex = 2
-        Me.butExit.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         Me.butExit.Text = "取消"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -67,7 +67,7 @@ Partial Class frmBrowserFolder
         Me.butOk.Size = New System.Drawing.Size(103, 27)
         Me.butOk.Name = "butOk"
         Me.butOk.TabIndex = 3
-        Me.butOk.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butOk.ForeColor = System.Drawing.Color.Black
         Me.butOk.Text = "好"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -101,6 +101,6 @@ Partial Class frmBrowserFolder
 
     Friend WithEvents DeskTop1 As Aqua.DirListBox
     Friend WithEvents txtFolder As Aqua.TextBox
-    Friend WithEvents butExit As Aqua.FlashButton
-    Friend WithEvents butOk As Aqua.FlashButton
+    Friend WithEvents butExit As Aqua.ThinButton
+    Friend WithEvents butOk As Aqua.ThinButton
 End Class

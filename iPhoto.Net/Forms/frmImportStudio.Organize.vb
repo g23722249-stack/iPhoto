@@ -37,8 +37,8 @@ Partial Class frmImportStudio
     Private lblPTitle, lblPPeople, lblPSpot, lblPKey, lblPRemark As Label
     Private WithEvents txtPTitle, txtPPeople, txtPSpot, txtPKey, txtPRemark As Aqua.TextBox
     Private flpFaces As FlowLayoutPanel
-    Private WithEvents butKeyWords As Aqua.FlashButton
-    Private WithEvents butAllTitle, butAllSpot, butAllKey, butAllRemark As Aqua.FlashButton
+    Private WithEvents butKeyWords As Aqua.ThinButton
+    Private WithEvents butAllTitle, butAllSpot, butAllKey, butAllRemark As Aqua.ThinButton
     Private lblNote As Label
     Private WithEvents mnuFace As ContextMenuStrip
     Private WithEvents mnuNotFace, mnuUnname, mnuReject As ToolStripMenuItem

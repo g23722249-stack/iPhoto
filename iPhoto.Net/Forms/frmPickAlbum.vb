@@ -5,8 +5,8 @@ Friend Class frmPickAlbum
 
     Private ReadOnly lblPrompt As New Label
     Private ReadOnly tvAlbums As New TreeView
-    Private ReadOnly butOk As New Aqua.FlashButton
-    Private ReadOnly butCancel As New Aqua.FlashButton
+    Private ReadOnly butOk As New Aqua.ThinButton
+    Private ReadOnly butCancel As New Aqua.ThinButton
     Private m_strPicked As String
 
     Public Sub New()
@@ -21,10 +21,11 @@ Friend Class frmPickAlbum
         lblPrompt.SetBounds(16, 12, 390, 24)
         tvAlbums.SetBounds(16, 44, 388, 410)
         tvAlbums.HideSelection = False
-        butOk.SetBounds(70, 470, 140, 36) : butOk.Text = "移到這裡"
-        butCancel.SetBounds(226, 470, 114, 36) : butCancel.Text = "放棄"
+        butOk.SetBounds(70, 470, 140, 27) : butOk.Text = "移到這裡"
+        butCancel.SetBounds(226, 470, 114, 27) : butCancel.Text = "放棄"
         For Each b In {butOk, butCancel}
             b.Font = New Font("華康細圓體", 13.0F)
+            b.ForeColor = Color.Black
         Next
         Controls.AddRange({lblPrompt, tvAlbums, butOk, butCancel})
 

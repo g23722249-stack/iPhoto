@@ -38,8 +38,8 @@ Partial Class frmPhotoInfo
         Me.lblFileName = New System.Windows.Forms.Label()
         Me.lblFileDateTime = New System.Windows.Forms.Label()
         Me.lblFileLength = New System.Windows.Forms.Label()
-        Me.butExit = New Aqua.FlashButton()
-        Me.butOk = New Aqua.FlashButton()
+        Me.butExit = New Aqua.ThinButton()
+        Me.butOk = New Aqua.ThinButton()
         Me.txtCharacter = New Aqua.TextBox()
         Me.txtTitle = New Aqua.TextBox()
         Me.txtKeyWord = New Aqua.TextBox()
@@ -220,6 +220,7 @@ Partial Class frmPhotoInfo
         Me.butExit.TabIndex = 13
         Me.butExit.Text = "取消"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         '
         'butOk
         '
@@ -229,6 +230,7 @@ Partial Class frmPhotoInfo
         Me.butOk.TabIndex = 14
         Me.butOk.Text = "好"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butOk.ForeColor = System.Drawing.Color.Black
         '
         'txtCharacter
         '
@@ -451,8 +453,8 @@ Partial Class frmPhotoInfo
     Friend WithEvents lblFileName As System.Windows.Forms.Label
     Friend WithEvents lblFileDateTime As System.Windows.Forms.Label
     Friend WithEvents lblFileLength As System.Windows.Forms.Label
-    Friend WithEvents butExit As Aqua.FlashButton
-    Friend WithEvents butOk As Aqua.FlashButton
+    Friend WithEvents butExit As Aqua.ThinButton
+    Friend WithEvents butOk As Aqua.ThinButton
     Friend WithEvents txtCharacter As Aqua.TextBox
     Friend WithEvents txtTitle As Aqua.TextBox
     Friend WithEvents txtKeyWord As Aqua.TextBox

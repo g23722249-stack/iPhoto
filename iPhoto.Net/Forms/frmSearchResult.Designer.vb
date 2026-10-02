@@ -25,10 +25,10 @@ Partial Class frmSearchResult
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(frmSearchResult))
         Me.imgInfo = New System.Windows.Forms.PictureBox()
         Me.Grid1 = New Aqua.Grid()
-        Me.butDock = New Aqua.FlashButton()
-        Me.butExit = New Aqua.FlashButton()
-        Me.butFavorite = New Aqua.FlashButton()
-        Me.butResearch = New Aqua.FlashButton()
+        Me.butDock = New Aqua.ThinButton()
+        Me.butExit = New Aqua.ThinButton()
+        Me.butFavorite = New Aqua.ThinButton()
+        Me.butResearch = New Aqua.ThinButton()
         Me.SuspendLayout()
         '
         'imgInfo
@@ -63,6 +63,7 @@ Partial Class frmSearchResult
         Me.butDock.TabIndex = 2
         Me.butDock.Text = "加入 Dockbar"
         Me.butDock.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butDock.ForeColor = System.Drawing.Color.Black
         '
         'butExit
         '
@@ -72,6 +73,7 @@ Partial Class frmSearchResult
         Me.butExit.TabIndex = 3
         Me.butExit.Text = "關閉"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         '
         'butFavorite
         '
@@ -81,6 +83,7 @@ Partial Class frmSearchResult
         Me.butFavorite.TabIndex = 4
         Me.butFavorite.Text = "成立攝影輯"
         Me.butFavorite.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butFavorite.ForeColor = System.Drawing.Color.Black
         '
         'butResearch
         '
@@ -90,6 +93,7 @@ Partial Class frmSearchResult
         Me.butResearch.TabIndex = 5
         Me.butResearch.Text = "重新尋找"
         Me.butResearch.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butResearch.ForeColor = System.Drawing.Color.Black
         '
         'frmSearchResult
         '
@@ -121,8 +125,8 @@ Partial Class frmSearchResult
 
     Friend WithEvents imgInfo As System.Windows.Forms.PictureBox
     Friend WithEvents Grid1 As Aqua.Grid
-    Friend WithEvents butDock As Aqua.FlashButton
-    Friend WithEvents butExit As Aqua.FlashButton
-    Friend WithEvents butFavorite As Aqua.FlashButton
-    Friend WithEvents butResearch As Aqua.FlashButton
+    Friend WithEvents butDock As Aqua.ThinButton
+    Friend WithEvents butExit As Aqua.ThinButton
+    Friend WithEvents butFavorite As Aqua.ThinButton
+    Friend WithEvents butResearch As Aqua.ThinButton
 End Class

@@ -12,7 +12,7 @@ Partial Class frmImportStudio
     Private barPhase(4) As ImportBar
     Private lstLog As ListBox
     Private pnlSummary As Panel
-    Private WithEvents butOpen, butAgain, butRetry As Aqua.FlashButton
+    Private WithEvents butOpen, butAgain, butRetry As Aqua.ThinButton
     Private WithEvents m_runner As ImportRunner
     Private m_bolCloseWhenStopped As Boolean
 

@@ -7,13 +7,13 @@ Friend Class frmDuplicates
     Inherits Form
 
     Private ReadOnly chkSimilar As New CheckBox
-    Private ReadOnly butFind As New Aqua.FlashButton
+    Private ReadOnly butFind As New Aqua.ThinButton
     Private ReadOnly lblStatus As New Label
     Private ReadOnly lstGroups As New ListBox
     Private ReadOnly pnlFiles As New FlowLayoutPanel
-    Private ReadOnly butDelete As New Aqua.FlashButton
-    Private ReadOnly butSkip As New Aqua.FlashButton
-    Private ReadOnly butClose As New Aqua.FlashButton
+    Private ReadOnly butDelete As New Aqua.ThinButton
+    Private ReadOnly butSkip As New Aqua.ThinButton
+    Private ReadOnly butClose As New Aqua.ThinButton
     Private m_lpCancel As Threading.CancellationTokenSource
     Private m_intDeleted As Integer
 
@@ -29,7 +29,7 @@ Friend Class frmDuplicates
 
         chkSimilar.SetBounds(16, 14, 520, 26)
         chkSimilar.Text = "也找非常相似的照片（連拍、另存成不同大小的同一張）"
-        butFind.SetBounds(560, 10, 140, 34) : butFind.Text = "開始尋找"
+        butFind.SetBounds(560, 10, 140, 27) : butFind.Text = "開始尋找"
         lblStatus.SetBounds(16, 50, 968, 24)
         lstGroups.SetBounds(16, 80, 300, 494)
         lstGroups.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Bottom
@@ -38,15 +38,16 @@ Friend Class frmDuplicates
         pnlFiles.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Bottom Or AnchorStyles.Right
         pnlFiles.AutoScroll = True
         pnlFiles.BackColor = Color.FromArgb(246, 247, 249)
-        butDelete.SetBounds(328, 588, 280, 36) : butDelete.Text = "刪除勾選的（移到資源回收筒）"
-        butSkip.SetBounds(620, 588, 130, 36) : butSkip.Text = "略過這組"
-        butClose.SetBounds(884, 588, 100, 36) : butClose.Text = "關閉"
+        butDelete.SetBounds(328, 588, 280, 27) : butDelete.Text = "刪除勾選的（移到資源回收筒）"
+        butSkip.SetBounds(620, 588, 130, 27) : butSkip.Text = "略過這組"
+        butClose.SetBounds(884, 588, 100, 27) : butClose.Text = "關閉"
         For Each b In {butDelete, butSkip}
             b.Anchor = AnchorStyles.Bottom Or AnchorStyles.Left
         Next
         butClose.Anchor = AnchorStyles.Bottom Or AnchorStyles.Right
         For Each b In {butFind, butDelete, butSkip, butClose}
             b.Font = New Font("華康細圓體", 12.0F)
+            b.ForeColor = Color.Black
         Next
         Controls.AddRange({chkSimilar, butFind, lblStatus, lstGroups, pnlFiles, butDelete, butSkip, butClose})
         lblStatus.Text = "按「開始尋找」，找出相片庫裡重複的照片。"

@@ -28,8 +28,8 @@ Partial Class frmSaveChangedPhoto
         Me.rbExecute_1 = New Aqua.RadioButton()
         Me.rbExecute_2 = New Aqua.RadioButton()
         Me.rbExecute_3 = New Aqua.RadioButton()
-        Me.butOk = New Aqua.FlashButton()
-        Me.butExit = New Aqua.FlashButton()
+        Me.butOk = New Aqua.ThinButton()
+        Me.butExit = New Aqua.ThinButton()
         Me.SuspendLayout()
         '
         'lblTitle
@@ -82,7 +82,7 @@ Partial Class frmSaveChangedPhoto
         Me.butOk.Size = New System.Drawing.Size(103, 27)
         Me.butOk.Name = "butOk"
         Me.butOk.TabIndex = 10
-        Me.butOk.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butOk.ForeColor = System.Drawing.Color.Black
         Me.butOk.Text = "好"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -92,7 +92,7 @@ Partial Class frmSaveChangedPhoto
         Me.butExit.Size = New System.Drawing.Size(103, 27)
         Me.butExit.Name = "butExit"
         Me.butExit.TabIndex = 11
-        Me.butExit.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         Me.butExit.Text = "取消"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -132,6 +132,6 @@ Partial Class frmSaveChangedPhoto
     Friend WithEvents rbExecute_1 As Aqua.RadioButton
     Friend WithEvents rbExecute_2 As Aqua.RadioButton
     Friend WithEvents rbExecute_3 As Aqua.RadioButton
-    Friend WithEvents butOk As Aqua.FlashButton
-    Friend WithEvents butExit As Aqua.FlashButton
+    Friend WithEvents butOk As Aqua.ThinButton
+    Friend WithEvents butExit As Aqua.ThinButton
 End Class

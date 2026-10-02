@@ -93,8 +93,8 @@ Friend Class frmRestartAsk
         BackColor = Color.White
         Dim l1 As New Label With {.Text = line1, .AutoSize = False, .Bounds = New Rectangle(24, 20, 452, 28), .Font = New Font(Font.FontFamily, 13.0F)}
         Dim l2 As New Label With {.Text = line2, .AutoSize = False, .Bounds = New Rectangle(24, 54, 452, 48), .ForeColor = Color.FromArgb(62, 76, 89)}
-        Dim later As New Aqua.FlashButton With {.Text = "稍後再重開", .Bounds = New Rectangle(124, 116, 150, 36), .Font = New Font("華康細圓體", 13.0F)}
-        Dim now As New Aqua.FlashButton With {.Text = "現在重新開啟 iPhoto", .Bounds = New Rectangle(284, 116, 196, 36), .Font = New Font("華康細圓體", 13.0F)}
+        Dim later As New Aqua.ThinButton With {.Text = "稍後再重開", .Bounds = New Rectangle(105, 116, 150, 27), .Font = New Font("華康細圓體", 13.0F), .ForeColor = Color.Black}
+        Dim now As New Aqua.ThinButton With {.Text = "現在重新開啟 iPhoto", .Bounds = New Rectangle(265, 116, 215, 27), .Font = New Font("華康細圓體", 13.0F), .ForeColor = Color.Black}
         AddHandler later.Click, Sub() Close()
         AddHandler now.Click, Sub()
                                   m_bolNow = True

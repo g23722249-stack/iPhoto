@@ -30,14 +30,14 @@ Friend Class frmImportStudio
     ' shell
     Private stepBar As ImportStepBar
     Private pnlStep(2) As Panel
-    Private WithEvents butCancel, butBack, butNext As Aqua.FlashButton
+    Private WithEvents butCancel, butBack, butNext As Aqua.ThinButton
     Private lblFoot As Label
 
     ' step 1
     Private WithEvents tvSource As ImportFolderTree
     Private WithEvents lstQuick As ListBox
     Private WithEvents grid1 As ImportThumbGrid
-    Private WithEvents butAll, butNone, butNewOnly As Aqua.FlashButton
+    Private WithEvents butAll, butNone, butNewOnly As Aqua.ThinButton
     Private lblSource As Label
     Private picPreview As PictureBox
     Private lblPreview, lblBatch, lblDup, lblShared As Label
@@ -73,11 +73,18 @@ Friend Class frmImportStudio
         Return l
     End Function
 
+    ''' <summary>The silver pill for the secondary buttons (Aqua's own disabled-button art); the primary
+    ''' one keeps ThinButton's blue. Loaded once, shared by every button (ThinButton doesn't dispose it).</summary>
+    Private Shared s_imgSecondary As Image
+
     Private Function NewButton(ByVal parent As Control, ByVal text As String, ByVal x As Integer, ByVal y As Integer, ByVal w As Integer,
-                               Optional ByVal primary As Boolean = False, Optional ByVal h As Integer = 27) As Aqua.FlashButton
-        Dim b As New Aqua.FlashButton With {.AutoSize = False, .Text = text, .Location = New Point(x, y), .Size = New Size(w, h),
-                                            .Font = New Font(Font.FontFamily, 11.0F), .Flash = primary,
-                                            .Color = If(primary, Aqua.ColorConstants.Blue, Aqua.ColorConstants.Metal)}
+                               Optional ByVal primary As Boolean = False, Optional ByVal h As Integer = 27) As Aqua.ThinButton
+        Dim b As New Aqua.ThinButton With {.Text = text, .Location = New Point(x, y), .Size = New Size(w, h),
+                                           .Font = New Font(Font.FontFamily, 11.0F), .ForeColor = Color.Black}
+        If Not primary Then
+            If s_imgSecondary Is Nothing Then s_imgSecondary = FormImages.Load(Me, "butSecondary_Image")
+            b.Image = s_imgSecondary
+        End If
         parent.Controls.Add(b)
         Return b
     End Function

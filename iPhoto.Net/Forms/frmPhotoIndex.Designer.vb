@@ -31,17 +31,17 @@ Partial Class frmPhotoIndex
         Me.chkPrintNote_0 = New Aqua.CheckBox()
         Me.chkPrintNote_1 = New Aqua.CheckBox()
         Me.Slider1 = New Aqua.Slider()
-        Me.butExit = New Aqua.FlashButton()
-        Me.butPreview = New Aqua.FlashButton()
-        Me.butPrint = New Aqua.FlashButton()
-        Me.butSave = New Aqua.FlashButton()
+        Me.butExit = New Aqua.ThinButton()
+        Me.butPreview = New Aqua.ThinButton()
+        Me.butPrint = New Aqua.ThinButton()
+        Me.butSave = New Aqua.ThinButton()
         Me.UpDown1 = New Aqua.UpDown()
         Me.picContainer = New Aqua.PicturePanel()
         Me.picPaper = New System.Windows.Forms.PictureBox()
         Me.picShadow = New System.Windows.Forms.PictureBox()
         Me.cboPrinter = New Aqua.DropDownList()
-        Me.butAdviance = New Aqua.FlashButton()
-        Me.butPaper = New Aqua.FlashButton()
+        Me.butAdviance = New Aqua.ThinButton()
+        Me.butPaper = New Aqua.ThinButton()
         Me.txtLimit = New Aqua.TextBox()
         Me.picCanvas_0 = New System.Windows.Forms.PictureBox()
         Me.frmClass.SuspendLayout()
@@ -146,7 +146,7 @@ Partial Class frmPhotoIndex
         Me.butExit.Size = New System.Drawing.Size(103, 27)
         Me.butExit.Name = "butExit"
         Me.butExit.TabIndex = 6
-        Me.butExit.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         Me.butExit.Text = "結束"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -156,7 +156,7 @@ Partial Class frmPhotoIndex
         Me.butPreview.Size = New System.Drawing.Size(103, 27)
         Me.butPreview.Name = "butPreview"
         Me.butPreview.TabIndex = 3
-        Me.butPreview.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butPreview.ForeColor = System.Drawing.Color.Black
         Me.butPreview.Text = "預覽"
         Me.butPreview.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -167,7 +167,7 @@ Partial Class frmPhotoIndex
         Me.butPrint.Enabled = False
         Me.butPrint.Name = "butPrint"
         Me.butPrint.TabIndex = 4
-        Me.butPrint.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butPrint.ForeColor = System.Drawing.Color.Black
         Me.butPrint.Text = "列印"
         Me.butPrint.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -178,7 +178,7 @@ Partial Class frmPhotoIndex
         Me.butSave.Enabled = False
         Me.butSave.Name = "butSave"
         Me.butSave.TabIndex = 5
-        Me.butSave.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butSave.ForeColor = System.Drawing.Color.Black
         Me.butSave.Text = "存檔"
         Me.butSave.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -248,7 +248,7 @@ Partial Class frmPhotoIndex
         Me.butAdviance.Size = New System.Drawing.Size(155, 27)
         Me.butAdviance.Name = "butAdviance"
         Me.butAdviance.TabIndex = 2
-        Me.butAdviance.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butAdviance.ForeColor = System.Drawing.Color.Black
         Me.butAdviance.Text = "進階選項"
         Me.butAdviance.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -258,7 +258,7 @@ Partial Class frmPhotoIndex
         Me.butPaper.Size = New System.Drawing.Size(155, 27)
         Me.butPaper.Name = "butPaper"
         Me.butPaper.TabIndex = 1
-        Me.butPaper.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butPaper.ForeColor = System.Drawing.Color.Black
         Me.butPaper.Text = "紙張設定"
         Me.butPaper.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -341,17 +341,17 @@ Partial Class frmPhotoIndex
     Friend WithEvents chkPrintNote_0 As Aqua.CheckBox
     Friend WithEvents chkPrintNote_1 As Aqua.CheckBox
     Friend WithEvents Slider1 As Aqua.Slider
-    Friend WithEvents butExit As Aqua.FlashButton
-    Friend WithEvents butPreview As Aqua.FlashButton
-    Friend WithEvents butPrint As Aqua.FlashButton
-    Friend WithEvents butSave As Aqua.FlashButton
+    Friend WithEvents butExit As Aqua.ThinButton
+    Friend WithEvents butPreview As Aqua.ThinButton
+    Friend WithEvents butPrint As Aqua.ThinButton
+    Friend WithEvents butSave As Aqua.ThinButton
     Friend WithEvents UpDown1 As Aqua.UpDown
     Friend WithEvents picContainer As Aqua.PicturePanel
     Friend WithEvents picPaper As System.Windows.Forms.PictureBox
     Friend WithEvents picShadow As System.Windows.Forms.PictureBox
     Friend WithEvents cboPrinter As Aqua.DropDownList
-    Friend WithEvents butAdviance As Aqua.FlashButton
-    Friend WithEvents butPaper As Aqua.FlashButton
+    Friend WithEvents butAdviance As Aqua.ThinButton
+    Friend WithEvents butPaper As Aqua.ThinButton
     Friend WithEvents txtLimit As Aqua.TextBox
     Friend WithEvents picCanvas_0 As System.Windows.Forms.PictureBox
 End Class

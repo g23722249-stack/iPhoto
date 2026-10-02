@@ -35,8 +35,8 @@ Partial Class frmSearch
         Me.Label10 = New System.Windows.Forms.Label()
         Me.ddRanking = New Aqua.DropDownList()
         Me.ddMediaType = New Aqua.DropDownList()
-        Me.butExit = New Aqua.FlashButton()
-        Me.butSearch = New Aqua.FlashButton()
+        Me.butExit = New Aqua.ThinButton()
+        Me.butSearch = New Aqua.ThinButton()
         Me.txtRemark = New Aqua.TextBox()
         Me.txtKeyWord = New Aqua.TextBox()
         Me.meStartDate = New Aqua.MaskEdit()
@@ -209,6 +209,7 @@ Partial Class frmSearch
         Me.butExit.TabIndex = 14
         Me.butExit.Text = "結束"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         '
         'butSearch
         '
@@ -218,6 +219,7 @@ Partial Class frmSearch
         Me.butSearch.TabIndex = 15
         Me.butSearch.Text = "尋找相片"
         Me.butSearch.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butSearch.ForeColor = System.Drawing.Color.Black
         '
         'txtRemark
         '
@@ -483,8 +485,8 @@ Partial Class frmSearch
     Friend WithEvents Label10 As System.Windows.Forms.Label
     Friend WithEvents ddRanking As Aqua.DropDownList
     Friend WithEvents ddMediaType As Aqua.DropDownList
-    Friend WithEvents butExit As Aqua.FlashButton
-    Friend WithEvents butSearch As Aqua.FlashButton
+    Friend WithEvents butExit As Aqua.ThinButton
+    Friend WithEvents butSearch As Aqua.ThinButton
     Friend WithEvents txtRemark As Aqua.TextBox
     Friend WithEvents txtKeyWord As Aqua.TextBox
     Friend WithEvents meStartDate As Aqua.MaskEdit

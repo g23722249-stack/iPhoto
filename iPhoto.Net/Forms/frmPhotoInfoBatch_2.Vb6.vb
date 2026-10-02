@@ -6,7 +6,7 @@
 '   vbalListViewCtl lvwMain + vbalImageList ilsIcons -> ListView (LargeIcon) + ImageList 120x96
 '   vbalExplorerBarCtl barSearch                    -> scrolling Panel with the four bars as sections
 '   vbalMultiSel cbo* (keyword multi-select combo)  -> "▼" Button + ContextMenuStrip mnuKeyWords (check items)
-'   TechnoComCtls SkinButton but*                   -> Aqua.FlashButton
+'   TechnoComCtls SkinButton but*                   -> Aqua.ThinButton
 Partial Class frmPhotoInfoBatch_2
 
     Public Sub New()

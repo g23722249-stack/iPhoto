@@ -34,8 +34,8 @@ Partial Class frmBackup
         Me.txtTarget = New Aqua.TextBox()
         Me.chkApplyAll = New Aqua.CheckBox()
         Me.txtLog = New Aqua.EditBox()
-        Me.butStart = New Aqua.FlashButton()
-        Me.butExit = New Aqua.FlashButton()
+        Me.butStart = New Aqua.ThinButton()
+        Me.butExit = New Aqua.ThinButton()
         Me.ProgressBar1 = New Aqua.ProgressBar()
         CType(Me.imgTarget, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SuspendLayout()
@@ -167,7 +167,7 @@ Partial Class frmBackup
         'butStart
         '
         Me.butStart.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
-        Me.butStart.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butStart.ForeColor = System.Drawing.Color.Black
         Me.butStart.Location = New System.Drawing.Point(390, 540)
         Me.butStart.Name = "butStart"
         Me.butStart.Size = New System.Drawing.Size(103, 27)
@@ -177,7 +177,7 @@ Partial Class frmBackup
         'butExit
         '
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
-        Me.butExit.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         Me.butExit.Location = New System.Drawing.Point(272, 540)
         Me.butExit.Name = "butExit"
         Me.butExit.Size = New System.Drawing.Size(103, 27)
@@ -239,7 +239,7 @@ Partial Class frmBackup
     Friend WithEvents txtTarget As Aqua.TextBox
     Friend WithEvents chkApplyAll As Aqua.CheckBox
     Friend WithEvents txtLog As Aqua.EditBox
-    Friend WithEvents butStart As Aqua.FlashButton
-    Friend WithEvents butExit As Aqua.FlashButton
+    Friend WithEvents butStart As Aqua.ThinButton
+    Friend WithEvents butExit As Aqua.ThinButton
     Friend WithEvents ProgressBar1 As Aqua.ProgressBar
 End Class

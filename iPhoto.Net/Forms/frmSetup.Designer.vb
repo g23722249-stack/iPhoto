@@ -24,8 +24,8 @@ Partial Class frmSetup
     Private Sub InitializeComponent()
         components = New ComponentModel.Container()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(frmSetup))
-        butSave = New Aqua.FlashButton()
-        butExit = New Aqua.FlashButton()
+        butSave = New Aqua.ThinButton()
+        butExit = New Aqua.ThinButton()
         tabSetup = New Aqua.TabControl()
         pageGeneral = New Aqua.TabPage()
         imgMusic = New PictureBox()
@@ -134,32 +134,20 @@ Partial Class frmSetup
         ' butSave
         ' 
         butSave.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
-        butSave.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
+        butSave.ForeColor = Color.Black
         butSave.Location = New Point(473, 566)
         butSave.Name = "butSave"
         butSave.Size = New Size(103, 27)
-        butSave.SoundFileOfClick = Nothing
-        butSave.SoundFileOfEnterFocus = Nothing
-        butSave.SoundFileOfExitFocus = Nothing
-        butSave.SoundFileOfMouseEnter = Nothing
-        butSave.SoundFileOfMouseHover = Nothing
-        butSave.SoundFileOfMouseLeave = Nothing
         butSave.TabIndex = 18
         butSave.Text = "儲存"
         ' 
         ' butExit
         ' 
         butExit.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
-        butExit.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
+        butExit.ForeColor = Color.Black
         butExit.Location = New Point(352, 566)
         butExit.Name = "butExit"
         butExit.Size = New Size(103, 27)
-        butExit.SoundFileOfClick = Nothing
-        butExit.SoundFileOfEnterFocus = Nothing
-        butExit.SoundFileOfExitFocus = Nothing
-        butExit.SoundFileOfMouseEnter = Nothing
-        butExit.SoundFileOfMouseHover = Nothing
-        butExit.SoundFileOfMouseLeave = Nothing
         butExit.TabIndex = 17
         butExit.Text = "放棄"
         ' 
@@ -1349,8 +1337,8 @@ Partial Class frmSetup
 
     End Sub
 
-    Friend WithEvents butSave As Aqua.FlashButton
-    Friend WithEvents butExit As Aqua.FlashButton
+    Friend WithEvents butSave As Aqua.ThinButton
+    Friend WithEvents butExit As Aqua.ThinButton
     Friend WithEvents tabSetup As Aqua.TabControl
     Friend WithEvents pagePlugins As Aqua.TabPage
     Friend WithEvents imgApp_0 As System.Windows.Forms.PictureBox

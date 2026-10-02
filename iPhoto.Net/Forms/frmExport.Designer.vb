@@ -31,8 +31,8 @@ Partial Class frmExport
         Me.txtPath = New Aqua.TextBox()
         Me.ddSize = New Aqua.DropDownList()
         Me.txtReName = New Aqua.TextBox()
-        Me.butOk = New Aqua.FlashButton()
-        Me.butExit = New Aqua.FlashButton()
+        Me.butOk = New Aqua.ThinButton()
+        Me.butExit = New Aqua.ThinButton()
         Me.chkSort = New Aqua.CheckBox()
         Me.ProgressBar1 = New Aqua.ProgressBar()
         Me.SuspendLayout()
@@ -133,7 +133,7 @@ Partial Class frmExport
         Me.butOk.Size = New System.Drawing.Size(103, 27)
         Me.butOk.Name = "butOk"
         Me.butOk.TabIndex = 6
-        Me.butOk.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butOk.ForeColor = System.Drawing.Color.Black
         Me.butOk.Text = "好"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -143,7 +143,7 @@ Partial Class frmExport
         Me.butExit.Size = New System.Drawing.Size(103, 27)
         Me.butExit.Name = "butExit"
         Me.butExit.TabIndex = 5
-        Me.butExit.ForeColor = System.Drawing.Color.FromArgb(CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(64, Byte), Integer))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         Me.butExit.Text = "取消"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         '
@@ -204,8 +204,8 @@ Partial Class frmExport
     Friend WithEvents txtPath As Aqua.TextBox
     Friend WithEvents ddSize As Aqua.DropDownList
     Friend WithEvents txtReName As Aqua.TextBox
-    Friend WithEvents butOk As Aqua.FlashButton
-    Friend WithEvents butExit As Aqua.FlashButton
+    Friend WithEvents butOk As Aqua.ThinButton
+    Friend WithEvents butExit As Aqua.ThinButton
     Friend WithEvents chkSort As Aqua.CheckBox
     Friend WithEvents ProgressBar1 As Aqua.ProgressBar
 End Class

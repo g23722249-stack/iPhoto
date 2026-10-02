@@ -10,9 +10,9 @@ Friend Class frmPeopleNames
     Private ReadOnly lblStatus As New Label
     Private ReadOnly txtFilter As New TextBox
     Private ReadOnly lvNames As New ListView
-    Private ReadOnly butRename As New Aqua.FlashButton
-    Private ReadOnly butRemove As New Aqua.FlashButton
-    Private ReadOnly butClose As New Aqua.FlashButton
+    Private ReadOnly butRename As New Aqua.ThinButton
+    Private ReadOnly butRemove As New Aqua.ThinButton
+    Private ReadOnly butClose As New Aqua.ThinButton
     Private m_lpUses As Dictionary(Of String, NameCheck.NameUse)
     Private m_lpFaceNames As HashSet(Of String)
     Private m_bolBackedUp As Boolean
@@ -39,11 +39,12 @@ Friend Class frmPeopleNames
         lvNames.Columns.Add("名字", 200)
         lvNames.Columns.Add("照片", 90, HorizontalAlignment.Right)
         lvNames.Columns.Add("面孔", 90, HorizontalAlignment.Center)
-        butRename.SetBounds(452, 84, 172, 34) : butRename.Text = "改名／合併…"
-        butRemove.SetBounds(452, 128, 172, 34) : butRemove.Text = "從人物欄移除…"
-        butClose.SetBounds(452, 550, 172, 34) : butClose.Text = "關閉"
+        butRename.SetBounds(452, 84, 172, 27) : butRename.Text = "改名／合併…"
+        butRemove.SetBounds(452, 128, 172, 27) : butRemove.Text = "從人物欄移除…"
+        butClose.SetBounds(452, 550, 172, 27) : butClose.Text = "關閉"
         For Each b In {butRename, butRemove, butClose}
             b.Font = New Font("華康細圓體", 13.0F)
+            b.ForeColor = Color.Black
         Next
         Dim lblHelp As New Label With {
             .AutoSize = False, .Bounds = New Rectangle(452, 176, 172, 300), .ForeColor = Color.DimGray, .Font = New Font(Font.FontFamily, 10.0F),

@@ -35,8 +35,8 @@ Partial Class frmCover
         Me.Shape1 = New System.Windows.Forms.Label()
         Me.Text1 = New System.Windows.Forms.TextBox()
         Me.picFace = New System.Windows.Forms.PictureBox()
-        Me.butExit = New Aqua.FlashButton()
-        Me.butOk = New Aqua.FlashButton()
+        Me.butExit = New Aqua.ThinButton()
+        Me.butOk = New Aqua.ThinButton()
         Me.Panel1.SuspendLayout()
         Me.picPhoto.SuspendLayout()
         Me.Panel2.SuspendLayout()
@@ -183,6 +183,7 @@ Partial Class frmCover
         Me.butExit.TabIndex = 11
         Me.butExit.Text = "取消"
         Me.butExit.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butExit.ForeColor = System.Drawing.Color.Black
         '
         'butOk
         '
@@ -192,6 +193,7 @@ Partial Class frmCover
         Me.butOk.TabIndex = 12
         Me.butOk.Text = "好"
         Me.butOk.Font = New System.Drawing.Font("華康細圓體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butOk.ForeColor = System.Drawing.Color.Black
         '
         'frmCover
         '
@@ -238,6 +240,6 @@ Partial Class frmCover
     Friend WithEvents Shape1 As System.Windows.Forms.Label
     Friend WithEvents Text1 As System.Windows.Forms.TextBox
     Friend WithEvents picFace As System.Windows.Forms.PictureBox
-    Friend WithEvents butExit As Aqua.FlashButton
-    Friend WithEvents butOk As Aqua.FlashButton
+    Friend WithEvents butExit As Aqua.ThinButton
+    Friend WithEvents butOk As Aqua.ThinButton
 End Class

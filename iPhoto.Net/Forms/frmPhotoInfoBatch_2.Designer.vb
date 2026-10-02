@@ -64,11 +64,11 @@ Partial Class frmPhotoInfoBatch_2
         Me.txtBatchKeyword = New System.Windows.Forms.TextBox()
         Me.lblBatchRemark = New System.Windows.Forms.Label()
         Me.txtBatchRemark = New System.Windows.Forms.TextBox()
-        Me.butBatchSave = New Aqua.FlashButton()
+        Me.butBatchSave = New Aqua.ThinButton()
         Me.lblBarUtility = New System.Windows.Forms.Label()
-        Me.butCheckedAll = New Aqua.FlashButton()
-        Me.butUnCheckedAll = New Aqua.FlashButton()
-        Me.butUnload = New Aqua.FlashButton()
+        Me.butCheckedAll = New Aqua.ThinButton()
+        Me.butUnCheckedAll = New Aqua.ThinButton()
+        Me.butUnload = New Aqua.ThinButton()
         Me.picIndex = New System.Windows.Forms.Panel()
         Me.chkBuildIndex = New Aqua.CheckBox()
         Me.Label3 = New System.Windows.Forms.Label()
@@ -453,6 +453,7 @@ Partial Class frmPhotoInfoBatch_2
         Me.butBatchSave.TabIndex = 12
         Me.butBatchSave.Text = "我已經修改完成了"
         Me.butBatchSave.Font = New System.Drawing.Font("華康細圓體", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butBatchSave.ForeColor = System.Drawing.Color.Black
         '
         'lblBarUtility
         '
@@ -473,6 +474,7 @@ Partial Class frmPhotoInfoBatch_2
         Me.butCheckedAll.TabIndex = 13
         Me.butCheckedAll.Text = "選取全部的照片"
         Me.butCheckedAll.Font = New System.Drawing.Font("華康細圓體", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butCheckedAll.ForeColor = System.Drawing.Color.Black
         '
         'butUnCheckedAll
         '
@@ -482,6 +484,7 @@ Partial Class frmPhotoInfoBatch_2
         Me.butUnCheckedAll.TabIndex = 14
         Me.butUnCheckedAll.Text = "取消選取的照片"
         Me.butUnCheckedAll.Font = New System.Drawing.Font("華康細圓體", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butUnCheckedAll.ForeColor = System.Drawing.Color.Black
         '
         'butUnload
         '
@@ -491,6 +494,7 @@ Partial Class frmPhotoInfoBatch_2
         Me.butUnload.TabIndex = 15
         Me.butUnload.Text = "結束並回到主畫面"
         Me.butUnload.Font = New System.Drawing.Font("華康細圓體", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.butUnload.ForeColor = System.Drawing.Color.Black
         '
         'picIndex
         '
@@ -592,11 +596,11 @@ Partial Class frmPhotoInfoBatch_2
     Friend WithEvents txtBatchKeyword As System.Windows.Forms.TextBox
     Friend WithEvents lblBatchRemark As System.Windows.Forms.Label
     Friend WithEvents txtBatchRemark As System.Windows.Forms.TextBox
-    Friend WithEvents butBatchSave As Aqua.FlashButton
+    Friend WithEvents butBatchSave As Aqua.ThinButton
     Friend WithEvents lblBarUtility As System.Windows.Forms.Label
-    Friend WithEvents butCheckedAll As Aqua.FlashButton
-    Friend WithEvents butUnCheckedAll As Aqua.FlashButton
-    Friend WithEvents butUnload As Aqua.FlashButton
+    Friend WithEvents butCheckedAll As Aqua.ThinButton
+    Friend WithEvents butUnCheckedAll As Aqua.ThinButton
+    Friend WithEvents butUnload As Aqua.ThinButton
     Friend WithEvents picIndex As System.Windows.Forms.Panel
     Friend WithEvents chkBuildIndex As Aqua.CheckBox
     Friend WithEvents Label3 As System.Windows.Forms.Label
