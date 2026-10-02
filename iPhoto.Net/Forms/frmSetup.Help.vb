@@ -24,14 +24,13 @@ Partial Class frmSetup
             .SetHelp("setup.privilege", chkPrivilege)
             ' 外觀 / 音效
             .SetHelp("setup.font", Label15, txtFont, imgFontName)
-            .SetHelp("setup.switch", chkSwitchScreen)
             Dim soundCaptions As Control() = {Label4, Label3, Label6, Label5, Label7}   ' 匯入完成, 匯出完成, 滑鼠移出, 滑鼠移入, 滑鼠按下
             For i = 0 To txtSound.Length - 1
                 .SetHelp("setup.sound." & i, soundCaptions(i), txtSound(i), imgSound(i))
             Next
             ' 外掛應用程式
-            Dim appCaptions As Control() = {Label8, Label9, Label10, Label11, Label12, Label13}
-            For i = 0 To txtApp.Length - 1
+            Dim appCaptions As Control() = {Label8, Label9, Label10, Label11, Label12}
+            For i = 0 To appCaptions.Length - 1   ' 5 燒錄 is gone (frmSetup.Plugins.vb)
                 .SetHelp("setup.app." & i, appCaptions(i), txtApp(i), imgApp(i))
             Next
             ' 面孔 (frmSetup.Faces.vb)

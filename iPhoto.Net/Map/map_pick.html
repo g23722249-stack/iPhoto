@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>選擇地點</title>
+<!-- 輸入地點 › 地圖 of iPhoto (frmPlacePicker.vb): click to put the pin, drag it to adjust.
+       page -> iPhoto  {type:'ready'} | {type:'pos', lat, lon} | {type:'offline'}
+       iPhoto -> page  {type:'set', lat, lon, zoom} (pin there, centred) | {type:'goto', lat, lon, zoom} -->
+<!-- served by iPhoto (Modules\MapHost.vb): works without the internet, on the outline map -->
+<link rel="stylesheet" href="lib/leaflet.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #eef1f4; font-family: "Microsoft JhengHei UI", "Microsoft JhengHei", sans-serif; }
+  #map { position: absolute; inset: 0; cursor: crosshair; }
+  #hint { position: absolute; left: 10px; bottom: 24px; z-index: 1000; background: rgba(255,255,255,.92); border-radius: 6px;
+          padding: 4px 10px; font-size: 13px; color: #3e4c59; }
+  #offline { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; text-align: center;
+             color: #444; font-size: 15px; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="hint">點一下放大頭針，可以拖曳調整</div>
+<div id="offline">地圖無法載入。<br>可以改用「行政區」或「景點」選擇地點。</div>
+<script>/* script errors go to iPhoto (MapHost writes them to %TEMP%\iPhoto_map.log): DevTools are off */
+window.addEventListener("error", function (e) { var h = window.chrome && window.chrome.webview; if (h) h.postMessage({ type: "jserror", msg: String(e.message) + " @ " + e.filename + ":" + e.lineno + ":" + e.colno + (e.error && e.error.stack ? " | " + e.error.stack : "") }); });
+</script>
+<script src="lib/leaflet.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/protomaps-leaflet.js"></script>
+<script src="lib/outline.js"></script>
+<script>
+(function () {
+  var host = window.chrome && window.chrome.webview;
+  function send(m) { if (host) host.postMessage(m); }
+  if (typeof L === 'undefined') {
+    document.getElementById('hint').style.display = 'none';
+    document.getElementById('offline').style.display = 'flex';
+    send({ type: 'offline' });
+    return;
+  }
+  var map = L.map('map', { maxZoom: 19 }).setView([23.7, 121.0], 8);
+  iPhotoOutline(map);   // the tiles, over the outline map (lib/outline.js)
+  var pin = null;
+
+  function place(latlng, report) {
+    if (!pin) {
+      pin = L.marker(latlng, { draggable: true }).addTo(map);
+      pin.on('dragend', function () { var p = pin.getLatLng(); send({ type: 'pos', lat: p.lat, lon: p.lng }); });
+    } else {
+      pin.setLatLng(latlng);
+    }
+    if (report) send({ type: 'pos', lat: latlng.lat, lon: latlng.lng });
+  }
+
+  map.on('click', function (e) { place(e.latlng, true); });
+
+  if (host) host.addEventListener('message', function (e) {
+    var m = e.data;
+    if (m.type === 'set') { place(L.latLng(m.lat, m.lon), false); map.setView([m.lat, m.lon], m.zoom || 15); }
+    if (m.type === 'goto') { map.setView([m.lat, m.lon], m.zoom || 15); }
+  });
+  send({ type: 'ready' });
+})();
+</script>
+</body>
+</html>

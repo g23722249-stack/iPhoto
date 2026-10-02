@@ -141,7 +141,7 @@ Friend Class frmSearch
             Dim strFile As String = f("FileName")
             If g_lpFileSystem.FileExists(strFile) AndAlso
                Matches(f("Exif_Title"), txtTitle) AndAlso Matches(f("Exif_Character"), txtCharacter) AndAlso
-               Matches(f("Exif_Spot"), txtSpot) AndAlso Matches(f("Exif_Remark"), txtRemark) AndAlso
+               Matches(f("Exif_Spot") & If(rows.Columns.Contains("Exif_City"), " " & f("Exif_City"), ""), txtSpot) AndAlso Matches(f("Exif_Remark"), txtRemark) AndAlso
                Matches(f("Exif_KeyWord"), txtKeyWord) AndAlso
                MatchesLists(f("Exif_Ranking"), GetMediaType(g_lpFileSystem, strFile)) Then
                 AddHit(strFile)

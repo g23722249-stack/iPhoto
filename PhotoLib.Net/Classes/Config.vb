@@ -44,7 +44,6 @@ Public Class Config
         AppVideoEdit = 2
         AppMail = 3
         AppHomePage = 4
-        AppBurn = 5
     End Enum
 
     <DllImport("winmm.dll", EntryPoint:="PlaySoundW", CharSet:=CharSet.Unicode)>
@@ -64,11 +63,11 @@ Public Class Config
     Private m_strButtonEnter As String = "", m_strButtonExit As String = "", m_strButtonClick As String = ""
     Private m_strImportFinish As String = "", m_strExportFinish As String = "", m_strOpenDialogBox As String = ""
     Private m_strAppPrint As String = "", m_strAppImageEdit As String = "", m_strAppVideoEdit As String = ""
-    Private m_strAppMail As String = "", m_strAppHomePage As String = "", m_strAppBurn As String = ""
+    Private m_strAppMail As String = "", m_strAppHomePage As String = ""
 
     Private m_strFontName As String = ""
     Private m_strStyle As String = ""
-    Private m_bolSwitchScreen As Boolean
+    Private m_bolScreenSingle As Boolean   ' [Interface] ScreenMode=Single (two screens: the user chose one)
 
     Private m_intSlideShowTimes As Integer
     Private m_strSlideMusicPath As String = ""
@@ -79,6 +78,19 @@ Public Class Config
     ' [Faces] (face recognition, new in the .NET port)
     Private m_bolFaceEnabled As Boolean = True, m_bolFaceAutoScan As Boolean = True, m_bolFaceWriteNames As Boolean = True
     Private m_intFaceStrictness As Integer = 1
+    ' [Import] Style: New = 輸入 opens frmImportStudio (default), Old = the ported frmImport
+    Private m_bolImportNewStyle As Boolean = True
+    ' [Viewer] PageTurn: how 全圖瀏覽 changes photos (frmViewerLarge, PageTurnView); PageTurnSpeed: 0 快 1 中 2 慢
+    Public Enum enumPageTurn
+        ptAlternate = 0   ' by the clock: even second 整頁翻, odd second 翻頁角
+        ptBook = 1
+        ptCorner = 2
+        ptOff = 3
+    End Enum
+    Private m_enumPageTurn As enumPageTurn = enumPageTurn.ptAlternate
+    Private m_intPageTurnSpeed As Integer = 1
+    ' [Place] where the place names filled from a photo's GPS come from (PlaceNames, new in the .NET port)
+    Private m_enumPlaceSource As PlaceNames.enumPlaceSource = PlaceNames.enumPlaceSource.psOffline
     Private m_bolReadOnly As Boolean
     Private ReadOnly m_strAppPath As String
 
@@ -139,6 +151,8 @@ Public Class Config
         LoadAttachedFiles()
         LoadPrivilege()
         LoadFaceParameter()
+        LoadPlaceParameter()
+        LoadImportParameter()
     End Sub
 
     Private Sub Clear()
@@ -161,7 +175,7 @@ Public Class Config
 
     Private Sub LoadInterfaceParameter()
         m_strFontName = Setting("Interface", "FontName")
-        m_bolSwitchScreen = (m_lpProfile.SimpleGetValue("Interface", "SwitchScreen") = "Y")
+        m_bolScreenSingle = String.Equals(GetClearText(m_lpProfile.SimpleGetValue("Interface", "ScreenMode")), "Single", StringComparison.OrdinalIgnoreCase)
         If m_strFontName.Trim().Length = 0 Then m_strFontName = "華康細圓體"
         If Not CheckSystemFont() Then m_strFontName = "標楷體"
         If Not CheckSystemFont() Then m_strFontName = "細明體"
@@ -193,7 +207,6 @@ Public Class Config
         m_strAppVideoEdit = Setting("Application", "VideoEdit")
         m_strAppMail = Setting("Application", "Mail")
         m_strAppHomePage = Setting("Application", "HomePage")
-        m_strAppBurn = Setting("Application", "Burn")
     End Sub
 
     Private Sub LoadAttachedFiles()
@@ -211,6 +224,125 @@ Public Class Config
         Dim s As String = Setting("Faces", "Strictness")
         m_intFaceStrictness = If(s = "", 1, Math.Max(0, Math.Min(2, CInt(Val(s)))))
     End Sub
+
+    ''' <summary>[Import] Style: New (default) / Old.</summary>
+    Private Sub LoadImportParameter()
+        m_bolImportNewStyle = Not String.Equals(Setting("Import", "Style"), "Old", StringComparison.OrdinalIgnoreCase)
+        ' [Viewer] PageTurn=Alternate / Book / Corner / Off, PageTurnSpeed=0..2
+        Select Case If(Setting("Viewer", "PageTurn"), "").ToUpperInvariant()
+            Case "BOOK" : m_enumPageTurn = enumPageTurn.ptBook
+            Case "CORNER" : m_enumPageTurn = enumPageTurn.ptCorner
+            Case "OFF" : m_enumPageTurn = enumPageTurn.ptOff
+            Case Else : m_enumPageTurn = enumPageTurn.ptAlternate
+        End Select
+        Dim s As String = Setting("Viewer", "PageTurnSpeed")
+        m_intPageTurnSpeed = If(s = "", 1, Math.Max(0, Math.Min(2, CInt(Val(s)))))
+        ' [Viewer] StripDock=Bottom / Top / Left / Right: the 地點 thumbnail strip of 全圖瀏覽
+        Select Case If(Setting("Viewer", "StripDock"), "").ToUpperInvariant()
+            Case "TOP" : m_enumStripDock = DockStyle.Top
+            Case "LEFT" : m_enumStripDock = DockStyle.Left
+            Case "RIGHT" : m_enumStripDock = DockStyle.Right
+            Case Else : m_enumStripDock = DockStyle.Bottom
+        End Select
+        ' [Viewer] StripDockSingle=Top (default) / Bottom / Left / Right: the strip of 全圖 in the main window (單螢幕)
+        Select Case If(Setting("Viewer", "StripDockSingle"), "").ToUpperInvariant()
+            Case "BOTTOM" : m_enumStripDockSingle = DockStyle.Bottom
+            Case "LEFT" : m_enumStripDockSingle = DockStyle.Left
+            Case "RIGHT" : m_enumStripDockSingle = DockStyle.Right
+            Case Else : m_enumStripDockSingle = DockStyle.Top
+        End Select
+        ' [Viewer] StripOrder=Oldest (default) / Newest: the order of the 地點 strip
+        m_bolStripNewestFirst = String.Equals(Setting("Viewer", "StripOrder"), "Newest", StringComparison.OrdinalIgnoreCase)
+    End Sub
+
+    Private m_bolStripNewestFirst As Boolean
+    Private m_enumStripDockSingle As DockStyle = DockStyle.Top
+
+    ''' <summary>Where the strip of 全圖 in the main window (單螢幕) sits; its own place, apart from the
+    ''' 地點 strip (ViewerStripDock). Written to iPhoto.Ini at once.</summary>
+    Public Property ViewerStripDockSingle As DockStyle
+        Get
+            Return m_enumStripDockSingle
+        End Get
+        Set(value As DockStyle)
+            If value <> DockStyle.Bottom AndAlso value <> DockStyle.Left AndAlso value <> DockStyle.Right Then value = DockStyle.Top
+            m_enumStripDockSingle = value
+            If Not m_bolReadOnly AndAlso m_lpProfile.FileName <> "" Then m_lpProfile.SimpleSetValue("Viewer", "StripDockSingle", value.ToString())
+        End Set
+    End Property
+
+    ''' <summary>The 地點 strip of 全圖瀏覽: newest day first (False: oldest first, the default).</summary>
+    Public Property ViewerStripNewestFirst As Boolean
+        Get
+            Return m_bolStripNewestFirst
+        End Get
+        Set(value As Boolean)
+            m_bolStripNewestFirst = value
+        End Set
+    End Property
+
+    Private m_enumStripDock As DockStyle = DockStyle.Bottom
+
+    ''' <summary>Where 全圖瀏覽's 地點 thumbnail strip sits (Top / Bottom / Left / Right). Written to
+    ''' iPhoto.Ini at once: it is changed by dragging the strip, not in 設定.</summary>
+    Public Property ViewerStripDock As DockStyle
+        Get
+            Return m_enumStripDock
+        End Get
+        Set(value As DockStyle)
+            If value <> DockStyle.Top AndAlso value <> DockStyle.Left AndAlso value <> DockStyle.Right Then value = DockStyle.Bottom
+            m_enumStripDock = value
+            If Not m_bolReadOnly AndAlso m_lpProfile.FileName <> "" Then m_lpProfile.SimpleSetValue("Viewer", "StripDock", value.ToString())
+        End Set
+    End Property
+
+    ''' <summary>[Place] Geocoder: Offline (default) / Online.</summary>
+    Private Sub LoadPlaceParameter()
+        m_enumPlaceSource = If(String.Equals(Setting("Place", "Geocoder"), "Online", StringComparison.OrdinalIgnoreCase),
+                               PlaceNames.enumPlaceSource.psOnline, PlaceNames.enumPlaceSource.psOffline)
+        ' [Place] MapMode=Online (default) / Offline; MapCacheMB: the map tiles kept on this computer
+        m_bolMapOffline = String.Equals(Setting("Place", "MapMode"), "Offline", StringComparison.OrdinalIgnoreCase)
+        ' [Place] RebuildFill=Y (default) / N: 重建資料庫索引 also fills blank GPS / 地點 into the .Exif
+        m_bolRebuildFill = Not String.Equals(Setting("Place", "RebuildFill"), "N", StringComparison.OrdinalIgnoreCase)
+        Dim mb As Integer
+        m_intMapCacheMB = If(Integer.TryParse(Setting("Place", "MapCacheMB"), mb) AndAlso mb >= 50, mb, 500)
+    End Sub
+
+    Private m_bolMapOffline As Boolean
+    Private m_bolRebuildFill As Boolean = True
+
+    ''' <summary>重建資料庫索引: True = first fill each photo's blank GPS / 地點 / Country / City / Town into its
+    ''' .Exif (from the picture, a .Exif backup first); False = only the index, no .Exif written.</summary>
+    Public Property RebuildFillPlaces As Boolean
+        Get
+            Return m_bolRebuildFill
+        End Get
+        Set(value As Boolean)
+            m_bolRebuildFill = value
+        End Set
+    End Property
+    Private m_intMapCacheMB As Integer = 500
+
+    ''' <summary>地點 / 輸入地點 maps: True = offline (the outline map only, no internet: OpenStreetMap's
+    ''' tiles may not be used offline); False = online OpenStreetMap through a tile cache (the default).</summary>
+    Public Property MapOffline As Boolean
+        Get
+            Return m_bolMapOffline
+        End Get
+        Set(value As Boolean)
+            m_bolMapOffline = value
+        End Set
+    End Property
+
+    ''' <summary>The most the map tile cache may hold, in MB (default 500).</summary>
+    Public Property MapCacheMB As Integer
+        Get
+            Return m_intMapCacheMB
+        End Get
+        Set(value As Integer)
+            m_intMapCacheMB = Math.Max(50, value)
+        End Set
+    End Property
 
     Private Sub LoadPrivilege()
         m_bolPrivDeleteAlbumPhotos = (Setting("Privilege", "DeleteAlbumPhotos") = "Y")
@@ -274,7 +406,7 @@ Public Class Config
             w.WriteLine("//外觀")
             w.WriteLine("[Interface]")
             w.WriteLine("FontName=" & m_strFontName.Trim())
-            w.WriteLine("SwitchScreen=" & If(m_bolSwitchScreen, "Y", "N"))
+            w.WriteLine("ScreenMode=" & If(m_bolScreenSingle, "Single", "Dual"))
             w.WriteLine(" ")
             w.WriteLine("//音效")
             w.WriteLine("[Sound]")
@@ -297,7 +429,6 @@ Public Class Config
             w.WriteLine("VideoEdit=" & m_strAppVideoEdit)
             w.WriteLine("Mail=" & m_strAppMail)
             w.WriteLine("HomePage=" & m_strAppHomePage)
-            w.WriteLine("Burn=" & m_strAppBurn)
             w.WriteLine(" ")
             w.WriteLine("[Attached]")
             w.WriteLine("KeyWordBook=" & m_strKeyWord)
@@ -315,6 +446,27 @@ Public Class Config
             w.WriteLine("AutoScan=" & If(m_bolFaceAutoScan, "Y", "N"))
             w.WriteLine("WriteNames=" & If(m_bolFaceWriteNames, "Y", "N"))
             w.WriteLine("Strictness=" & m_intFaceStrictness)
+            w.WriteLine(" ")
+            w.WriteLine("//拍攝地點：座標換算地名的方式（Offline 離線 / Online 線上）")
+            w.WriteLine("[Place]")
+            w.WriteLine("Geocoder=" & If(m_enumPlaceSource = PlaceNames.enumPlaceSource.psOnline, "Online", "Offline"))
+            w.WriteLine("//地圖（Online 線上 OpenStreetMap 街道地圖 / Offline 離線，只用簡易地圖）；MapCacheMB 線上地圖圖磚快取上限")
+            w.WriteLine("MapMode=" & If(m_bolMapOffline, "Offline", "Online"))
+            w.WriteLine("MapCacheMB=" & m_intMapCacheMB)
+            w.WriteLine("//重建資料庫索引時是否補上空白的 GPS／地點（Y 補，會寫 .Exif / N 只重建索引）")
+            w.WriteLine("RebuildFill=" & If(m_bolRebuildFill, "Y", "N"))
+            w.WriteLine(" ")
+            w.WriteLine("//輸入照片的畫面（New 新畫面 / Old 舊畫面）")
+            w.WriteLine("[Import]")
+            w.WriteLine("Style=" & If(m_bolImportNewStyle, "New", "Old"))
+            w.WriteLine(" ")
+            w.WriteLine("//全圖瀏覽換照片的翻頁（Alternate 依秒數單雙輪流 / Book 整頁翻 / Corner 翻頁角 / Off 關閉）；速度 0 快 1 中 2 慢")
+            w.WriteLine("[Viewer]")
+            w.WriteLine("PageTurn=" & {"Alternate", "Book", "Corner", "Off"}(CInt(m_enumPageTurn)))
+            w.WriteLine("PageTurnSpeed=" & m_intPageTurnSpeed)
+            w.WriteLine("StripDock=" & m_enumStripDock.ToString())
+            w.WriteLine("StripOrder=" & If(m_bolStripNewestFirst, "Newest", "Oldest"))
+            w.WriteLine("StripDockSingle=" & m_enumStripDockSingle.ToString())
             w.WriteLine(" ")
         End Using
         Return True
@@ -405,7 +557,6 @@ Public Class Config
                 Case enumApplication.AppVideoEdit : Return m_strAppVideoEdit
                 Case enumApplication.AppMail : Return m_strAppMail
                 Case enumApplication.AppHomePage : Return m_strAppHomePage
-                Case enumApplication.AppBurn : Return m_strAppBurn
             End Select
             Return ""
         End Get
@@ -417,7 +568,6 @@ Public Class Config
                 Case enumApplication.AppVideoEdit : m_strAppVideoEdit = v
                 Case enumApplication.AppMail : m_strAppMail = v
                 Case enumApplication.AppHomePage : m_strAppHomePage = v
-                Case enumApplication.AppBurn : m_strAppBurn = v
             End Select
         End Set
     End Property
@@ -496,6 +646,53 @@ Public Class Config
         End Set
     End Property
 
+    ''' <summary>How 全圖瀏覽 turns to the next / prior photo.</summary>
+    Public Property ViewerPageTurn As enumPageTurn
+        Get
+            Return m_enumPageTurn
+        End Get
+        Set(value As enumPageTurn)
+            m_enumPageTurn = value
+        End Set
+    End Property
+
+    ''' <summary>0 快 / 1 中 / 2 慢.</summary>
+    Public Property ViewerPageTurnSpeed As Integer
+        Get
+            Return m_intPageTurnSpeed
+        End Get
+        Set(value As Integer)
+            m_intPageTurnSpeed = Math.Max(0, Math.Min(2, value))
+        End Set
+    End Property
+
+    ''' <summary>Milliseconds of one page turn (快 350 / 中 550 / 慢 900, as in the demo).</summary>
+    Public ReadOnly Property ViewerPageTurnMs As Integer
+        Get
+            Return {350, 550, 900}(m_intPageTurnSpeed)
+        End Get
+    End Property
+
+    ''' <summary>輸入 opens the new import window (frmImportStudio); False = the ported frmImport.</summary>
+    Public Property ImportNewStyle As Boolean
+        Get
+            Return m_bolImportNewStyle
+        End Get
+        Set(value As Boolean)
+            m_bolImportNewStyle = value
+        End Set
+    End Property
+
+    ''' <summary>Where the 地點 filled from a photo's GPS comes from (PlaceNames).</summary>
+    Public Property PlaceSource As PlaceNames.enumPlaceSource
+        Get
+            Return m_enumPlaceSource
+        End Get
+        Set(value As PlaceNames.enumPlaceSource)
+            m_enumPlaceSource = value
+        End Set
+    End Property
+
     Public Property InterfaceFontName As String
         Get
             Return m_strFontName
@@ -505,12 +702,15 @@ Public Class Config
         End Set
     End Property
 
-    Public Property SwitchScreen As Boolean
+    ''' <summary>設定 › 螢幕: one screen even when two are there (main window with the 全圖 inside it).
+    ''' False = 雙螢幕 (the default); with only one screen iPhoto is single-screen whatever this says.
+    ''' Takes effect at the next start.</summary>
+    Public Property ScreenSingle As Boolean
         Get
-            Return m_bolSwitchScreen
+            Return m_bolScreenSingle
         End Get
         Set(value As Boolean)
-            m_bolSwitchScreen = value
+            m_bolScreenSingle = value
         End Set
     End Property
 

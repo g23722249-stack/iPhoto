@@ -40,7 +40,7 @@ Partial Class frmSetup
             pageFaces.Controls.Add(rb)
         Next
         pageFaces.Controls.Add(New Label With {
-            .AutoSize = False, .Size = New Size(700, 64), .Location = New Point(x, 190), .Font = small, .ForeColor = Color.DimGray,
+            .AutoSize = False, .Size = New Size(770, 64), .Location = New Point(x, 190), .Font = small, .ForeColor = Color.DimGray,
             .BackColor = Color.Transparent,
             .Text = "程式自己認出多少臉：寬鬆約 6 成（其中約 7% 認錯）、平衡約 5 成（約 6%）、嚴格約 4 成（約 6%）。" & vbCrLf &
                     "程式認出的名字只顯示在面孔牆與全圖瀏覽，按 ✓ 確認後才會寫進照片的人物欄。"})

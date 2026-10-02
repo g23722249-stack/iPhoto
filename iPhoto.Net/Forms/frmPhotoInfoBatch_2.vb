@@ -231,6 +231,7 @@ Friend Class frmPhotoInfoBatch_2
             txtRemark.Text = p.Exif(enumPhotoExif.peRemark)
             txtCharacter.Text = p.Exif(enumPhotoExif.peCharacter)
             txtSpot.Text = p.Exif(enumPhotoExif.peSpot)
+            ShowPlaceOf(p)   ' frmPhotoInfoBatch_2.Place.vb: 縣市區 after the 地點 label
 
             If txtTitle.Text.Trim() <> "" Then txtBatchTitle.Text = txtTitle.Text
             If txtKeyword.Text.Trim() <> "" Then txtBatchKeyword.Text = txtKeyword.Text
@@ -311,16 +312,15 @@ Friend Class frmPhotoInfoBatch_2
         UpdateSelectedItemExif()
         If chkBuildIndex.Checked AndAlso g_lpDatabase IsNot Nothing AndAlso g_lpDatabase.Implement Then
             Enabled = False
+            Dim done As Boolean
             Try
-                frmLoading.StartLoading("正在編列索引檔…請耐心等候")
                 Cursor = Cursors.WaitCursor
-                g_lpDatabase.Rebuild(g_lpStorage)
+                done = RebuildPhotoIndex()   ' Modules\PhotoIndexTools.vb
             Finally
                 Cursor = Cursors.Default
-                frmLoading.EndLoading()
                 Enabled = True
             End Try
-            frmMsgBox.ShowExclamationMessage("重建完成" & vbCrLf & "建議重新啟動以釋放資源", "")
+            If done Then frmMsgBox.ShowExclamationMessage("重建完成" & vbCrLf & "建議重新啟動以釋放資源", "")
         End If
         Close()
     End Sub

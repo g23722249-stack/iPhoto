@@ -135,7 +135,7 @@ Partial Class frmSetup
         ' 
         butSave.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         butSave.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
-        butSave.Location = New Point(438, 486)
+        butSave.Location = New Point(473, 566)
         butSave.Name = "butSave"
         butSave.Size = New Size(103, 27)
         butSave.SoundFileOfClick = Nothing
@@ -151,7 +151,7 @@ Partial Class frmSetup
         ' 
         butExit.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         butExit.ForeColor = Color.FromArgb(CByte(64), CByte(64), CByte(64))
-        butExit.Location = New Point(317, 486)
+        butExit.Location = New Point(352, 566)
         butExit.Name = "butExit"
         butExit.Size = New Size(103, 27)
         butExit.SoundFileOfClick = Nothing
@@ -174,14 +174,14 @@ Partial Class frmSetup
         tabSetup.ForeColor = SystemColors.ControlText
         tabSetup.Location = New Point(34, 48)
         tabSetup.Name = "tabSetup"
-        tabSetup.Size = New Size(789, 429)
+        tabSetup.Size = New Size(860, 509)
         tabSetup.TabIndex = 20
         tabSetup.TabPages.Add(pageGeneral)
         tabSetup.TabPages.Add(pageAlbums)
         tabSetup.TabPages.Add(pageAppearance)
         tabSetup.TabPages.Add(pagePlugins)
         tabSetup.TabStop = False
-        tabSetup.TabStripPadding = New Padding(76, 0, 41, 0)
+        tabSetup.TabStripPadding = New Padding(10, 0, 10, 0)
         ' 
         ' pageGeneral
         ' 
@@ -208,7 +208,7 @@ Partial Class frmSetup
         pageGeneral.ForeColor = SystemColors.ControlText
         pageGeneral.Location = New Point(3, 30)
         pageGeneral.Name = "pageGeneral"
-        pageGeneral.Size = New Size(783, 396)
+        pageGeneral.Size = New Size(854, 476)
         pageGeneral.TabIndex = 40
         pageGeneral.Title = "一般設定"
         ' 
@@ -279,7 +279,7 @@ Partial Class frmSetup
         sliSlide.Maximum = 20
         sliSlide.Minimum = 1
         sliSlide.Name = "sliSlide"
-        sliSlide.Size = New Size(527, 39)
+        sliSlide.Size = New Size(598, 39)
         sliSlide.SoundFileOfClick = Nothing
         sliSlide.SoundFileOfEnterFocus = Nothing
         sliSlide.SoundFileOfExitFocus = Nothing
@@ -301,7 +301,7 @@ Partial Class frmSetup
         txtAttached_2.SelLength = 0
         txtAttached_2.SelStart = 0
         txtAttached_2.SelText = ""
-        txtAttached_2.Size = New Size(735, 27)
+        txtAttached_2.Size = New Size(806, 27)
         txtAttached_2.SoundFileOfEnterFocus = ""
         txtAttached_2.SoundFileOfExitFocus = ""
         txtAttached_2.TabIndex = 1
@@ -321,7 +321,7 @@ Partial Class frmSetup
         txtAttached_3.SelLength = 0
         txtAttached_3.SelStart = 0
         txtAttached_3.SelText = ""
-        txtAttached_3.Size = New Size(735, 27)
+        txtAttached_3.Size = New Size(806, 27)
         txtAttached_3.SoundFileOfEnterFocus = ""
         txtAttached_3.SoundFileOfExitFocus = ""
         txtAttached_3.TabIndex = 52
@@ -341,7 +341,7 @@ Partial Class frmSetup
         txtAttached_0.SelLength = 0
         txtAttached_0.SelStart = 0
         txtAttached_0.SelText = ""
-        txtAttached_0.Size = New Size(735, 27)
+        txtAttached_0.Size = New Size(806, 27)
         txtAttached_0.SoundFileOfEnterFocus = ""
         txtAttached_0.SoundFileOfExitFocus = ""
         txtAttached_0.TabIndex = 53
@@ -361,7 +361,7 @@ Partial Class frmSetup
         txtAttached_1.SelLength = 0
         txtAttached_1.SelStart = 0
         txtAttached_1.SelText = ""
-        txtAttached_1.Size = New Size(735, 27)
+        txtAttached_1.Size = New Size(806, 27)
         txtAttached_1.SoundFileOfEnterFocus = ""
         txtAttached_1.SoundFileOfExitFocus = ""
         txtAttached_1.TabIndex = 54
@@ -381,7 +381,7 @@ Partial Class frmSetup
         txtMusic.SelLength = 0
         txtMusic.SelStart = 0
         txtMusic.SelText = ""
-        txtMusic.Size = New Size(735, 27)
+        txtMusic.Size = New Size(806, 27)
         txtMusic.SoundFileOfEnterFocus = ""
         txtMusic.SoundFileOfExitFocus = ""
         txtMusic.TabIndex = 55
@@ -476,7 +476,7 @@ Partial Class frmSetup
         pageAlbums.ForeColor = SystemColors.ControlText
         pageAlbums.Location = New Point(3, 30)
         pageAlbums.Name = "pageAlbums"
-        pageAlbums.Size = New Size(783, 396)
+        pageAlbums.Size = New Size(854, 476)
         pageAlbums.TabIndex = 21
         pageAlbums.Title = "相簿位置"
         ' 
@@ -500,7 +500,7 @@ Partial Class frmSetup
         lstAlbum.Location = New Point(12, 46)
         lstAlbum.Name = "lstAlbum"
         lstAlbum.SelectedIndex = -1
-        lstAlbum.Size = New Size(769, 283)
+        lstAlbum.Size = New Size(840, 283)
         lstAlbum.SoundFileOfEnterFocus = ""
         lstAlbum.SoundFileOfExitFocus = ""
         lstAlbum.SoundFileOfMouseEnter = ""
@@ -521,7 +521,7 @@ Partial Class frmSetup
         txtFavorite.SelLength = 0
         txtFavorite.SelStart = 0
         txtFavorite.SelText = ""
-        txtFavorite.Size = New Size(767, 27)
+        txtFavorite.Size = New Size(838, 27)
         txtFavorite.SoundFileOfEnterFocus = ""
         txtFavorite.SoundFileOfExitFocus = ""
         txtFavorite.TabIndex = 4
@@ -579,7 +579,7 @@ Partial Class frmSetup
         chkPrivilege.ImageChecked = CType(resources.GetObject("chkPrivilege.ImageChecked"), Image)
         chkPrivilege.ImageUnCheckDisabled = CType(resources.GetObject("chkPrivilege.ImageUnCheckDisabled"), Image)
         chkPrivilege.ImageUnChecked = CType(resources.GetObject("chkPrivilege.ImageUnChecked"), Image)
-        chkPrivilege.Location = New Point(576, 24)
+        chkPrivilege.Location = New Point(647, 24)
         chkPrivilege.Name = "chkPrivilege"
         chkPrivilege.TabIndex = 50
         chkPrivilege.TextValue = "可刪除相片庫的相片"
@@ -648,7 +648,7 @@ Partial Class frmSetup
         pageAppearance.ForeColor = SystemColors.ControlText
         pageAppearance.Location = New Point(3, 30)
         pageAppearance.Name = "pageAppearance"
-        pageAppearance.Size = New Size(783, 396)
+        pageAppearance.Size = New Size(854, 476)
         pageAppearance.TabIndex = 24
         pageAppearance.Title = "外觀/音效"
         ' 
@@ -726,7 +726,7 @@ Partial Class frmSetup
         txtFont.SelLength = 0
         txtFont.SelStart = 0
         txtFont.SelText = ""
-        txtFont.Size = New Size(739, 27)
+        txtFont.Size = New Size(810, 27)
         txtFont.SoundFileOfEnterFocus = ""
         txtFont.SoundFileOfExitFocus = ""
         txtFont.TabIndex = 5
@@ -746,7 +746,7 @@ Partial Class frmSetup
         txtSound_0.SelLength = 0
         txtSound_0.SelStart = 0
         txtSound_0.SelText = ""
-        txtSound_0.Size = New Size(739, 27)
+        txtSound_0.Size = New Size(810, 27)
         txtSound_0.SoundFileOfEnterFocus = ""
         txtSound_0.SoundFileOfExitFocus = ""
         txtSound_0.TabIndex = 6
@@ -766,7 +766,7 @@ Partial Class frmSetup
         txtSound_1.SelLength = 0
         txtSound_1.SelStart = 0
         txtSound_1.SelText = ""
-        txtSound_1.Size = New Size(739, 27)
+        txtSound_1.Size = New Size(810, 27)
         txtSound_1.SoundFileOfEnterFocus = ""
         txtSound_1.SoundFileOfExitFocus = ""
         txtSound_1.TabIndex = 7
@@ -786,7 +786,7 @@ Partial Class frmSetup
         txtSound_2.SelLength = 0
         txtSound_2.SelStart = 0
         txtSound_2.SelText = ""
-        txtSound_2.Size = New Size(739, 27)
+        txtSound_2.Size = New Size(810, 27)
         txtSound_2.SoundFileOfEnterFocus = ""
         txtSound_2.SoundFileOfExitFocus = ""
         txtSound_2.TabIndex = 8
@@ -806,7 +806,7 @@ Partial Class frmSetup
         txtSound_3.SelLength = 0
         txtSound_3.SelStart = 0
         txtSound_3.SelText = ""
-        txtSound_3.Size = New Size(739, 27)
+        txtSound_3.Size = New Size(810, 27)
         txtSound_3.SoundFileOfEnterFocus = ""
         txtSound_3.SoundFileOfExitFocus = ""
         txtSound_3.TabIndex = 9
@@ -826,7 +826,7 @@ Partial Class frmSetup
         txtSound_4.SelLength = 0
         txtSound_4.SelStart = 0
         txtSound_4.SelText = ""
-        txtSound_4.Size = New Size(739, 27)
+        txtSound_4.Size = New Size(810, 27)
         txtSound_4.SoundFileOfEnterFocus = ""
         txtSound_4.SoundFileOfExitFocus = ""
         txtSound_4.TabIndex = 10
@@ -1039,9 +1039,9 @@ Partial Class frmSetup
         pagePlugins.ForeColor = SystemColors.ControlText
         pagePlugins.Location = New Point(3, 30)
         pagePlugins.Name = "pagePlugins"
-        pagePlugins.Size = New Size(783, 396)
+        pagePlugins.Size = New Size(854, 476)
         pagePlugins.TabIndex = 25
-        pagePlugins.Title = "外掛應用程式"
+        pagePlugins.Title = "外掛程式"
         ' 
         ' imgApp_0
         ' 
@@ -1117,7 +1117,7 @@ Partial Class frmSetup
         txtApp_0.SelLength = 0
         txtApp_0.SelStart = 0
         txtApp_0.SelText = ""
-        txtApp_0.Size = New Size(767, 27)
+        txtApp_0.Size = New Size(838, 27)
         txtApp_0.SoundFileOfEnterFocus = ""
         txtApp_0.SoundFileOfExitFocus = ""
         txtApp_0.TabIndex = 11
@@ -1137,7 +1137,7 @@ Partial Class frmSetup
         txtApp_1.SelLength = 0
         txtApp_1.SelStart = 0
         txtApp_1.SelText = ""
-        txtApp_1.Size = New Size(767, 27)
+        txtApp_1.Size = New Size(838, 27)
         txtApp_1.SoundFileOfEnterFocus = ""
         txtApp_1.SoundFileOfExitFocus = ""
         txtApp_1.TabIndex = 12
@@ -1157,7 +1157,7 @@ Partial Class frmSetup
         txtApp_2.SelLength = 0
         txtApp_2.SelStart = 0
         txtApp_2.SelText = ""
-        txtApp_2.Size = New Size(767, 27)
+        txtApp_2.Size = New Size(838, 27)
         txtApp_2.SoundFileOfEnterFocus = ""
         txtApp_2.SoundFileOfExitFocus = ""
         txtApp_2.TabIndex = 13
@@ -1177,7 +1177,7 @@ Partial Class frmSetup
         txtApp_3.SelLength = 0
         txtApp_3.SelStart = 0
         txtApp_3.SelText = ""
-        txtApp_3.Size = New Size(767, 27)
+        txtApp_3.Size = New Size(838, 27)
         txtApp_3.SoundFileOfEnterFocus = ""
         txtApp_3.SoundFileOfExitFocus = ""
         txtApp_3.TabIndex = 14
@@ -1197,7 +1197,7 @@ Partial Class frmSetup
         txtApp_4.SelLength = 0
         txtApp_4.SelStart = 0
         txtApp_4.SelText = ""
-        txtApp_4.Size = New Size(767, 27)
+        txtApp_4.Size = New Size(838, 27)
         txtApp_4.SoundFileOfEnterFocus = ""
         txtApp_4.SoundFileOfExitFocus = ""
         txtApp_4.TabIndex = 15
@@ -1217,7 +1217,7 @@ Partial Class frmSetup
         txtApp_5.SelLength = 0
         txtApp_5.SelStart = 0
         txtApp_5.SelText = ""
-        txtApp_5.Size = New Size(767, 27)
+        txtApp_5.Size = New Size(838, 27)
         txtApp_5.SoundFileOfEnterFocus = ""
         txtApp_5.SoundFileOfExitFocus = ""
         txtApp_5.TabIndex = 16
@@ -1299,7 +1299,7 @@ Partial Class frmSetup
         ' 
         AutoScaleMode = AutoScaleMode.None
         BackColor = SystemColors.Window
-        ClientSize = New Size(859, 525)
+        ClientSize = New Size(930, 605)
         Controls.Add(butSave)
         Controls.Add(butExit)
         Controls.Add(tabSetup)

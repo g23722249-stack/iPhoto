@@ -5,7 +5,8 @@ Partial Class frmSetup
 
     Private pageMaint As Aqua.TabPage
     Private lblDbBackup, lblExifBackup As Label
-    Private WithEvents lblOpenBackups, lblExifNow, lblCleanOrphans, lblNameCheck, lblDuplicates As Label
+    Private WithEvents lblOpenBackups, lblExifNow, lblCleanOrphans, lblNameCheck, lblDuplicates, lblExifRegen, lblPeopleNames As Label
+    Private m_bolExifRegenBusy As Boolean
 
     Private Sub MaintPage_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         pageMaint = New Aqua.TabPage With {.Title = "維護", .BackColor = Color.White, .Font = pageGeneral.Font, .ForeColor = pageGeneral.ForeColor}
@@ -19,6 +20,7 @@ Partial Class frmSetup
         lblExifBackup = AddNote(x + 20, 152, small)
         lblExifNow = AddLink("立即備份 .Exif", x + 20, 200, big, Color.FromArgb(42, 116, 208))
         lblOpenBackups = AddLink("開啟備份資料夾", x + 250, 200, big, Color.FromArgb(42, 116, 208))
+        lblExifRegen = AddLink("重新產生 .Exif…", x + 480, 200, big, Color.FromArgb(42, 116, 208))   ' frmSetup.ExifRegen.vb
 
         AddHeading("清理失效紀錄", x, 256, big)
         pageMaint.Controls.Add(New Label With {
@@ -28,6 +30,7 @@ Partial Class frmSetup
         lblCleanOrphans = AddLink("檢查並清理…", x + 20, 340, big, Color.FromArgb(42, 116, 208))
         lblNameCheck = AddLink("人物欄名字檢查…", x + 250, 340, big, Color.FromArgb(42, 116, 208))
         lblDuplicates = AddLink("尋找重複照片…", x + 480, 340, big, Color.FromArgb(42, 116, 208))
+        lblPeopleNames = AddLink("全部人物名字…", x + 250, 380, big, Color.FromArgb(42, 116, 208))
 
         tabSetup.TabPages.Add(pageMaint)
         ShowBackupState()
@@ -72,7 +75,9 @@ Partial Class frmSetup
         lblOpenBackups.Enabled = ok AndAlso IO.Directory.Exists(folder)
         lblCleanOrphans.Enabled = writable AndAlso g_lpDatabase IsNot Nothing AndAlso g_lpDatabase.Implement
         lblNameCheck.Enabled = writable
+        lblPeopleNames.Enabled = writable
         lblDuplicates.Enabled = writable
+        lblExifRegen.Enabled = writable AndAlso Not m_bolExifRegenBusy AndAlso g_lpConfig.AlbumCount > 0
         If Not ok Then lblDbBackup.Text = "找不到資料庫檔案，無法備份。"
     End Sub
 
@@ -118,6 +123,15 @@ Partial Class frmSetup
     Private Sub lblNameCheck_Click(sender As Object, e As EventArgs) Handles lblNameCheck.Click
         If Not lblNameCheck.Enabled Then Return
         Using f As New frmNameCheck
+            f.ShowDialog(Me)
+        End Using
+        ShowBackupState()
+    End Sub
+
+    ''' <summary>Every name in the people fields: rename, merge, take out (frmPeopleNames).</summary>
+    Private Sub lblPeopleNames_Click(sender As Object, e As EventArgs) Handles lblPeopleNames.Click
+        If Not lblPeopleNames.Enabled Then Return
+        Using f As New frmPeopleNames
             f.ShowDialog(Me)
         End Using
         ShowBackupState()

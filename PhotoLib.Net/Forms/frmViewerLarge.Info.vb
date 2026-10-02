@@ -51,6 +51,15 @@ Partial Class frmViewerLarge
         pnlInfo.Visible = m_bolInfoMode AndAlso picInfoBar.Visible
         If Not pnlInfo.Visible Then Return
         Dim lines As List(Of String) = If(m_lpShot?.Lines(), New List(Of String))
+        ' the place the .Exif keeps (地點 / Country / City, PlaceNames.Resolve), after the GPS line
+        If m_strFileName <> "" Then
+            Dim p As New Photo
+            p.Construct(m_strFileName)
+            Dim spot As String = p.Exif(enumPhotoExif.peSpot), city As String = p.Exif(enumPhotoExif.peCity), country As String = p.Exif(enumPhotoExif.peCountry)
+            Dim suffix As String = If(country <> "", "（" & country & "）", "")
+            If spot <> "" Then lines.Add("照片地點：" & spot & If(city = "" OrElse city = spot, suffix, ""))
+            If city <> "" AndAlso city <> spot Then lines.Add("縣市區：" & city & suffix)
+        End If
         lblInfo.Text = If(lines.Count = 0, "這張照片沒有拍攝資訊", String.Join(vbCrLf, lines))
         lnkMap.Visible = m_lpShot IsNot Nothing AndAlso m_lpShot.HasPlace
         lnkMap.Location = New Point(10, lblInfo.Bottom + 6)

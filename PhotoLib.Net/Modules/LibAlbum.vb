@@ -66,6 +66,10 @@ Public Module LibAlbum
         peRanking = 40
         peKeyWord = 50
         peRemark = 60
+        peGps = 70          ' [Exif] GPS=lat,lon (decimal degrees; new in the .NET port, PlaceNames)
+        peCountry = 71      ' [Exif] Country=臺灣           (PlaceNames.Resolve)
+        peCity = 72         ' [Exif] City=臺中市西屯區     county + district
+        peTown = 73         ' [Exif] Town=西屯區
 
         peIcon = 90
     End Enum

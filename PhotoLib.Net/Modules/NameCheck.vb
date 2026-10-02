@@ -173,6 +173,28 @@ Public Module NameCheck
         Return changed
     End Function
 
+    ''' <summary>Every photo whose people field has <paramref name="name"/> loses it (the other names stay);
+    ''' PhotoIndex follows. Returns how many .Exif files changed.</summary>
+    Public Function RemoveName(ByVal name As NameUse, ByVal db As Database) As Integer
+        Dim changed As Integer = 0
+        For Each exif In name.Files
+            Dim ini As New Carbon.IniFile With {.FileName = exif}
+            Dim before As String = GetClearText(ini.SimpleGetValue("Exif", "Character"))
+            If Not FaceNames.Contains(before, name.Name) Then Continue For   ' Remove would also re-join the rest
+            Dim after As String = FaceNames.Remove(before, name.Name)
+            If after = before Then Continue For
+            ini.SimpleSetValue("Exif", "Character", after)
+            changed += 1
+            Dim photo As String = PhotoOf(exif)
+            If photo <> "" AndAlso db IsNot Nothing AndAlso db.Implement Then
+                Dim p As New Photo
+                p.Construct(photo)
+                db.SetPhotoCharacter(p)
+            End If
+        Next
+        Return changed
+    End Function
+
     ''' <summary>The photo / video a .Exif belongs to ("" when it is gone).</summary>
     Private Function PhotoOf(ByVal exifFile As String) As String
         Dim folder As String = Path.GetDirectoryName(exifFile), baseName As String = Path.GetFileNameWithoutExtension(exifFile)

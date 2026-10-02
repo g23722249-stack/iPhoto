@@ -37,7 +37,7 @@ D:\專案\電子相簿\Net\
 | 項目 | 決定 | 原因 |
 |---|---|---|
 | 平台 | iPhoto.Net 建置為 **x86** | iPhoto.mdb 用 `Microsoft.Jet.OLEDB.4.0`，Jet 只有 32 位元版；這樣不必另外安裝 ACE 驅動程式。資料庫存取用 `System.Data.OleDb` |
-| 主視窗 | 一律用 `frmMain_1280x1024`，**不移植 frmMain_1440X900_NEW** | 需求決定。VB6 在寬螢幕時會改選 1440 版，這段已拿掉 |
+| 主視窗 | 一律用 `frmMain`，**不移植 frmMain_1440X900_NEW** | 需求決定。VB6 在寬螢幕時會改選 1440 版，這段已拿掉 |
 | DPI | `HighDpiMode.DpiUnawareGdiScaled` | 跟 VB6 一樣不處理 DPI；Aqua 的外觀圖是像素圖 |
 | Option Strict | iPhoto.Net、PhotoLib.Net 為 **Off**，Techno.Net 為 On | 移植過來的程式大量使用晚期繫結（As Object、Variant）；整理好的檔案再逐一改成 `Option Strict On` |
 | 全域物件 | 搬到 PhotoLib.Net 的 `Globals.vb` | 共用的 Lib 程式碼要用到它們，而類別庫無法反過來參考主程式 |
@@ -61,7 +61,7 @@ VB 的預設執行個體只在**定義該表單的組件內**有效。iPhoto 自
   ```vb
   ' VB6:  imgButton(1).MaskImage = "frmMain.frx":235E76
   imgButton1.MaskImage = FormImages.Load(Me, "imgButton_1_MaskImage")
-  Me.Icon = FormImages.LoadIcon(Me, "frmMain_1280x1024_Icon")
+  Me.Icon = FormImages.LoadIcon(Me, "frmMain_Icon")
   ```
   `Load` 會依序找 png、bmp、ico、jpg、gif；找不到會直接丟例外，名稱打錯馬上就會發現。
 - 圖片和位址的完整對照在 `D:\專案\電子相簿\iPhoto\frx_export\manifest.csv`。
@@ -162,7 +162,7 @@ dotnet C:\專案\RunTime\Tools\FrmConverter\bin\Debug\net8.0-windows\FrmConverte
 | 核心類別：Config、Storage、Albums、Class、Book、Photo、Dock、Import、Database | ✅ 已移植；以實際相片庫（唯讀）和資料庫複本測試，23 項全部通過 |
 | `LibAlbum`、`LibMain`、`LibDataBase`、`Program`（Sub Main） | ✅ |
 | `LibUserInterface` | ✅（`AddSubjectToListView` 已移到 PhotoLib 的 frmSubject；MediaListPlus 版不移植） |
-| `frmMain_1280x1024` 的程式碼 | ✅ 已實測：相簿樹、開啟相簿、縮圖與評價、日曆查詢、關鍵字搜尋 |
+| `frmMain` 的程式碼 | ✅ 已實測：相簿樹、開啟相簿、縮圖與評價、日曆查詢、關鍵字搜尋 |
 | `frmMsgBox`、`frmQueryMsgBox`、`frmSaveChangedPhoto`、`frmDefaultPhotoInfo` | ✅ |
 | `frmImport`（輸入相片） | ✅ 已在測試相片庫實測：建立相簿資料夾、Note.Ini、olyalbum.inf、每張相片的 .Exif、複製檔案、寫入資料庫，回主畫面自動開啟新相簿 |
 | `frmSetup`（基本設置）、`frmBrowserFolder`、`frmBrowserFile` | ✅ 已實測：四個分頁、選擇資料夾（不存在時詢問是否建立）、儲存到 iPhoto.Ini |
@@ -223,7 +223,7 @@ dotnet C:\專案\RunTime\Tools\FrmConverter\bin\Debug\net8.0-windows\FrmConverte
 | Form | `frmExport` | 電子相簿\iPhoto\Form\frmExport.frm | iPhoto.Net\Forms\ |
 | Form | `frmImport` | 電子相簿\iPhoto\Form\frmImport.frm | iPhoto.Net\Forms\ |
 | Form | `frmKeyWords` | 電子相簿\iPhoto\Form\frmKeyWords.frm | iPhoto.Net\Forms\ |
-| Form | `frmMain_1280x1024` | 電子相簿\iPhoto\Form\frmMain.frm | iPhoto.Net\Forms\ |
+| Form | `frmMain` | 電子相簿\iPhoto\Form\frmMain.frm | iPhoto.Net\Forms\ |
 | Form | `frmPaint` | 電子相簿\iPhoto\Form\frmPaint.frm | iPhoto.Net\Forms\ |
 | Form | `frmPaperSetup` | 電子相簿\iPhoto\Form\frmPaperSetup.frm | iPhoto.Net\Forms\ |
 | Form | `frmPhotoIndex` | 電子相簿\iPhoto\Form\frmPhotoIndex.frm | iPhoto.Net\Forms\ |
@@ -390,6 +390,7 @@ dotnet C:\專案\RunTime\Tools\FrmConverter\bin\Debug\net8.0-windows\FrmConverte
   - **記憶體上限**：項目捲出畫面就釋放縮圖。ThumbnailLoader 另外保留 48 MB 的 LRU 快取（以「路徑＋大小＋檔案修改時間」為鍵，存檔修改後會重新解碼），捲回來時直接取用。另外拿掉每張縮圖多複製一份的 `_thumb`（原本是給拖曳用；現在只有影片開始播放、背景圖被釋放前才保留一份）。
   - 實測：1000 張從頭捲到尾 6.7 秒（原本 29 秒），最長一次捲動（一整個畫面）UI 忙 0.12 秒；捲完後記憶體 1000 張 98 MB（原本 300 MB）、3000 張 224 MB（原本 837 MB），不再隨捲過的張數增加。
 - ⚡ **效能優化**（UiTest10 的 bench 實測）：
+  - **點選影片到開始播放**：原本每次點擊都在 UI 執行緒上新建一個 LibVLC（要載入全部外掛），第一次約 3.8 秒、之後每次約 0.33 秒。改成全部 MediaViewerControl 共用一個 LibVLC，並在背景預先載入（`MediaViewerControl.PreloadVideoEngine`：顯示影片縮圖時自動呼叫，iPhoto 主畫面出現後也會先呼叫一次）。現在從點擊到開始播放約 30–45 ms（UiTest10 play）。
   - Aqua.Panel 材質樣式：原本每次重畫都重新建一張整個面板大小的點陣圖，做九宮格再去背；現在依大小／樣式快取，重畫時只貼需要更新的那一塊。工具列上 PngButton 動畫每一格從約 1.05 ms 降到 0.21 ms，整個面板重畫從約 2.7 ms 降到 1.0 ms。
   - RegionUtil.CreateRegionFromBitmap（DropDownList、Buttons、UpDown、Label、IconBox 等的外形裁切）：改用 LockBits 一次讀取像素（原本每個像素呼叫 GetPixel），並把形狀相同的連續列合併成一個矩形（原本每列每段一個矩形）。400×23 的遮罩從約 2–3 ms 降到 0.19 ms。
   - ChildWindowsFollowMain 的視窗掛鉤會收到 UI 執行緒的每一則訊息：改成先只讀訊息編號，不是 WM_SHOWWINDOW 就直接略過，不再每則都複製整個結構。

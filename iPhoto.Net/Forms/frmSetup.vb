@@ -51,8 +51,6 @@ Friend Class frmSetup
         '風格
         g_lpConfig.Style = If(rbStyle(0).Checked, "0", "1")
 
-        '雙螢幕
-        If chkSwitchScreen.Enabled Then g_lpConfig.SwitchScreen = chkSwitchScreen.Checked
 
         '音效
         g_lpConfig.Sound(Config.enumSound.snImportFinish) = txtSound(0).Text
@@ -68,7 +66,6 @@ Friend Class frmSetup
         g_lpConfig.Application(Config.enumApplication.AppVideoEdit) = txtApp(2).Text
         g_lpConfig.Application(Config.enumApplication.AppMail) = txtApp(3).Text
         g_lpConfig.Application(Config.enumApplication.AppHomePage) = txtApp(4).Text
-        g_lpConfig.Application(Config.enumApplication.AppBurn) = txtApp(5).Text
 
         '附加檔案
         g_lpConfig.Attached(Config.enumAttachedFile.filDatabase) = txtAttached(0).Text
@@ -77,9 +74,15 @@ Friend Class frmSetup
         g_lpConfig.Attached(Config.enumAttachedFile.filFaceCover) = txtAttached(3).Text
 
         SaveFacePage()   ' frmSetup.Faces.vb
+        SaveImportOption()   ' frmSetup.Import.vb
+        SaveRebuildOption()   ' frmSetup.Rebuild.vb
+        SaveViewerPage()     ' frmSetup.Viewer.vb
+        SavePlacesPage()     ' frmSetup.Places.vb
+        Dim screenChanged As Boolean = SaveScreenPage()   ' frmSetup.Screen.vb
         g_lpConfig.Save()
         m_lpChanged = True
         Close()
+        If screenChanged Then AskRestartForScreen()
     End Sub
 
     ''' <summary>VB6 "BorderStyle = 1 : Wait : BorderStyle = 0" press effect of the small browse icons.</summary>
@@ -174,13 +177,14 @@ Friend Class frmSetup
 
     Private Sub imgRebuild_Click(sender As Object, e As EventArgs) Handles imgRebuild.Click
         If Not g_lpDatabase.Implement Then Return
+        Dim done As Boolean
         Application.UseWaitCursor = True
         Try
-            g_lpDatabase.Rebuild(g_lpStorage)
+            done = RebuildPhotoIndex(chkRebuildFill?.Checked)   ' Modules\PhotoIndexTools.vb (the box as it is now)
         Finally
             Application.UseWaitCursor = False
         End Try
-        frmMsgBox.ShowExclamationMessage("重建完成" & vbCrLf & "建議重新啟動以釋放資源", "")
+        If done Then frmMsgBox.ShowExclamationMessage("重建完成" & vbCrLf & "建議重新啟動以釋放資源", "")
     End Sub
 
     Private Sub imgSound_Click(sender As Object, e As EventArgs) Handles imgSound_0.Click, imgSound_1.Click, imgSound_2.Click, imgSound_3.Click, imgSound_4.Click
@@ -223,11 +227,6 @@ Friend Class frmSetup
             rbStyle(1).Checked = True
         End If
 
-        If g_intMonitorCount > 1 Then
-            chkSwitchScreen.Checked = g_lpConfig.SwitchScreen
-        Else
-            chkSwitchScreen.Enabled = False   ' disabled, it draws its caption grey itself
-        End If
 
         '音效
         txtSound(0).Text = g_lpConfig.Sound(Config.enumSound.snImportFinish)
@@ -242,7 +241,6 @@ Friend Class frmSetup
         txtApp(2).Text = g_lpConfig.Application(Config.enumApplication.AppVideoEdit)
         txtApp(3).Text = g_lpConfig.Application(Config.enumApplication.AppMail)
         txtApp(4).Text = g_lpConfig.Application(Config.enumApplication.AppHomePage)
-        txtApp(5).Text = g_lpConfig.Application(Config.enumApplication.AppBurn)
     End Sub
 
 End Class

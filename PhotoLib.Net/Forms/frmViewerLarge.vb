@@ -62,6 +62,7 @@ Public Class frmViewerLarge
     End Sub
 
     Public Sub Clear() Implements IPhotoViewer.Clear
+        KeepFrameForTurn()   ' frmViewerLarge.PageTurn.vb: the photo on screen stays up for the page turn
         Try
             mpViewerVideo.Clear()
         Catch
@@ -120,10 +121,12 @@ Public Class frmViewerLarge
         imgPhoto.Visible = True
         ShowFacesForPicture()   ' frmViewerLarge.Faces.vb
         ShowInfoForPicture()    ' frmViewerLarge.Info.vb
+        TurnToPicture()         ' frmViewerLarge.PageTurn.vb
     End Sub
 
     Public Sub ShowVideo(ByVal FileName As String, ByVal FirstPhoto As Boolean, ByVal LastPhoto As Boolean) Implements IPhotoViewer.ShowVideo
         Clear()
+        CancelTurn()   ' frmViewerLarge.PageTurn.vb
         SetControlVideoMode()
 
         m_strFileName = FileName
@@ -158,8 +161,15 @@ Public Class frmViewerLarge
     ''' hidden (a modal "全圖瀏覽" returns; the second-screen viewer just goes away).</summary>
     Private Sub CloseViewer()
         mpViewerVideo.Pause()
+        If Not TopLevel Then   ' inside the main window (單螢幕 全圖): the main window goes back to 縮圖
+            RaiseEvent CloseRequested(Me, EventArgs.Empty)
+            Return
+        End If
         If Modal Then Close() Else Hide()
     End Sub
+
+    ''' <summary>Esc while the viewer sits inside another window (TopLevel False).</summary>
+    Public Event CloseRequested As EventHandler
 
     Private Sub Form_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
         If e.CloseReason = CloseReason.UserClosing AndAlso Not Modal Then
@@ -173,10 +183,12 @@ Public Class frmViewerLarge
     End Sub
 
     Private Sub imbNext_Click(sender As Object, e As EventArgs) Handles imbNext.Click
+        TurnDirection = 1
         RaiseEvent ShowNextPhoto(Me, EventArgs.Empty)
     End Sub
 
     Private Sub imbPrior_Click(sender As Object, e As EventArgs) Handles imbPrior.Click
+        TurnDirection = -1
         RaiseEvent ShowPriorPhoto(Me, EventArgs.Empty)
     End Sub
 
@@ -291,7 +303,8 @@ Public Class frmViewerLarge
     End Function
 
     Private Sub imgPhoto_MouseDown(sender As Object, e As MouseEventArgs) Handles imgPhoto.MouseDown
-        If FaceMouseDown(e) Then Return   ' a click on a face box (face mode)
+        m_bolFaceTookClick = FaceMouseDown(e)   ' a click on a face box (face mode)
+        If m_bolFaceTookClick Then Return
         If e.Button = MouseButtons.Left Then
             m_blnDrawing = True
             m_P1 = e.Location

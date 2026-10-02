@@ -61,6 +61,7 @@ Friend Class frmPhotoInfo
         m_lpPhoto.Exif(enumPhotoExif.peTime) = Convert.ToString(meTime.Value).Trim()
         m_lpPhoto.Exif(enumPhotoExif.peRemark) = txtRemark.Text
         m_lpPhoto.Exif(enumPhotoExif.peKeyWord) = txtKeyWord.Text
+        SavePlaceFields()   ' frmPhotoInfo.Place.vb: Country / City / Town
 
         If g_lpDatabase IsNot Nothing AndAlso g_lpDatabase.Implement Then g_lpDatabase.AddItem(m_lpPhoto)
         Close()

@@ -22,6 +22,9 @@ Public Module Globals
 
     Public g_lpMonitors As CoreMedia.Monitors
     Public g_intMonitorCount As Integer
+    ''' <summary>True: the main window on one screen, 全圖瀏覽 on another (two screens and 設定 › 螢幕 says
+    ''' 雙螢幕). False: everything in the main window (frmMain.SingleScreen.vb). Set at start.</summary>
+    Public g_bolDualScreen As Boolean
 
     Public Enum enumScreenRatio
         rtNormal = 0

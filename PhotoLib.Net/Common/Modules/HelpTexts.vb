@@ -1,6 +1,6 @@
 ﻿' The help texts shown by HelpTip (new in the .NET port), all in one place so they can be edited
 ' without touching the forms. Key -> title, text, hint (a tip), disabled hint (why it can't be used now).
-' Keys: "main.*" = frmMain_1280x1024, "viewer.*" = frmViewerLarge. An unknown key gives Nothing (no help).
+' Keys: "main.*" = frmMain, "viewer.*" = frmViewerLarge. An unknown key gives Nothing (no help).
 Public Module HelpTexts
 
     Private ReadOnly Table As New Dictionary(Of String, HelpTip.Entry)(StringComparer.OrdinalIgnoreCase) From {
@@ -24,7 +24,7 @@ Public Module HelpTexts
         {"main.toolbox.10", E("編輯", "用外部的影像編輯程式開啟照片。", "程式在「設定 › 外掛」指定。", "還沒在「設定 › 外掛」指定影像編輯程式。")},
         {"main.toolbox.11", E("沖印", "開啟沖印程式，同時打開 Dock 清單方便把選取的照片交給它。", "程式在「設定 › 外掛」指定。", "還沒在「設定 › 外掛」指定沖印程式。")},
         {"main.toolbox.12", E("郵件", "開啟郵件程式，同時打開 Dock 清單方便附加選取的照片。", "程式在「設定 › 外掛」指定。", "還沒在「設定 › 外掛」指定郵件程式。")},
-        {"main.toolbox.13", E("燒錄", "開啟燒錄程式，並列出 Dock 裡選取的照片：可以整批拖進燒錄程式、存成清單，或複製到資料夾。", "程式在「設定 › 外掛」指定。", "還沒在「設定 › 外掛」指定燒錄程式。")},
+        {"main.toolbox.13", E("地點", "開啟地圖：有拍攝位置的照片顯示在地圖上，左邊依縣市 › 鄉鎮 › 景點瀏覽。", "點左邊的地點，主視窗會列出那裡的照片；地圖上選的照片也可以送到主視窗。", "")},
         {"main.toolbox.14", E("同步備份", "把指定的資料夾單向備份到另一個位置，只複製新增或修改過的檔案。", "來源刪掉的檔案不會從備份刪除，而是移到備份裡的 Lost 資料夾。")},
         {"main.button.0", E("新增", "新增一個相片庫或攝影集的分類（依上方目前選的是「相片庫」還是「攝影集」）。", "", "唯讀模式不能新增。")},
         {"main.button.1", E("批次修改資訊", "一次修改多張照片的資訊：勾選相簿後逐張或整批填寫人物、地點等欄位。")},
@@ -99,9 +99,6 @@ Public Module HelpTexts
         {"dock.load", E("載入", "載入之前存下的選取清單（.dck），取代目前的選取。")},
         {"dock.save", E("儲存", "把目前的選取存成清單檔（.dck），之後可以再載入。")},
         {"dock.clear", E("清空", "把所有照片從 Dock 移除（照片本身不受影響），並關閉視窗。", "會先詢問。")},
-        {"droplist.list", E("檔案清單", "Dock 裡的照片，依拍攝日期排序。", "拖曳任一列到燒錄程式，會把全部檔案一起拖過去。")},
-        {"droplist.save", E("存成檔案清單", "把清單存成文字檔，並用記事本打開。")},
-        {"droplist.folder", E("複製到資料夾", "把照片依序複製到一個資料夾，命名為 Photo0001.jpg、Photo0002.jpg…", "資料夾已有檔案時會先詢問；不能是相片庫或攝影集的資料夾。")},
         {"keywords.section", E("分類", "關鍵字本的分類，選一個分類列出它的關鍵字。")},
         {"keywords.list", E("關鍵字", "按兩下把關鍵字加進下面的欄位。")},
         {"keywords.text", E("選好的關鍵字", "按「好」後填回原本的欄位；也可以直接輸入。")},
@@ -192,7 +189,7 @@ Public Module HelpTexts
         {"setup.favorite", E("攝影集存放位置", "攝影集（.Alm 檔）存放的資料夾。", "按右邊的圖示選擇資料夾。")},
         {"setup.privilege", E("可刪除相片庫的相片", "勾選後，在相片庫的縮圖上按 Delete 可以把照片從清單移除。", "", "唯讀模式不能勾選。")},
         {"setup.font", E("顯示字型", "iPhoto 使用的字型；系統沒有時會自動改用標楷體或細明體。")},
-        {"setup.switch", E("左右螢幕對調", "兩個螢幕時，主視窗與全圖瀏覽視窗交換位置。", "", "只有接兩個螢幕時才能使用。")},
+        {"setup.screen", E("螢幕模式", "雙螢幕：一個螢幕放主視窗，另一個放全圖瀏覽。單螢幕：全圖在主視窗裡看（縮圖／全圖切換）。", "重新開啟 iPhoto 後生效。", "只偵測到一個螢幕時只能用單螢幕。")},
         {"setup.sound.0", E("匯入完成音效", "匯入照片完成時播放的聲音（.wav）。")},
         {"setup.sound.1", E("匯出完成音效", "匯出照片完成時播放的聲音（.wav）。")},
         {"setup.sound.2", E("滑鼠移出音效", "滑鼠離開按鈕時播放的聲音（.wav）。")},
@@ -203,7 +200,6 @@ Public Module HelpTexts
         {"setup.app.2", E("影片編輯程式", "影片編輯程式的位置。", "目前 iPhoto 沒有功能用到這個設定（保留自舊版）。")},
         {"setup.app.3", E("電子郵件程式", "工具列「郵件」開啟的程式。")},
         {"setup.app.4", E("網頁建置程式", "網頁建置程式的位置。", "目前 iPhoto 沒有功能用到這個設定（保留自舊版）。")},
-        {"setup.app.5", E("燒錄程式", "工具列「燒錄」開啟的程式。")},
         {"setup.face.enabled", E("啟用人物辨識", "在照片裡找出人臉並認出是誰；關閉後面孔牆與全圖瀏覽的面孔功能都不會出現。", "下次開啟 iPhoto 生效。")},
         {"setup.face.autoscan", E("開啟時分析新照片", "開啟 iPhoto 後，在背景分析新增或修改過的照片。",
                                   "關閉時，點主畫面左下角的面孔狀態就能手動分析。")},

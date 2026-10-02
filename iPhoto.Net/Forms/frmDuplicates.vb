@@ -149,7 +149,7 @@ Friend Class frmDuplicates
                     If(f.Width > 0, $"{f.Width}×{f.Height}，", "") & $"{f.Size / 1024.0:#,0} KB" & vbCrLf &
                     If(f.Rating > 0, New String("★"c, f.Rating) & "  ", "") & f.Time.ToString("yyyy/MM/dd")}
         Dim open As New LinkLabel With {.Bounds = New Rectangle(8, 266, 184, 22), .Text = "以檔案總管開啟"}
-        AddHandler open.LinkClicked, Sub() frmMain_1280x1024.ShowInExplorer(f.File)
+        AddHandler open.LinkClicked, Sub() frmMain.ShowInExplorer(f.File)
         card.Controls.AddRange({pic, chk, info, open})
         Return card
     End Function

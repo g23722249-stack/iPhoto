@@ -72,6 +72,10 @@ Public Class Photo
                 Case enumPhotoExif.peRanking : Return GetClearText(ini.SimpleGetValue("Exif", "Ranking"))
                 Case enumPhotoExif.peKeyWord : Return GetClearText(ini.SimpleGetValue("Exif", "KeyWord"))
                 Case enumPhotoExif.peRemark : Return GetClearText(ini.SimpleGetValue("Exif", "Remark").Replace(vbCrLf, vbTab))
+                Case enumPhotoExif.peGps : Return GetClearText(ini.SimpleGetValue("Exif", "GPS"))
+                Case enumPhotoExif.peCountry : Return GetClearText(ini.SimpleGetValue("Exif", "Country"))
+                Case enumPhotoExif.peCity : Return GetClearText(ini.SimpleGetValue("Exif", "City"))
+                Case enumPhotoExif.peTown : Return GetClearText(ini.SimpleGetValue("Exif", "Town"))
             End Select
             Return ""
         End Get
@@ -92,6 +96,10 @@ Public Class Photo
                 Case enumPhotoExif.peRanking : ini.SimpleSetValue("Exif", "Ranking", value)
                 Case enumPhotoExif.peKeyWord : ini.SimpleSetValue("Exif", "KeyWord", value)
                 Case enumPhotoExif.peRemark : ini.SimpleSetValue("Exif", "Remark", If(value, "").Replace(vbCrLf, vbTab))
+                Case enumPhotoExif.peGps : ini.SimpleSetValue("Exif", "GPS", If(value, ""))
+                Case enumPhotoExif.peCountry : ini.SimpleSetValue("Exif", "Country", If(value, ""))
+                Case enumPhotoExif.peCity : ini.SimpleSetValue("Exif", "City", If(value, ""))
+                Case enumPhotoExif.peTown : ini.SimpleSetValue("Exif", "Town", If(value, ""))
             End Select
         End Set
     End Property

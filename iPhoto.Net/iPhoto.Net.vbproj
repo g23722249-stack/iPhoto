@@ -39,6 +39,12 @@
     <!-- 華康細圓體 (the forms' font): next to iPhoto.exe, installed for the user at start when missing
          (Modules\FontSetup.vb). Optional: a checkout without the file still builds. -->
     <None Include="Fonts\細圓體.TTC" Condition="Exists('Fonts\細圓體.TTC')" Link="細圓體.TTC" CopyToOutputDirectory="PreserveNewest" />
+    <!-- the offline place names (PlaceNames.vb): points of every township, from 內政部國土測繪中心
+         鄉(鎮、市、區)界線 1140318, 政府資料開放授權第1版 (Places\README.txt) -->
+    <None Update="Places\Places.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- the attractions (Attractions.vb): 交通部觀光署 觀光資訊資料庫 景點, 政府資料開放授權第1版;
+         設定 › 地點 「更新景點資料」 replaces the copy next to iPhoto.exe with a newer one -->
+    <None Update="Places\Attractions.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,25 +62,51 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+    <!-- 地點 › 地圖 (frmMap): Leaflet + OpenStreetMap in WebView2 (the Edge WebView2 runtime comes with
+         Windows 11). The page is Map\map.html, embedded and served by Modules\MapHost.vb. -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- the map pages and what they load (Leaflet, markercluster, topojson-client and the county / town
+         outlines: taiwan-atlas, 內政部國土測繪中心 open data), served by Modules\MapHost.vb, so the map
+         works without the internet (resource name: iPhoto.Map\ + the path under Map) -->
+    <EmbeddedResource Include="Map\**\*.*">
+      <LogicalName>iPhoto.Map\%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <!-- Aqua.Net (AnyCPU) still brings the 64-bit copy along with its content files; an x86 app can't use it. -->
   <Target Name="RemoveLibVlcX64" AfterTargets="Build">
     <RemoveDir Directories="$(OutDir)libvlc\win-x64" />
   </Target>
 
-  <!-- The converter's *.Vb6.vb files are the second half of a form's partial class (Sub New, control
-       arrays): open them as code, not in the form designer: opening one in the designer makes Visual
-       Studio add an empty <form>.Vb6.resx, which compiles to the same resource name as <form>.resx
-       (error MSB3577). Such a file is also left out of the build if it ever appears again. -->
+  <!-- A form's other partial files (the converter's <form>.Vb6.vb (Sub New, control arrays) and the
+       ones added since (<form>.Faces.vb, .Help.vb, .Covers.vb, .Info.vb ...) open as code, not in the
+       form designer: opening one in the designer makes Visual Studio add an empty <form>.<part>.resx,
+       which compiles to the same resource name as <form>.resx (error MSB3577). Such a file is also left
+       out of the build if it ever appears again (a form's own .resx has no dot in its name). -->
   <ItemGroup>
-    <Compile Update="**\*.Vb6.vb" SubType="Code" />
-    <EmbeddedResource Remove="**\*.Vb6.resx" />
+    <Compile Update="**\*.*.vb" SubType="Code" />
+    <EmbeddedResource Remove="**\*.*.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="My Project\Resources.Designer.vb">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="My Project\Resources.resx">
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <!-- Visual Studio may still add an Include for such a file further down this project file (after the
        Remove above, which then no longer applies): this drops it again right before the resources are built. -->
-  <Target Name="DropVb6Resx" BeforeTargets="PrepareResources">
+  <Target Name="DropPartialResx" BeforeTargets="PrepareResources">
     <ItemGroup>
-      <EmbeddedResource Remove="**\*.Vb6.resx" />
+      <EmbeddedResource Remove="**\*.*.resx" />
     </ItemGroup>
   </Target>
 

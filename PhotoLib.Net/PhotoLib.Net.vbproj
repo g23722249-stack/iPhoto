@@ -43,19 +43,20 @@
     <PackageReference Include="System.Data.OleDb" Version="8.0.1" />
   </ItemGroup>
 
-  <!-- The converter's *.Vb6.vb files are the second half of a form's partial class (Sub New, control
-       arrays): open them as code, not in the form designer: opening one in the designer makes Visual
-       Studio add an empty <form>.Vb6.resx, which compiles to the same resource name as <form>.resx
-       (error MSB3577). Such a file is also left out of the build if it ever appears again. -->
+  <!-- A form's other partial files (the converter's <form>.Vb6.vb (Sub New, control arrays) and the
+       ones added since (<form>.Faces.vb, .Help.vb, .Covers.vb, .Info.vb ...) open as code, not in the
+       form designer: opening one in the designer makes Visual Studio add an empty <form>.<part>.resx,
+       which compiles to the same resource name as <form>.resx (error MSB3577). Such a file is also left
+       out of the build if it ever appears again (a form's own .resx has no dot in its name). -->
   <ItemGroup>
-    <Compile Update="**\*.Vb6.vb" SubType="Code" />
-    <EmbeddedResource Remove="**\*.Vb6.resx" />
+    <Compile Update="**\*.*.vb" SubType="Code" />
+    <EmbeddedResource Remove="**\*.*.resx" />
   </ItemGroup>
   <!-- Visual Studio may still add an Include for such a file further down this project file (after the
        Remove above, which then no longer applies): this drops it again right before the resources are built. -->
-  <Target Name="DropVb6Resx" BeforeTargets="PrepareResources">
+  <Target Name="DropPartialResx" BeforeTargets="PrepareResources">
     <ItemGroup>
-      <EmbeddedResource Remove="**\*.Vb6.resx" />
+      <EmbeddedResource Remove="**\*.*.resx" />
     </ItemGroup>
   </Target>
 

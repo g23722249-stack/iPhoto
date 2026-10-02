@@ -20,6 +20,7 @@ Public Class frmSlideShow
 
     Private m_objCurrent As Bitmap
     Private m_objPreliminary As Bitmap
+    Private m_boxCurrent, m_boxPreliminary, m_boxShown As Rectangle   ' where the photo is in each screen-sized frame (page turn)
     Private m_intLastEffective As Integer = -1   ' 用來判斷特效是否重複
     Private m_intLastSound As Integer = -1       ' 用來判斷最後撥放的音樂
 
@@ -104,7 +105,7 @@ Public Class frmSlideShow
     ''' <summary>A black screen-sized picture with the photo centred (VB6 GetCurrentSizePhoto).</summary>
     Private Function GetCurrentSizePhoto(ByVal pic As Image) As Bitmap
         Dim sz As Size = ScreenSize
-        Dim bmp As New Bitmap(sz.Width, sz.Height)
+        Dim bmp As New Bitmap(sz.Width, sz.Height, Imaging.PixelFormat.Format32bppPArgb)   ' the fastest for GDI+ to draw (page turn)
         Using g As Graphics = Graphics.FromImage(bmp)
             g.Clear(Color.Black)
             If pic IsNot Nothing Then g.DrawImage(pic, (sz.Width - pic.Width) \ 2, (sz.Height - pic.Height) \ 2, pic.Width, pic.Height)
@@ -147,20 +148,22 @@ Public Class frmSlideShow
     Private Function LoadPhoto() As Boolean
         If m_objPreliminary Is Nothing Then
             If Not SeekPicture(True) Then Return False
-            m_objPreliminary = LoadScreenPhoto(CurrentPhoto().FileDesc)
+            m_objPreliminary = LoadScreenPhoto(CurrentPhoto().FileDesc, m_boxPreliminary)
         End If
         ' the picture on screen is freed by MovePhotoToScreen once it is replaced
         m_objCurrent = m_objPreliminary
+        m_boxCurrent = m_boxPreliminary
         m_objPreliminary = Nothing
         If Not SeekPicture(False) Then Return False
-        m_objPreliminary = LoadScreenPhoto(CurrentPhoto().FileDesc)
+        m_objPreliminary = LoadScreenPhoto(CurrentPhoto().FileDesc, m_boxPreliminary)
         Return True
     End Function
 
-    Private Function LoadScreenPhoto(ByVal file As String) As Bitmap
+    Private Function LoadScreenPhoto(ByVal file As String, ByRef box As Rectangle) As Bitmap
         Dim thumb As New Quartz.Thumbnail With {.FileName = file}
         Dim sz As Size = ScreenSize
         Using pic As Bitmap = thumb.GetThumbnail(sz.Width, sz.Height)
+            box = If(pic Is Nothing, Rectangle.Empty, New Rectangle((sz.Width - pic.Width) \ 2, (sz.Height - pic.Height) \ 2, pic.Width, pic.Height))
             Return GetCurrentSizePhoto(pic)
         End Using
     End Function
@@ -193,6 +196,7 @@ Public Class frmSlideShow
         BackgroundImageLayout = ImageLayout.None
         Dim old As Image = BackgroundImage
         BackgroundImage = m_objCurrent
+        m_boxShown = m_boxCurrent
         If old IsNot Nothing AndAlso old IsNot m_objCurrent Then old.Dispose()
     End Sub
 
@@ -232,11 +236,24 @@ Public Class frmSlideShow
     End Function
 
     Private Sub SlideShowScreen()
+        ' 25 VB6 transitions, plus the page turns of 全圖瀏覽 (設定 › 全圖瀏覽) as about a third of them:
+        ' 25..36 is a page turn, of the style chosen there (both: 整頁翻 25..30, 翻頁角 31..36)
+        Dim turn As Config.enumPageTurn = If(SystemInformation.UIEffectsEnabled, g_lpConfig.ViewerPageTurn, Config.enumPageTurn.ptOff)
         Dim intRandom As Integer
         Do
-            intRandom = m_random.Next(0, 25)
+            intRandom = m_random.Next(0, If(turn = Config.enumPageTurn.ptOff, 25, 37))
         Loop Until m_intLastEffective <> intRandom
         m_intLastEffective = intRandom
+        If intRandom >= 25 Then
+            Dim style As PageTurnView.enumTurnStyle
+            Select Case turn
+                Case Config.enumPageTurn.ptBook : style = PageTurnView.enumTurnStyle.tsBook
+                Case Config.enumPageTurn.ptCorner : style = PageTurnView.enumTurnStyle.tsCorner
+                Case Else : style = If(intRandom <= 30, PageTurnView.enumTurnStyle.tsBook, PageTurnView.enumTurnStyle.tsCorner)
+            End Select
+            PageTurnTransition(style)
+            Return
+        End If
 
         Dim sw As Integer = ScreenSize.Width * TwipsPerPixel, sh As Integer = ScreenSize.Height * TwipsPerPixel
         Dim intBarSize As Integer, intBarNumber As Integer
@@ -334,6 +351,44 @@ Public Class frmSlideShow
                     Next
             End Select
         End Using
+    End Sub
+
+    ''' <summary>The picture on screen (BackgroundImage) turns over to the next one (m_objCurrent), drawn
+    ''' by PageTurnView like 全圖瀏覽; a screen bigger than 2560 x 1600 turns at half size. Slides go forward.</summary>
+    Private Sub PageTurnTransition(ByVal style As PageTurnView.enumTurnStyle)
+        Dim oldF As Bitmap = TryCast(BackgroundImage, Bitmap)
+        If oldF Is Nothing OrElse m_objCurrent Is Nothing OrElse oldF.Size <> m_objCurrent.Size Then Return
+        Dim big As Boolean = CLng(oldF.Width) * oldF.Height > PageTurnView.MaxTurnPixels
+        Dim a As Bitmap = oldF, b As Bitmap = m_objCurrent
+        Dim ba As RectangleF = m_boxShown, bb As RectangleF = m_boxCurrent
+        If big Then
+            a = PageTurnView.Half(oldF)
+            b = PageTurnView.Half(m_objCurrent)
+            ba = New RectangleF(ba.X / 2, ba.Y / 2, ba.Width / 2, ba.Height / 2)
+            bb = New RectangleF(bb.X / 2, bb.Y / 2, bb.Width / 2, bb.Height / 2)
+        End If
+        Dim ms As Integer = g_lpConfig.ViewerPageTurnMs * 3 \ 2   ' a slide show can take its time
+        Try
+            Using buf As New Bitmap(a.Width, a.Height, Imaging.PixelFormat.Format32bppPArgb), g As Graphics = CreateGraphics()
+                g.InterpolationMode = If(big, Drawing2D.InterpolationMode.NearestNeighbor, Drawing2D.InterpolationMode.Bilinear)
+                g.PixelOffsetMode = Drawing2D.PixelOffsetMode.Half
+                Dim clock As Diagnostics.Stopwatch = Diagnostics.Stopwatch.StartNew()
+                Do
+                    Dim t As Double = Math.Min(1.0, clock.ElapsedMilliseconds / CDbl(ms))
+                    Using bg As Graphics = Graphics.FromImage(buf)
+                        PageTurnView.Render(bg, a, b, 1, style, PageTurnView.Ease(t), ba, bb)
+                    End Using
+                    g.DrawImage(buf, New Rectangle(0, 0, oldF.Width, oldF.Height))
+                    If Not Pump() Then Return
+                    If t >= 1 Then Exit Do
+                Loop
+            End Using
+        Finally
+            If big Then
+                a.Dispose()
+                b.Dispose()
+            End If
+        End Try
     End Sub
 
     '==================================================================================================

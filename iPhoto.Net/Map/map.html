@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iPhoto 地圖</title>
+<!-- 地點 › 地圖 of iPhoto (frmMap.vb): the photos with GPS as clustered markers. Talks to the window
+     through window.chrome.webview:
+       page -> iPhoto  {type:'ready'} | {type:'pick', ids, all}   (a cluster / marker clicked, or 顯示畫面中的照片)
+       iPhoto -> page  {type:'points', points:[[lat, lon, id, year, text], ...], keep}
+                       | {type:'fit', s, w, n, e} (a place picked in the window's place tree) -->
+<!-- everything comes from iPhoto itself (Modules\MapHost.vb), the map tiles through its cache:
+     the page works without the internet, on the outline map (lib/outline.js) -->
+<link rel="stylesheet" href="lib/leaflet.css">
+<link rel="stylesheet" href="lib/MarkerCluster.css">
+<link rel="stylesheet" href="lib/MarkerCluster.Default.css">
+<style>
+  /* the Aqua look of iPhoto's windows: brushed light panels, pill buttons, a blue gel default button */
+  html, body { margin: 0; height: 100%; background: #eef1f4; font-family: "華康細圓體", "Microsoft JhengHei UI", "Microsoft JhengHei", sans-serif; }
+  #map { position: absolute; inset: 0; }
+  #bar { position: absolute; top: 10px; right: 10px; z-index: 1000; display: flex; gap: 8px; align-items: center;
+         background: linear-gradient(#fbfbfb, #e3e4e6); border: 1px solid #a7a9ad; border-radius: 12px; padding: 5px 8px;
+         box-shadow: 0 2px 8px rgba(0,0,0,.28), inset 0 1px 0 #fff; font-size: 15px; }
+  #bar select, #bar button { font: inherit; height: 28px; padding: 0 14px; border-radius: 14px; cursor: pointer; color: #1a1a1a;
+         border: 1px solid #8e9095; background: linear-gradient(#ffffff 0%, #f1f1f1 48%, #dcdcdc 52%, #ececec 100%);
+         box-shadow: 0 1px 2px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.9); }
+  #bar select { padding: 0 10px; }
+  #bar button.main { color: #fff; border-color: #2b5fa8; text-shadow: 0 -1px 0 rgba(0,0,0,.25);
+         background: linear-gradient(#a9d0fb 0%, #5aa1ec 48%, #2f7fdc 52%, #6cb3f4 100%); }
+  #bar button.main:hover { background: linear-gradient(#bcdcfd 0%, #6eaef2 48%, #3a8ae3 52%, #7fc0f7 100%); }
+  #bar button:disabled { opacity: .55; cursor: default; }
+  #hint { position: absolute; left: 10px; bottom: 24px; z-index: 1000; border-radius: 12px; padding: 4px 12px; font-size: 14px; color: #333;
+          background: linear-gradient(rgba(251,251,251,.94), rgba(227,228,230,.94)); border: 1px solid #a7a9ad; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+  #offline { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; text-align: center;
+             color: #444; font-size: 16px; line-height: 1.8; }
+  .marker-cluster.picked { box-shadow: 0 0 0 4px #e11d48, 0 0 14px rgba(225, 29, 72, .75); }
+  .leaflet-marker-icon.picked:not(.marker-cluster) { filter: drop-shadow(0 0 3px #e11d48) drop-shadow(0 0 3px #e11d48); }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="bar">
+  <select id="year" title="只看某一年"><option value="">全部年份</option></select>
+  <button id="pick" class="main" disabled>顯示畫面中的照片</button>
+</div>
+<div id="hint">讀取照片位置…</div>
+<div id="offline">地圖無法載入。</div>
+
+<script>/* script errors go to iPhoto (MapHost writes them to %TEMP%\iPhoto_map.log): DevTools are off */
+window.addEventListener("error", function (e) { var h = window.chrome && window.chrome.webview; if (h) h.postMessage({ type: "jserror", msg: String(e.message) + " @ " + e.filename + ":" + e.lineno + ":" + e.colno + (e.error && e.error.stack ? " | " + e.error.stack : "") }); });
+</script>
+<script src="lib/leaflet.js"></script>
+<script src="lib/leaflet.markercluster.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/protomaps-leaflet.js"></script>
+<script src="lib/outline.js"></script>
+<script>
+(function () {
+  var host = window.chrome && window.chrome.webview;
+  function send(m) { if (host) host.postMessage(m); }
+  if (typeof L === 'undefined' || !L.markerClusterGroup) {
+    document.getElementById('bar').style.display = 'none';
+    document.getElementById('hint').style.display = 'none';
+    document.getElementById('offline').style.display = 'flex';
+    send({ type: 'offline' });
+    return;
+  }
+
+  // maxZoom on the map itself: offline there is no tile layer to give it, and markercluster needs it
+  var map = L.map('map', { zoomControl: true, preferCanvas: true, maxZoom: 19 }).setView([23.7, 121.0], 8);
+  iPhotoOutline(map);   // the tiles, over the outline map (lib/outline.js)
+
+  var all = [];          // [lat, lon, id, year, text]
+  var cluster = null;
+  var markers = [];      // the markers in the cluster now (after the year filter)
+  var yearSel = document.getElementById('year');
+  var pickBtn = document.getElementById('pick');
+  var hint = document.getElementById('hint');
+
+  // a click on a cluster (or a single marker) sends its photos to iPhoto -- the 全圖瀏覽 strip on the
+  // other screen -- and rings it; a double click zooms in instead (the click waits a moment for it)
+  var pickedMarker = null, clickTimer = null;
+
+  function build() {
+    if (cluster) map.removeLayer(cluster);
+    cluster = L.markerClusterGroup({ chunkedLoading: true, showCoverageOnHover: false, maxClusterRadius: 60,
+                                     zoomToBoundsOnClick: false, spiderfyOnMaxZoom: false });
+    markers = [];
+    var y = yearSel.value;
+    for (var i = 0; i < all.length; i++) {
+      var p = all[i];
+      if (y && String(p[3]) !== y) continue;
+      var m = L.marker([p[0], p[1]], { title: p[4] });
+      m.photoId = p[2];
+      markers.push(m);
+    }
+    cluster.addLayers(markers);
+    cluster.on('clusterclick', function (e) { later(e.layer.getAllChildMarkers()); });
+    cluster.on('clustercontextmenu', function (e) { pickGroup(e.layer.getAllChildMarkers()); });
+    cluster.on('clusterdblclick', function (e) {
+      clearTimeout(clickTimer);
+      if (e.originalEvent) L.DomEvent.stop(e.originalEvent);
+      e.layer.zoomToBounds({ padding: [40, 40] });
+    });
+    cluster.on('click', function (e) { later([e.layer]); });          // a single marker
+    cluster.on('contextmenu', function (e) { pickGroup([e.layer]); });
+    cluster.on('animationend', ring);
+    map.addLayer(cluster);
+    pickedMarker = null;
+    updateCount();
+  }
+
+  function later(group) {
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(function () { pickGroup(group); }, 260);
+  }
+
+  function pickGroup(group) {
+    if (!group || group.length === 0) return;
+    pickedMarker = group[0];
+    send({ type: 'pick', ids: group.map(function (m) { return m.photoId; }), all: false });
+    ring();
+  }
+
+  // the ring follows the picked group as clusters split and merge with the zoom
+  function ring() {
+    var old = document.querySelectorAll('.picked');
+    for (var i = 0; i < old.length; i++) old[i].classList.remove('picked');
+    if (!pickedMarker || !cluster) return;
+    var shown = cluster.getVisibleParent(pickedMarker);
+    if (shown && shown._icon) shown._icon.classList.add('picked');
+  }
+  function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function inView() {
+    var b = map.getBounds(), ids = [];
+    for (var i = 0; i < markers.length; i++) if (b.contains(markers[i].getLatLng())) ids.push(markers[i].photoId);
+    return ids;
+  }
+
+  function updateCount() {
+    var n = inView().length;
+    pickBtn.textContent = '顯示畫面中的照片 (' + n.toLocaleString() + ')';
+    pickBtn.disabled = n === 0;
+  }
+
+  map.on('moveend', function () { updateCount(); ring(); });
+  yearSel.addEventListener('change', build);
+  pickBtn.addEventListener('click', function () { send({ type: 'pick', ids: inView(), all: true }); });
+
+  if (host) host.addEventListener('message', function (e) {
+    var m = e.data;
+    if (m.type === 'fit') {
+      map.fitBounds([[m.s, m.w], [m.n, m.e]], { padding: [40, 40], maxZoom: 16 });
+    } else if (m.type === 'points') {
+      all = m.points;
+      var keepYear = yearSel.value;
+      while (yearSel.options.length > 1) yearSel.remove(1);   // again after places were written
+      var years = {};
+      all.forEach(function (p) { if (p[3] > 0) years[p[3]] = (years[p[3]] || 0) + 1; });
+      Object.keys(years).sort().reverse().forEach(function (y) {
+        var o = document.createElement('option'); o.value = y; o.textContent = y + ' 年 (' + years[y] + ')'; yearSel.appendChild(o);
+      });
+      if (keepYear && years[keepYear]) yearSel.value = keepYear;
+      build();
+      // the points themselves: with chunkedLoading the cluster is still being filled here
+      if (all.length > 0 && !m.keep) map.fitBounds(L.latLngBounds(all.map(function (p) { return [p[0], p[1]]; })), { padding: [30, 30], maxZoom: 12 });
+      hint.textContent = all.length.toLocaleString() + ' 張照片有拍攝位置 · 點數字圈或大頭針：照片送到全圖瀏覽 · 雙擊：放大';
+    }
+  });
+  send({ type: 'ready' });
+})();
+</script>
+</body>
+</html>

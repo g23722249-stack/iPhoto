@@ -73,6 +73,17 @@ Friend Class DualScreenSwap
 
     Friend Const MainKey As String = "Main"
     Friend Const ViewerKey As String = "Viewer"
+    Friend Const PlaceMapKey As String = "PlaceMap"   ' the 地點 window, paired with the viewer while it is open
+
+    ''' <summary>While True moves are ignored (another pair is using one of the windows); Resume takes the
+    ''' windows' current screens as their homes again.</summary>
+    Public Property Paused As Boolean
+
+    Public Sub [Resume]()
+        Paused = False
+        Remember(m_main)
+        If m_viewer.Form.Visible Then Remember(m_viewer)
+    End Sub
 
     ''' <summary>The screen each window was last settled on, and whether it was maximised there.</summary>
     Private Class Home
@@ -87,9 +98,9 @@ Friend Class DualScreenSwap
     Private ReadOnly m_timer As New Timer With {.Interval = 300}
     Private m_busy As Boolean
 
-    Public Sub New(ByVal main As Form, ByVal viewer As Form)
-        m_main = New Home With {.Form = main, .Key = MainKey}
-        m_viewer = New Home With {.Form = viewer, .Key = ViewerKey}
+    Public Sub New(ByVal main As Form, ByVal viewer As Form, Optional ByVal mainKey As String = DualScreenSwap.MainKey, Optional ByVal viewerKey As String = DualScreenSwap.ViewerKey)
+        m_main = New Home With {.Form = main, .Key = mainKey}
+        m_viewer = New Home With {.Form = viewer, .Key = viewerKey}
         Remember(m_main)
         Remember(m_viewer)
         For Each f As Form In {main, viewer}
@@ -106,7 +117,7 @@ Friend Class DualScreenSwap
 
     ' A move (or a restore when a maximised window is dragged) -- wait until it has settled.
     Private Sub Moved(sender As Object, e As EventArgs)
-        If m_busy Then Return
+        If m_busy OrElse Paused Then Return
         m_timer.Stop()
         m_timer.Start()
     End Sub
@@ -114,15 +125,15 @@ Friend Class DualScreenSwap
     Private Sub Settle(sender As Object, e As EventArgs)
         If Control.MouseButtons <> MouseButtons.None Then Return      ' still dragging
         m_timer.Stop()
-        If m_main.Form.IsDisposed OrElse m_viewer.Form.IsDisposed Then Return
+        If Paused OrElse m_main.Form.IsDisposed OrElse m_viewer.Form.IsDisposed Then Return
         If m_main.Form.WindowState = FormWindowState.Minimized OrElse m_viewer.Form.WindowState = FormWindowState.Minimized Then Return
         m_busy = True
         Try
             If Not TrySwap(m_main, m_viewer) Then TrySwap(m_viewer, m_main)
             Remember(m_main)
             If m_viewer.Form.Visible Then Remember(m_viewer)
-            WindowPlacement.Save(MainKey, m_main.Form)
-            If m_viewer.Form.Visible Then WindowPlacement.Save(ViewerKey, m_viewer.Form)
+            WindowPlacement.Save(m_main.Key, m_main.Form)
+            If m_viewer.Form.Visible Then WindowPlacement.Save(m_viewer.Key, m_viewer.Form)
         Finally
             m_busy = False
         End Try

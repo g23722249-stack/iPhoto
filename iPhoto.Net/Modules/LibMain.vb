@@ -2,7 +2,7 @@
 '   Sub Main                      -> Program.vb
 '   globals (g_lpConfig ...)      -> PhotoLib.Net\Modules\Globals.vb (the shared Lib code uses them)
 '   SetStyleOffice10 (vbAccelerator cFlatControl) is not needed with WinForms visual styles.
-'   CreateMultiMonters (the photo viewer) -> frmMain_1280x1024.CreateMultiMonters, which keeps the viewer.
+'   CreateMultiMonters (the photo viewer) -> frmMain.CreateMultiMonters, which keeps the viewer.
 Friend Module LibMain
 
     ''' <summary>Creates the app-wide objects (VB6 called this from the main form's Load):
