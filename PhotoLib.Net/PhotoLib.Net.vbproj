@@ -34,7 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Techno.Net\Techno.Net.vbproj" />
-    <ProjectReference Include="C:\專案\RunTime\Aqua.Net\Aqua.Net.vbproj" />
+    <ProjectReference Include="..\..\RunTime\Aqua.Net\Aqua.Net.vbproj" />
   </ItemGroup>
 
   <ItemGroup>

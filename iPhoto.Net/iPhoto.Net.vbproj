@@ -50,7 +50,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PhotoLib.Net\PhotoLib.Net.vbproj" />
     <ProjectReference Include="..\Techno.Net\Techno.Net.vbproj" />
-    <ProjectReference Include="C:\專案\RunTime\Aqua.Net\Aqua.Net.vbproj" />
+    <ProjectReference Include="..\..\RunTime\Aqua.Net\Aqua.Net.vbproj" />
   </ItemGroup>
 
   <!-- Native LibVLC for Aqua.MediaViewerControl (video). The package copies libvlc\win-x86\ only into
