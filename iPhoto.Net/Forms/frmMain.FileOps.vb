@@ -316,7 +316,7 @@ Partial Class frmMain
         Dim srcFolder As String = IO.Path.GetDirectoryName(src), srcBase As String = IO.Path.GetFileNameWithoutExtension(src)
         Dim ext As String = IO.Path.GetExtension(src)
         Dim base As String = srcBase, k As Integer = 1
-        While IO.File.Exists(IO.Path.Combine(folder, base & ext)) OrElse IO.File.Exists(IO.Path.Combine(folder, base & "." & gc_strExifPattern))
+        While IO.File.Exists(IO.Path.Combine(folder, base & ext)) OrElse New ExifFile(IO.Path.Combine(folder, base & ext)).Exists
             k += 1
             base = srcBase & " (" & k & ")"
         End While
@@ -327,7 +327,10 @@ Partial Class frmMain
             Return Nothing
         End Try
         ' side files (a failure here leaves the photo moved; the side file stays behind)
-        TryMove(IO.Path.Combine(srcFolder, srcBase & "." & gc_strExifPattern), IO.Path.Combine(folder, base & "." & gc_strExifPattern))
+        Try
+            ExifFile.MoveEntry(src, dst)   ' its entry only: IMG_1.JPG and IMG_1.MP4 share IMG_1.Exif
+        Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException
+        End Try
         TryMove(IO.Path.Combine(srcFolder, "Restore", srcBase & ext), IO.Path.Combine(folder, "Restore", base & ext))
         TryMove(IO.Path.Combine(srcFolder, "Thumb", srcBase & ".jpg"), IO.Path.Combine(folder, "Thumb", base & ".jpg"))
         ' what refers to it

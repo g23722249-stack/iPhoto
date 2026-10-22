@@ -330,10 +330,9 @@ Friend Class frmPrint
         Dim result As String = FormatDate(strDate)
 
         ' 取得自行定義的 Exif 檔日期
-        Dim strExifFileDesc As String = strFolder & "\" & g_lpFileSystem.AnalyseFile(Carbon.AnalyseFileConstants.fsBaseName, strFileDesc) & "." & gc_strExifPattern
-        If Not g_lpFileSystem.FileExists(strExifFileDesc) Then Return result
-        Dim ini As New Carbon.IniFile With {.FileName = strExifFileDesc}
-        Return FormatDate(GetClearText(ini.SimpleGetValue("Exif", "Date")))
+        Dim exif As New ExifFile(strFileDesc)
+        If Not exif.Exists Then Return result
+        Return FormatDate(GetClearText(exif.SimpleGetValue("Exif", "Date")))
     End Function
 
     Private Shared Function FormatDate(ByVal digits As String) As String

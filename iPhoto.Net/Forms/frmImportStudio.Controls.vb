@@ -398,7 +398,6 @@ Friend Class ImportThumbGrid
             Dim ask As Integer = it.VisibleFaces.Where(Function(f) f.State = ImportFace.enumImportFaceState.ifSuggested).Count()
             If n > 0 Then badge(n & " 臉" & If(ask > 0, " ?", ""), If(ask > 0, Color.FromArgb(220, 184, 116, 15), Color.FromArgb(200, 20, 24, 30)))
         End If
-        If it.SharesExifWith <> "" AndAlso it.Include Then badge("同名", Color.FromArgb(220, 192, 57, 43))
         If it.Edited Then
             Using b As New SolidBrush(Color.FromArgb(245, 190, 63)), p As New Pen(Color.White)
                 g.FillEllipse(b, r.Right - 12, r.Y + 4, 8, 8)

@@ -877,20 +877,17 @@ Friend Class frmMain
             pgImport.Maximum = g_lpImport.Count
             pgImport.Value = 0
 
-            Dim lpProfile As New Carbon.IniFile
             For I As Integer = 0 To g_lpImport.Count - 1
                 '寫入資訊檔
                 pgImport.Value = I
                 Application.DoEvents()
                 miImport.FileName = g_lpImport.Item(I)
                 Dim strFileName As String = strFolder & "\" & g_lpFileSystem.AnalyseFile(fsFileName, g_lpImport.Item(I))
-                Dim strExifFileName As String = strFolder & "\" & g_lpFileSystem.AnalyseFile(fsBaseName, g_lpImport.Item(I)) & "." & gc_strExifPattern
 
                 g_lpFileSystem.CopyFile(g_lpImport.Item(I), strFileName)
                 Dim strDateTime As String = GetExifFileDateTime(g_lpFileSystem, strFileName)
 
-                With lpProfile
-                    .FileName = strExifFileName
+                With New ExifFile(strFileName)   ' its entry in <name>.Exif
                     .SimpleSetValue("Create", "Date", Mid(strDateTime, 1, 8))
                     .SimpleSetValue("Create", "Time", Mid(strDateTime, 9, 6))
 

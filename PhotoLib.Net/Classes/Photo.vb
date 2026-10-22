@@ -1,5 +1,6 @@
 ' Port of 電子相簿\Lib\Class\Photo.cls: one photo/video file plus its "<name>.Exif" side file
-' (an ini holding date, time, title, people, place, ranking, keywords, remark).
+' (date, time, title, people, place, ranking, keywords, remark): XML since the .NET port, one entry
+' per file of the base name; VB6's ini is still read (ExifFile).
 '
 ' Construct was Friend in VB6, which meant "the whole project" -- the Lib classes were compiled into
 ' each app. It is Public here because the app (iPhoto.Net) is a different assembly.
@@ -61,7 +62,7 @@ Public Class Photo
     Public Property Exif(ByVal Mode As enumPhotoExif) As String
         Get
             If Not CheckCreate() Then Return Nothing
-            Dim ini As New Carbon.IniFile With {.FileName = m_szExifFile}
+            Dim ini As New ExifFile(m_szFileDesc)
             Select Case Mode
                 Case enumPhotoExif.peDate : Return GetClearText(ini.SimpleGetValue("Exif", "Date"))
                 Case enumPhotoExif.peTime : Return GetClearText(ini.SimpleGetValue("Exif", "Time"))
@@ -81,7 +82,7 @@ Public Class Photo
         End Get
         Set(value As String)
             If Not CheckCreate() Then Return
-            Dim ini As New Carbon.IniFile With {.FileName = m_szExifFile}
+            Dim ini As New ExifFile(m_szFileDesc)
             Select Case Mode
                 Case enumPhotoExif.peDate
                     ini.SimpleSetValue("Exif", "Date", value)

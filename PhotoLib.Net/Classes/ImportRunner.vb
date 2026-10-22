@@ -36,11 +36,11 @@ Public Class ImportRunner
 
     Private ReadOnly m_jobs As List(Of ImportJob)
     Private ReadOnly m_strDatabase As String
+    Private m_bolFaceArchive As Boolean   ' the library keeps face data in the .Exif files (FaceArchive)
     Private m_context As SynchronizationContext
     Private m_thread As Thread
     Private ReadOnly m_resume As New ManualResetEventSlim(True)
     Private m_bolCancel As Boolean
-    Private ReadOnly m_exifWritten As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
     Private ReadOnly m_made As New HashSet(Of ImportJob)
 
     ''' <summary>Write PhotoIndex (iPhoto has a database) / the faces (the face tables exist).</summary>
@@ -178,6 +178,8 @@ Public Class ImportRunner
                     db = Nothing
                 End If
             End If
+            ' the face data goes into each photo's .Exif at once (FaceArchive), once the library was converted
+            m_bolFaceArchive = db IsNot Nothing AndAlso FaceArchive.LastExport(m_strDatabase).HasValue
 
             For Each w In work
                 m_resume.Wait()
@@ -229,15 +231,8 @@ Public Class ImportRunner
         If Not IO.File.Exists(dest) Then IO.File.Copy(it.SourceFile, dest, False)
         Counts(enumPhase.phCopy) += 1
 
-        ' 2. .Exif -- IMG_1.JPG and IMG_1.MOV share IMG_1.Exif: the first one written (pictures go first)
-        '    keeps it, the other is not allowed to overwrite it
-        Dim exif As String = IO.Path.ChangeExtension(dest, gc_strExifPattern)
-        If m_exifWritten.Contains(exif) Then
-            notes.Add("與同名檔案共用 .Exif，保留先寫入的資料")
-        Else
-            WriteExif(job, it, dest)
-            m_exifWritten.Add(exif)
-        End If
+        ' 2. .Exif -- IMG_1.JPG and IMG_1.MOV share IMG_1.Exif, each with an entry of its own (ExifFile)
+        WriteExif(job, it, dest)
         Counts(enumPhase.phExif) += 1
 
         ' 3. PhotoIndex
@@ -253,6 +248,12 @@ Public Class ImportRunner
             Dim info As New IO.FileInfo(dest)
             Dim year As Integer = If(it.ShotDate.HasValue, it.ShotDate.Value.Year, info.LastWriteTime.Year)
             db.SaveImportedFaces(dest, info.Length, info.LastWriteTime, year, it.Faces)
+            If m_bolFaceArchive Then
+                Try
+                    Call New ExifFile(dest).SetElement("Faces", db.FaceArchiveOf(dest))   ' else the next background export
+                Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException
+                End Try
+            End If
             Counts(enumPhase.phFaces) += 1
             Dim n As Integer = it.VisibleFaces.Count()
             If n > 0 Then notes.Add(n & " 張臉")
@@ -266,22 +267,18 @@ Public Class ImportRunner
         Dim fs As New Carbon.FileSystem
         Dim strDateTime As String = If(it.ShotDateTime <> "", it.ShotDateTime, GetExifFileDateTime(fs, strDest))
         strDateTime = strDateTime.PadRight(14, "0"c)
-        Dim ini As New Carbon.IniFile With {.FileName = IO.Path.ChangeExtension(strDest, gc_strExifPattern)}
-        With ini
-            .SimpleSetValue("Create", "Date", Mid(strDateTime, 1, 8))
-            .SimpleSetValue("Create", "Time", Mid(strDateTime, 9, 6))
-            .SimpleSetValue("Exif", "Date", Mid(strDateTime, 1, 8))
-            .SimpleSetValue("Exif", "Time", Mid(strDateTime, 9, 6))
-            .SimpleSetValue("Exif", "Title", it.Title)
-            .SimpleSetValue("Exif", "Character", it.Character())
-            If it.Gps <> "" Then .SimpleSetValue("Exif", "GPS", it.Gps)
-            If it.Country <> "" Then .SimpleSetValue("Exif", "Country", it.Country)
-            If it.City <> "" Then .SimpleSetValue("Exif", "City", it.City)
-            If it.Town <> "" Then .SimpleSetValue("Exif", "Town", it.Town)
-            .SimpleSetValue("Exif", "Spot", it.SpotFor(job.Spot))
-            .SimpleSetValue("Exif", "KeyWord", it.KeyWord)
-            .SimpleSetValue("Exif", "Remark", it.Remark)
-        End With
+        Dim values As New List(Of (Section As String, Key As String, Value As String)) From {
+            ("Create", "Date", Mid(strDateTime, 1, 8)), ("Create", "Time", Mid(strDateTime, 9, 6)),
+            ("Exif", "Date", Mid(strDateTime, 1, 8)), ("Exif", "Time", Mid(strDateTime, 9, 6)),
+            ("Exif", "Title", it.Title), ("Exif", "Character", it.Character())}
+        If it.Gps <> "" Then values.Add(("Exif", "GPS", it.Gps))
+        If it.Country <> "" Then values.Add(("Exif", "Country", it.Country))
+        If it.City <> "" Then values.Add(("Exif", "City", it.City))
+        If it.Town <> "" Then values.Add(("Exif", "Town", it.Town))
+        values.Add(("Exif", "Spot", it.SpotFor(job.Spot)))
+        values.Add(("Exif", "KeyWord", it.KeyWord))
+        values.Add(("Exif", "Remark", it.Remark))
+        Call New ExifFile(strDest).SetValues(values)   ' one write
     End Sub
 
     ''' <summary>olyalbum.inf and Note.Ini of the new class folder (as frmImport wrote them).</summary>

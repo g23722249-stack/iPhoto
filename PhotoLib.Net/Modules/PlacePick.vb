@@ -65,10 +65,10 @@ Public Module PlacePick
     '==================================================================================================
     ''' <summary>True when the photo already has a position: its .Exif GPS, or the picture's own EXIF.</summary>
     Public Function HasGps(ByVal strFile As String) As Boolean
-        Dim exif As String = Path.ChangeExtension(strFile, gc_strExifPattern)
-        If File.Exists(exif) Then
+        Dim exif As New ExifFile(strFile)
+        If exif.Exists Then
             Dim lat, lon As Double
-            If PlaceNames.TryParseGps(GetClearText(New Carbon.IniFile With {.FileName = exif}.SimpleGetValue("Exif", "GPS")), lat, lon) Then Return True
+            If PlaceNames.TryParseGps(GetClearText(exif.SimpleGetValue("Exif", "GPS")), lat, lon) Then Return True
         End If
         Return PlaceNames.GpsOfPicture(strFile) <> ""
     End Function
@@ -111,8 +111,7 @@ Public Module PlacePick
         Dim fs As New Carbon.FileSystem
         For Each f In todo
             Try
-                Dim exif As String = Path.ChangeExtension(f, gc_strExifPattern)
-                If Not File.Exists(exif) Then
+                If Not New ExifFile(f).Exists Then
                     Dim created As Boolean
                     ExifRegen.RegenerateOne(f, fs, created)   ' a whole .Exif (dates and all), as an import makes
                 End If
@@ -140,7 +139,7 @@ Public Module PlacePick
     ''' <paramref name="folder"/>\Exif_Place_yyyyMMdd_HHmmss.zip, each under its full path; "" when there was
     ''' nothing to keep, Nothing when it failed.</summary>
     Public Function Backup(ByVal files As IEnumerable(Of String), ByVal folder As String) As String
-        Dim exifs = files.Select(Function(f) Path.ChangeExtension(f, gc_strExifPattern)).Where(Function(x) File.Exists(x)).ToList()
+        Dim exifs = files.Select(Function(f) ExifFile.SidecarOf(f)).Distinct(StringComparer.OrdinalIgnoreCase).Where(Function(x) File.Exists(x)).ToList()   ' IMG_1.JPG and IMG_1.MP4 share one
         If exifs.Count = 0 Then Return ""
         Try
             Directory.CreateDirectory(folder)

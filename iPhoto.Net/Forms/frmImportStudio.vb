@@ -560,17 +560,11 @@ Friend Class frmImportStudio
             lblDup.Text = ""
         End If
 
-        ' IMG_1.JPG + IMG_1.MOV would share IMG_1.Exif
+        ' the file names they will get (IMG_1.JPG + IMG_1.MOV sharing IMG_1.Exif is fine: an entry each)
         Dim probe As New ImportJob
         probe.Items.AddRange(m_items)
         probe.AssignFileNames()
-        Dim shared_ = inc.Where(Function(i) i.SharesExifWith <> "").ToList()
-        If shared_.Count > 0 Then
-            lblShared.Text = "注意：有 " & shared_.Count & " 個檔案和另一個檔案同名（例如 " & shared_(0).FileName & " 和 " & shared_(0).SharesExifWith &
-                             "），它們會共用同一個 .Exif，只保留照片的資料。縮圖上標「同名」。"
-        Else
-            lblShared.Text = ""
-        End If
+        lblShared.Text = ""
 
         Dim split As String = ""
         If chkSplit.Checked Then

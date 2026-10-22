@@ -8,7 +8,13 @@ Friend Module PhotoFiles
         Dim remove As Func(Of String, Boolean) = If(permanent, New Func(Of String, Boolean)(AddressOf DeleteNow), New Func(Of String, Boolean)(AddressOf Recycle))
         If Not remove(file) Then Return False
         Dim folder As String = IO.Path.GetDirectoryName(file), baseName As String = IO.Path.GetFileNameWithoutExtension(file)
-        remove(IO.Path.Combine(folder, baseName & "." & gc_strExifPattern))
+        ' its .Exif entry; the side file itself only when no other file of the name has one in it
+        Dim lastEntry As Boolean = True
+        Try
+            lastEntry = ExifFile.RemoveEntry(file)
+        Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException
+        End Try
+        If lastEntry Then remove(ExifFile.SidecarOf(file))
         remove(IO.Path.Combine(folder, "Restore", IO.Path.GetFileName(file)))
         remove(IO.Path.Combine(folder, "Thumb", baseName & ".jpg"))
         g_lpDatabase?.Delete(file)

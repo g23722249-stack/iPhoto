@@ -21,7 +21,6 @@ Friend Class frmShowPhoto
 
     Private Sub MovePhotoToScreen()
         Dim fs As Carbon.FileSystem = g_lpFileSystem
-        Dim strExifFile As String = fs.AnalyseFile(fsParentFolderName, m_strFileDesc) & "\" & fs.AnalyseFile(fsBaseName, m_strFileDesc) & "." & gc_strExifPattern
 
         lblFilePath.Text = fs.AnalyseFile(fsParentFolderName, m_strFileDesc)
         lblFileName.Text = fs.AnalyseFile(fsFileName, m_strFileDesc)
@@ -33,8 +32,7 @@ Friend Class frmShowPhoto
             lblFileLength.Text = ""
         End If
 
-        Dim ini As New Carbon.IniFile
-        ini.FileName = strExifFile
+        Dim ini As New ExifFile(m_strFileDesc)
         lblTitle.Text = ini.SimpleGetValue("Exif", "Title")
         lblCharacter.Text = ini.SimpleGetValue("Exif", "Character")
         lblSopt.Text = ini.SimpleGetValue("Exif", "Spot")

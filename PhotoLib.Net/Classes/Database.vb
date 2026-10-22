@@ -295,7 +295,7 @@ Public Class Database
     Public Shared Function FillPlace(ByVal p As Photo) As Boolean
         If p.MediaType <> enumPhotoMediaType.mdImage Then Return False
         ' no .Exif yet: make a whole one (dates and every key, as an import does), not one with only the place
-        If Not IO.File.Exists(IO.Path.ChangeExtension(p.FileDesc, gc_strExifPattern)) Then
+        If Not New ExifFile(p.FileDesc).Exists Then
             If PlaceNames.GpsOfPicture(p.FileDesc) = "" Then Return False
             Dim created As Boolean
             Return ExifRegen.RegenerateOne(p.FileDesc, New Carbon.FileSystem, created) > 0

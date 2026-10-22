@@ -225,13 +225,12 @@ Public Module LibAlbum
     ''' <summary>Sorts the first intCount entries of strFiles by their photo date/time (the .Exif side
     ''' file if it has one, else the file's last-write time); strFiles is replaced by the sorted list.</summary>
     Public Function SortPhotoFileByCreateDateTime(ByVal enumSort As enumSortOrder, ByRef strFiles() As String, ByVal intCount As Integer) As Integer
-        Dim fs As New Carbon.FileSystem
         Dim rows As New List(Of Tuple(Of String, String, String))
         For i = 0 To intCount - 1
             Dim f As String = If(strFiles(i), "").Trim()
             If f.Length = 0 Then Continue For
-            Dim exif As String = fs.AnalyseFile(fsParentFolderName, f) & "\" & fs.AnalyseFile(fsBaseName, f) & "." & gc_strExifPattern
-            rows.Add(Tuple.Create(f, IniDateOrFile(exif, "Exif", "Date", f, "yyyyMMdd", 8), IniDateOrFile(exif, "Exif", "Time", f, "HHmmss", 6)))
+            Dim exif As New ExifFile(f)
+            rows.Add(Tuple.Create(f, ExifDateOrFile(exif, "Date", f, "yyyyMMdd", 8), ExifDateOrFile(exif, "Time", f, "HHmmss", 6)))
         Next
         strFiles = SortRows(rows, enumSort, False)
         Return strFiles.Length
@@ -281,6 +280,14 @@ Public Module LibAlbum
 
     ''' <summary>The ini value zero-padded to <paramref name="digits"/>, or the file/folder's last-write
     ''' time in <paramref name="fileFormat"/> when the ini has no (non-zero) value.</summary>
+    ''' <summary>IniDateOrFile for a photo's [Exif] value (its .Exif entry).</summary>
+    Private Function ExifDateOrFile(ByVal exif As ExifFile, ByVal key As String,
+                                    ByVal path As String, ByVal fileFormat As String, ByVal digits As Integer) As String
+        Dim v As String = GetClearText(exif.SimpleGetValue("Exif", key))
+        If Val(v) > 0 Then Return PadNum(v, digits)
+        Return File.GetLastWriteTime(path).ToString(fileFormat)
+    End Function
+
     Private Function IniDateOrFile(ByVal iniPath As String, ByVal section As String, ByVal key As String,
                                    ByVal path As String, ByVal fileFormat As String, ByVal digits As Integer) As String
         Dim ini As New Carbon.IniFile With {.FileName = iniPath}

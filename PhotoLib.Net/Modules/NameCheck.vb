@@ -7,7 +7,7 @@ Imports System.IO
 ' The caller backs the .Exif files up first (Maintenance.BackupExif) and renames the face person.
 Public Module NameCheck
 
-    ''' <summary>A spelling and the .Exif files whose people field has it.</summary>
+    ''' <summary>A spelling and the photos / videos whose people field has it (an entry each of a shared .Exif).</summary>
     Public Class NameUse
         Public Name As String = ""
         Public ReadOnly Files As New List(Of String)
@@ -41,23 +41,24 @@ Public Module NameCheck
             Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
             End Try
         Next
+        Dim media As List(Of String) = files.SelectMany(Function(f) ExifFile.MediaFilesOf(f)).ToList()   ' the photos the side files belong to
         Dim uses As New Dictionary(Of String, NameUse)(StringComparer.Ordinal)
-        For i = 0 To files.Count - 1
-            For Each n In FaceNames.Split(ReadCharacter(files(i)))
+        For i = 0 To media.Count - 1
+            For Each n In FaceNames.Split(ReadCharacter(media(i)))
                 Dim u As NameUse = Nothing
                 If Not uses.TryGetValue(n, u) Then
                     u = New NameUse With {.Name = n}
                     uses(n) = u
                 End If
-                u.Files.Add(files(i))
+                u.Files.Add(media(i))
             Next
-            If progress IsNot Nothing AndAlso (i Mod 200 = 0 OrElse i = files.Count - 1) Then progress(i + 1, files.Count)
+            If progress IsNot Nothing AndAlso (i Mod 200 = 0 OrElse i = media.Count - 1) Then progress(i + 1, media.Count)
         Next
         Return uses
     End Function
 
-    Private Function ReadCharacter(ByVal exifFile As String) As String
-        Dim ini As New Carbon.IniFile With {.FileName = exifFile}
+    Private Function ReadCharacter(ByVal strMediaFile As String) As String
+        Dim ini As New ExifFile(strMediaFile)
         Return GetClearText(ini.SimpleGetValue("Exif", "Character"))
     End Function
 
@@ -156,15 +157,14 @@ Public Module NameCheck
     ''' .Exif files changed.</summary>
     Public Function Unify(ByVal from As NameUse, ByVal target As String, ByVal db As Database) As Integer
         Dim changed As Integer = 0
-        For Each exif In from.Files
-            Dim ini As New Carbon.IniFile With {.FileName = exif}
+        For Each photo In from.Files
+            Dim ini As New ExifFile(photo)
             Dim before As String = GetClearText(ini.SimpleGetValue("Exif", "Character"))
             Dim after As String = FaceNames.Rename(before, from.Name, target)
             If after = before Then Continue For
             ini.SimpleSetValue("Exif", "Character", after)
             changed += 1
-            Dim photo As String = PhotoOf(exif)
-            If photo <> "" AndAlso db IsNot Nothing AndAlso db.Implement Then
+            If File.Exists(photo) AndAlso db IsNot Nothing AndAlso db.Implement Then
                 Dim p As New Photo
                 p.Construct(photo)
                 db.SetPhotoCharacter(p)
@@ -177,34 +177,21 @@ Public Module NameCheck
     ''' PhotoIndex follows. Returns how many .Exif files changed.</summary>
     Public Function RemoveName(ByVal name As NameUse, ByVal db As Database) As Integer
         Dim changed As Integer = 0
-        For Each exif In name.Files
-            Dim ini As New Carbon.IniFile With {.FileName = exif}
+        For Each photo In name.Files
+            Dim ini As New ExifFile(photo)
             Dim before As String = GetClearText(ini.SimpleGetValue("Exif", "Character"))
             If Not FaceNames.Contains(before, name.Name) Then Continue For   ' Remove would also re-join the rest
             Dim after As String = FaceNames.Remove(before, name.Name)
             If after = before Then Continue For
             ini.SimpleSetValue("Exif", "Character", after)
             changed += 1
-            Dim photo As String = PhotoOf(exif)
-            If photo <> "" AndAlso db IsNot Nothing AndAlso db.Implement Then
+            If File.Exists(photo) AndAlso db IsNot Nothing AndAlso db.Implement Then
                 Dim p As New Photo
                 p.Construct(photo)
                 db.SetPhotoCharacter(p)
             End If
         Next
         Return changed
-    End Function
-
-    ''' <summary>The photo / video a .Exif belongs to ("" when it is gone).</summary>
-    Private Function PhotoOf(ByVal exifFile As String) As String
-        Dim folder As String = Path.GetDirectoryName(exifFile), baseName As String = Path.GetFileNameWithoutExtension(exifFile)
-        Try
-            Return Directory.GetFiles(folder, baseName & ".*").
-                   FirstOrDefault(Function(f) Not f.EndsWith("." & gc_strExifPattern, StringComparison.OrdinalIgnoreCase) AndAlso
-                                               String.Equals(Path.GetFileNameWithoutExtension(f), baseName, StringComparison.OrdinalIgnoreCase))
-        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
-        End Try
-        Return ""
     End Function
 
 End Module

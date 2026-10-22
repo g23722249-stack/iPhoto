@@ -109,6 +109,13 @@ Public Class FaceLibrary
         End Try
     End Sub
 
+    ''' <summary>After the face tables were made again outside (FaceArchive.Restore): forget what was loaded
+    ''' and sort again (the organizer also works out the templates). Stop the scan before the restore.</summary>
+    Public Sub Reload()
+        m_lpCatalog = Nothing
+        RequestOrganize()
+    End Sub
+
     Public Sub RequestOrganize()
         If IsRunning Then
             m_bolOrganizeAgain = True

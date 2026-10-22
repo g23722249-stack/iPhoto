@@ -9,7 +9,7 @@
 ' Title / Character / KeyWord / Remark can't be worked out: a missing one is added empty. GPS / Country /
 ' City / Town are only added with a value (as an import does).
 ' A photo whose .Exif was made or changed gets its PhotoIndex row written again. IMG_1.JPG and IMG_1.MOV
-' share IMG_1.Exif: the picture goes first. The caller backs the .Exif files up first
+' share IMG_1.Exif, each with an entry of its own (ExifFile). The caller backs the .Exif files up first
 ' (Maintenance.BackupExif). Worker thread: it opens its own Database.
 Public Module ExifRegen
 
@@ -25,25 +25,27 @@ Public Module ExifRegen
     ''' <summary>Fills in one file's .Exif; returns how many keys were written (0 = nothing to do) and
     ''' whether the .Exif had to be made.</summary>
     Public Function RegenerateOne(ByVal strFile As String, ByVal fs As Carbon.FileSystem, ByRef created As Boolean) As Integer
-        Dim exif As String = IO.Path.ChangeExtension(strFile, gc_strExifPattern)
-        created = Not IO.File.Exists(exif)
-        Dim ini As New Carbon.IniFile With {.FileName = exif}
+        Dim ini As New ExifFile(strFile)   ' this file's entry of the .Exif
+        created = Not ini.Exists
         Dim keys As New Dictionary(Of String, HashSet(Of String))(StringComparer.OrdinalIgnoreCase)
         For Each sec In {"Create", "Exif"}
             keys(sec) = New HashSet(Of String)(If(created, New String() {}, If(ini.EnumerateKeys(sec), New String() {})), StringComparer.OrdinalIgnoreCase)
         Next
-        Dim written As Integer = 0
+        Dim pending As New List(Of (Section As String, Key As String, Value As String))   ' written once, at the end
+        Dim newValues As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
 
         ' blank = missing or only spaces
         Dim valueOf = Function(sec As String, key As String) As String
+                          Dim v As String = Nothing
+                          If newValues.TryGetValue(sec & "|" & key, v) Then Return v
                           Return If(keys(sec).Contains(key), ini.SimpleGetValue(sec, key), "")
                       End Function
         Dim put = Sub(sec As String, key As String, value As String, addEmpty As Boolean)
                       If valueOf(sec, key) <> "" Then Return
                       If value = "" AndAlso (Not addEmpty OrElse keys(sec).Contains(key)) Then Return
-                      ini.SimpleSetValue(sec, key, value)
+                      pending.Add((sec, key, value))
+                      newValues(sec & "|" & key) = value
                       keys(sec).Add(key)
-                      written += 1
                   End Sub
 
         ' date and time
@@ -73,7 +75,8 @@ Public Module ExifRegen
 
         put("Exif", "KeyWord", "", True)
         put("Exif", "Remark", "", True)
-        Return written
+        If pending.Count > 0 Then ini.SetValues(pending)
+        Return pending.Count
     End Function
 
     ''' <summary>Every photo and video of the albums under <paramref name="roots"/>.

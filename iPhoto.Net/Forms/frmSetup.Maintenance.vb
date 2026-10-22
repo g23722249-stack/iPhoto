@@ -6,6 +6,8 @@ Partial Class frmSetup
     Private pageMaint As Aqua.TabPage
     Private lblDbBackup, lblExifBackup As Label
     Private WithEvents lblOpenBackups, lblExifNow, lblCleanOrphans, lblNameCheck, lblDuplicates, lblExifRegen, lblPeopleNames As Label
+    Private WithEvents lblExifConvert As Label   ' frmSetup.ExifConvert.vb
+    Private lblExifFormat As Label
     Private m_bolExifRegenBusy As Boolean
 
     Private Sub MaintPage_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -21,6 +23,9 @@ Partial Class frmSetup
         lblExifNow = AddLink("立即備份 .Exif", x + 20, 200, big, Color.FromArgb(42, 116, 208))
         lblOpenBackups = AddLink("開啟備份資料夾", x + 250, 200, big, Color.FromArgb(42, 116, 208))
         lblExifRegen = AddLink("重新產生 .Exif…", x + 480, 200, big, Color.FromArgb(42, 116, 208))   ' frmSetup.ExifRegen.vb
+        lblExifConvert = AddLink("轉換 .Exif 為新格式…", x + 20, 228, big, Color.FromArgb(42, 116, 208))   ' frmSetup.ExifConvert.vb
+        lblExifFormat = New Label With {.AutoSize = True, .Location = New Point(x + 250, 231), .Font = small, .ForeColor = Color.DimGray, .BackColor = Color.Transparent}
+        pageMaint.Controls.Add(lblExifFormat)
 
         AddHeading("清理失效紀錄", x, 256, big)
         pageMaint.Controls.Add(New Label With {
@@ -78,6 +83,7 @@ Partial Class frmSetup
         lblPeopleNames.Enabled = writable
         lblDuplicates.Enabled = writable
         lblExifRegen.Enabled = writable AndAlso Not m_bolExifRegenBusy AndAlso g_lpConfig.AlbumCount > 0
+        ShowExifFormat(writable)   ' frmSetup.ExifConvert.vb
         If Not ok Then lblDbBackup.Text = "找不到資料庫檔案，無法備份。"
     End Sub
 

@@ -404,9 +404,9 @@ Friend Class frmPlacePicker
     ''' <summary>The .Exif GPS of the first photo that has one ("" when none).</summary>
     Private Function ExistingGps() As String
         For Each f In m_lpFiles
-            Dim exif As String = Path.ChangeExtension(f, gc_strExifPattern)
-            If Not File.Exists(exif) Then Continue For
-            Dim g As String = GetClearText(New Carbon.IniFile With {.FileName = exif}.SimpleGetValue("Exif", "GPS"))
+            Dim exif As New ExifFile(f)
+            If Not exif.Exists Then Continue For
+            Dim g As String = GetClearText(exif.SimpleGetValue("Exif", "GPS"))
             If g <> "" Then Return g
         Next
         Return If(m_lpFiles.Count > 0, PlaceNames.GpsOfPicture(m_lpFiles(0)), "")
