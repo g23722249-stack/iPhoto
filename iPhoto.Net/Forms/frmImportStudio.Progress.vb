@@ -94,7 +94,7 @@ Partial Class frmImportStudio
             AddLog("有些照片還沒分析完面孔，匯入後會在背景補分析", True)
         End If
         Dim target As String = jobs(0).AlbumPath
-        SaveSetting(AppName, "Import Recent", "Album", target)   ' the album imported into (as frmImport kept it)
+        SaveSetting(AppName, "Import Recent", "Album", g_lpConfig.ToLocalPath(target))   ' the album imported into (as frmImport kept it)
 
         lstLog.Items.Clear()
         pnlSummary.Visible = False

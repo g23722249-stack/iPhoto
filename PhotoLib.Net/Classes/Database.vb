@@ -14,6 +14,10 @@ Imports System.Data.OleDb
 '   - SetYearChanged / SetMonthChanged ask once (SELECT DISTINCT) instead of once per month / per day.
 '   - TruncateTable deletes every row; VB6's "Where FileName <> Null" is never true in Jet, so it
 '     deleted nothing (Rebuild isn't called by iPhoto -- CreateServerObject has it commented out).
+'   - FileName (PhotoIndex, FacePhoto, FaceRegion, FaceIndex) is stored relative to the folder of
+'     iPhoto.mdb when on the same drive (LibraryPath), so the library works from another drive letter.
+'     Callers still pass and get full paths: ToStored / FromStored convert at every FileName here.
+'     Construct converts the full paths of an older .mdb once (MigrateToRelativePaths).
 Public Class Database
     Implements IDisposable
 
@@ -21,6 +25,7 @@ Public Class Database
 
     Private m_lpConnection As OleDbConnection
     Private m_bolImplement As Boolean = False
+    Private m_strBaseFolder As String = ""   ' the folder of iPhoto.mdb: FileName is relative to it
 
     ''' <summary>True once Construct opened the database.</summary>
     Public ReadOnly Property Implement As Boolean
@@ -40,6 +45,8 @@ Public Class Database
         Close()
         m_bolImplement = False
         If String.IsNullOrEmpty(szFileDesc) OrElse Not IO.File.Exists(szFileDesc) Then Return
+        m_strBaseFolder = IO.Path.GetDirectoryName(IO.Path.GetFullPath(szFileDesc))
+        MigrateToRelativePaths(szFileDesc)   ' before the shared connection: it needs the file to itself
         Try
             m_lpConnection = New OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" & szFileDesc)
             m_lpConnection.Open()
@@ -50,7 +57,132 @@ Public Class Database
         End Try
         EnsureGpsColumns()
         EnsurePlaceColumns()
+        ' converted (or nothing to convert): relative; otherwise full paths, as the rows still are
+        m_bolRelativeNames = PendingSteps(m_lpConnection).Count = 0
     End Sub
+
+    '==================================================================================================
+    ' Relative FileName (new in the .NET port)
+    '==================================================================================================
+    Private m_bolRelativeNames As Boolean = True   ' False: the .mdb still has full paths to convert
+
+    ''' <summary>A full path as FileName stores it (relative to the folder of iPhoto.mdb when on its drive).
+    ''' Full paths as they are while the .mdb still holds full ones (see MigrateToRelativePaths).</summary>
+    Public Function ToStored(ByVal strFileDesc As String) As String
+        If Not m_bolRelativeNames Then Return strFileDesc
+        Return LibraryPath.ToRelative(strFileDesc, m_strBaseFolder)
+    End Function
+
+    ''' <summary>A FileName value as a full path again.</summary>
+    Public Function FromStored(ByVal strStored As String) As String
+        Return LibraryPath.FromRelative(strStored, m_strBaseFolder)
+    End Function
+
+    ''' <summary>The full paths an older iPhoto.mdb holds become relative, in a few statements per table
+    ''' (no row by row: FileName isn't indexed). For each folder the .mdb is in, innermost first, the
+    ''' rows under it get "..\" once per level instead of the folder: with iPhoto.mdb in
+    ''' D:\生活剪輯\System\Database, D:\生活剪輯\Album\x.jpg becomes ..\..\Album\x.jpg. Rows of a library
+    ''' copied to another drive letter (E:\生活剪輯\...) still read D:\生活剪輯\...: for every folder but
+    ''' the drive itself the drive letter isn't compared, so they are converted too. A path elsewhere on
+    ''' another drive stays as it is.
+    ''' All four tables in one transaction, on a connection of its own opened exclusively: a table left
+    ''' with full paths while the others are relative would no longer be found (FileName links them), and
+    ''' shared, a transaction this size runs out of locks ("File sharing lock count exceeded", ~75,000
+    ''' rows). When it can't be done (read-only, the file in use, a relationship that refuses the update)
+    ''' nothing changes; Construct then keeps FileName as full paths until a later start converts it.</summary>
+    Private Sub MigrateToRelativePaths(ByVal szFileDesc As String)
+        If g_lpConfig IsNot Nothing AndAlso g_lpConfig.ReadOnly Then Return
+        Try
+            Using cn As New OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" & szFileDesc & ";Mode=Share Exclusive")
+                cn.Open()
+                Dim pending As Dictionary(Of String, List(Of MigrationStep)) = PendingSteps(cn)
+                If pending.Count = 0 Then Return
+                Using tx As OleDbTransaction = cn.BeginTransaction()
+                    For Each kv In pending
+                        For Each s In kv.Value
+                            Using cmd As New OleDbCommand("Update " & kv.Key & " Set FileName = ? & Mid(FileName, ?) Where FileName Like ?", cn, tx)
+                                cmd.Parameters.Add(New OleDbParameter With {.OleDbType = OleDbType.VarWChar, .Value = s.Dots})
+                                cmd.Parameters.Add(New OleDbParameter With {.OleDbType = OleDbType.Integer, .Value = s.Prefix.Length + 1})
+                                cmd.Parameters.Add(New OleDbParameter With {.OleDbType = OleDbType.VarWChar, .Value = s.LikePattern})
+                                cmd.ExecuteNonQuery()
+                            End Using
+                        Next
+                    Next
+                    tx.Commit()
+                End Using
+            End Using
+        Catch ex As Exception When TypeOf ex Is OleDbException OrElse TypeOf ex Is InvalidOperationException
+            ' in use, or rolled back: still full paths everywhere
+        End Try
+    End Sub
+
+    ''' <summary>One Update of MigrateToRelativePaths: the rows under Prefix (with any drive letter when
+    ''' AnyDrive) get Dots instead of it.</summary>
+    Private Structure MigrationStep
+        Public Dots As String
+        Public Prefix As String
+        Public AnyDrive As Boolean
+
+        Public ReadOnly Property LikePattern As String
+            Get
+                Dim escaped As String = Prefix.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]")   ' taken literally
+                Return If(AnyDrive, "_" & escaped.Substring(1), escaped) & "%"
+            End Get
+        End Property
+
+        ''' <summary>The same test as LikePattern (Jet's Like ignores case too), done here.</summary>
+        Public Function Matches(ByVal strFileName As String) As Boolean
+            If strFileName.Length < Prefix.Length Then Return False
+            If Not AnyDrive Then Return strFileName.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase)
+            Return String.Compare(strFileName, 1, Prefix, 1, Prefix.Length - 1, StringComparison.OrdinalIgnoreCase) = 0
+        End Function
+    End Structure
+
+    ''' <summary>The Updates, one or two per folder the .mdb is in, innermost first.</summary>
+    Private Function MigrationSteps() As List(Of MigrationStep)
+        Dim steps As New List(Of MigrationStep)
+        Dim d As String = m_strBaseFolder
+        Dim level As Integer = 0
+        While Not String.IsNullOrEmpty(d)
+            Dim prefix As String = d.TrimEnd("\"c) & "\"
+            Dim dots As String = String.Concat(Enumerable.Repeat("..\", level))
+            Dim parent As String = IO.Path.GetDirectoryName(d)
+            steps.Add(New MigrationStep With {.Dots = dots, .Prefix = prefix})   ' this drive
+            ' any drive letter, but not for the drive itself (that would take in a whole other drive)
+            If Not String.IsNullOrEmpty(parent) AndAlso prefix(1) = ":"c Then
+                steps.Add(New MigrationStep With {.Dots = dots, .Prefix = prefix, .AnyDrive = True})
+            End If
+            d = parent
+            level += 1
+        End While
+        Return steps
+    End Function
+
+    ''' <summary>By table, the Updates that have rows to convert (in their order). The full paths are read
+    ''' with one plain Like per table and matched here: a Where with a parameter per folder took Jet
+    ''' minutes. After the conversion only the few full paths elsewhere are read.</summary>
+    Private Function PendingSteps(ByVal cn As OleDbConnection) As Dictionary(Of String, List(Of MigrationStep))
+        Dim steps As List(Of MigrationStep) = MigrationSteps()
+        Dim result As New Dictionary(Of String, List(Of MigrationStep))
+        For Each table In {mc_strTableName, "FacePhoto", "FaceRegion", "FaceIndex"}
+            Dim used As New HashSet(Of Integer)
+            Try
+                Using cmd As New OleDbCommand("Select Distinct FileName From " & table & " Where FileName Like '_:\%' Or FileName Like '\\%'", cn)
+                    Using r As OleDbDataReader = cmd.ExecuteReader()
+                        While r.Read() AndAlso used.Count < steps.Count
+                            Dim f As String = AsText(r(0))
+                            Dim i As Integer = steps.FindIndex(Function(s) s.Matches(f))   ' the first that takes it
+                            If i >= 0 Then used.Add(i)
+                        End While
+                    End Using
+                End Using
+            Catch ex As OleDbException
+                Continue For   ' not there
+            End Try
+            If used.Count > 0 Then result(table) = used.OrderBy(Function(i) i).Select(Function(i) steps(i)).ToList()
+        Next
+        Return result
+    End Function
 
     ' [Exif] Country / City / Town (PlaceNames.Resolve) as PhotoIndex.Exif_Country / Exif_City / Exif_Town,
     ' so 地點 searches find 「新社」 in a photo whose 地點 is 「薰衣草森林」. Added like the GPS columns.
@@ -204,7 +336,7 @@ Public Class Database
 
     Public Sub Delete(ByVal strFileDesc As String)
         Try
-            Execute("Delete From " & mc_strTableName & " Where FileName = ?", strFileDesc)
+            Execute("Delete From " & mc_strTableName & " Where FileName = ?", ToStored(strFileDesc))
         Catch
             ' VB6: On Error Resume Next
         End Try
@@ -228,7 +360,7 @@ Public Class Database
                 " (FileName, Create_Date, Create_Year, Create_Month, Create_Day, Exif_Date, Exif_Year, Exif_Month, Exif_Day," &
                 "  Exif_Title, Exif_Character, Exif_Spot, Exif_Remark, Exif_KeyWord, Exif_Ranking, ModifyTime" & gpsCols & ")" &
                 " Values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?" & gpsVals & ")", m_lpConnection, tx)
-            For Each v In {p.FileDesc, d, y, m, dd, d, y, m, dd,
+            For Each v In {ToStored(p.FileDesc), d, y, m, dd, d, y, m, dd,
                            p.Exif(enumPhotoExif.peTitle), p.Exif(enumPhotoExif.peCharacter), p.Exif(enumPhotoExif.peSpot),
                            p.Exif(enumPhotoExif.peRemark), p.Exif(enumPhotoExif.peKeyWord)}
                 cmd.Parameters.Add(New OleDbParameter With {.OleDbType = OleDbType.VarWChar, .Value = If(v, "")})
@@ -253,7 +385,7 @@ Public Class Database
     Public Sub AddFaceCover(ByVal strFaceName As String, ByVal strFileDesc As String)
         Try
             Execute("Delete From FaceIndex Where FaceName = ?", strFaceName)
-            Execute("Insert Into FaceIndex (FaceName, FileName) Values (?, ?)", strFaceName, strFileDesc)
+            Execute("Insert Into FaceIndex (FaceName, FileName) Values (?, ?)", strFaceName, ToStored(strFileDesc))
         Catch ex As Exception
             MsgBox(ex.Message)
         End Try
@@ -288,7 +420,7 @@ Public Class Database
             Using cmd As New OleDbCommand("Select FileName, FaceName From FaceIndex", m_lpConnection)
                 Using r As OleDbDataReader = cmd.ExecuteReader()
                     While r.Read()
-                        files.Add(AsText(r(0)))
+                        files.Add(CoverFile(FromStored(AsText(r(0)))))
                         names.Add(AsText(r(1)))
                     End While
                 End Using
@@ -301,31 +433,31 @@ Public Class Database
 
     ''' <summary>Photos whose people (Exif_Character) contain <paramref name="strName"/>.</summary>
     Public Function LoadFaceFile(ByVal strName As String, ByRef strFileDesc() As String) As Integer
-        strFileDesc = FileNames("Select FileName From " & mc_strTableName & " Where InStr(Exif_Character, ?) > 0", strName)
+        strFileDesc = Paths("Select FileName From " & mc_strTableName & " Where InStr(Exif_Character, ?) > 0", strName)
         Return strFileDesc.Length
     End Function
 
     ''' <summary>Photos dated within the last 365 days.</summary>
     Public Function LoadOneYearFile(ByRef strFileDesc() As String) As Integer
-        strFileDesc = FileNames("Select FileName From " & mc_strTableName & " Where Exif_Date > ?", DateTime.Now.AddDays(-365).ToString("yyyyMMdd"))
+        strFileDesc = Paths("Select FileName From " & mc_strTableName & " Where Exif_Date > ?", DateTime.Now.AddDays(-365).ToString("yyyyMMdd"))
         Return strFileDesc.Length
     End Function
 
     ''' <summary>Five-star photos.</summary>
     Public Function LoadRankingFile(ByRef strFileDesc() As String) As Integer
-        strFileDesc = FileNames("Select FileName From " & mc_strTableName & " Where Exif_Ranking = 5")
+        strFileDesc = Paths("Select FileName From " & mc_strTableName & " Where Exif_Ranking = 5")
         Return strFileDesc.Length
     End Function
 
     Public Function LoadDateFile(ByVal intYear As Integer, ByVal intMonth As Integer, ByVal intDay As Integer, ByRef strFileDesc() As String) As Integer
-        strFileDesc = FileNames("Select FileName From " & mc_strTableName & " Where Exif_Year = ? And Exif_Month = ? And Exif_Day = ?",
+        strFileDesc = Paths("Select FileName From " & mc_strTableName & " Where Exif_Year = ? And Exif_Month = ? And Exif_Day = ?",
                                 intYear.ToString("0000"), intMonth.ToString("00"), intDay.ToString("00"))
         Return strFileDesc.Length
     End Function
 
     ''' <summary>Files matching a WHERE clause built by the caller (frmSearch).</summary>
     Public Function SearchFileArrayList(ByVal strWhereSQL As String, ByRef strFileDesc() As String) As Integer
-        strFileDesc = FileNames("Select FileName From " & mc_strTableName & " Where " & strWhereSQL)
+        strFileDesc = Paths("Select FileName From " & mc_strTableName & " Where " & strWhereSQL)
         Return strFileDesc.Length
     End Function
 
@@ -338,6 +470,12 @@ Public Class Database
         Using da As New OleDbDataAdapter(sql, m_lpConnection)
             da.Fill(objRecordSet)
         End Using
+        If objRecordSet.Columns.Contains("FileName") Then
+            For Each row As DataRow In objRecordSet.Rows
+                If row("FileName") IsNot DBNull.Value Then row("FileName") = FromStored(CStr(row("FileName")))
+            Next
+            objRecordSet.AcceptChanges()
+        End If
         Return objRecordSet.Rows.Count > 0
     End Function
 
@@ -363,6 +501,11 @@ Public Class Database
             End Using
         End If
         Return result.ToArray()
+    End Function
+
+    ''' <summary><see cref="FileNames"/> for a FileName column: the values as full paths.</summary>
+    Private Function Paths(ByVal sql As String, ParamArray values As Object()) As String()
+        Return FileNames(sql, values).Select(Function(s) FromStored(s)).ToArray()
     End Function
 
     Private Function DistinctNumbers(ByVal sql As String, ParamArray values As Object()) As HashSet(Of Integer)

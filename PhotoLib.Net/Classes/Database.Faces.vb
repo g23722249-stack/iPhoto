@@ -45,10 +45,10 @@ Partial Public Class Database
         If Not FaceTablesReady Then Return result
         Using cmd As New OleDbCommand("Select FileName, FileSize, FileTime, EngineVer From FacePhoto" &
                                       If(strFileDesc Is Nothing, "", " Where FileName = ?"), m_lpConnection)
-            If strFileDesc IsNot Nothing Then cmd.Parameters.Add(Txt(strFileDesc))
+            If strFileDesc IsNot Nothing Then cmd.Parameters.Add(Pth(strFileDesc))
             Using r As OleDbDataReader = cmd.ExecuteReader()
                 While r.Read()
-                    result(AsText(r(0))) = New FacePhotoState With {
+                    result(FromStored(AsText(r(0)))) = New FacePhotoState With {
                         .FileSize = If(IsDBNull(r(1)), -1L, CLng(r(1))),
                         .FileTime = If(IsDBNull(r(2)), DateTime.MinValue, CDate(r(2))),
                         .EngineVer = AsText(r(3))}
@@ -73,9 +73,9 @@ Partial Public Class Database
         If Not FaceTablesReady Then Return
         WithRetry(Sub()
                       Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
-                          Exec(tx, "Delete From FacePhoto Where FileName = ?", Txt(strFileDesc))
+                          Exec(tx, "Delete From FacePhoto Where FileName = ?", Pth(strFileDesc))
                           Exec(tx, "Insert Into FacePhoto (FileName, FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer) Values (?, ?, ?, ?, ?, ?, ?, ?)",
-                               Txt(strFileDesc), P(OleDbType.Integer, CInt(Math.Min(lngSize, Integer.MaxValue))), P(OleDbType.Date, dtFileTime),
+                               Pth(strFileDesc), P(OleDbType.Integer, CInt(Math.Min(lngSize, Integer.MaxValue))), P(OleDbType.Date, dtFileTime),
                                P(OleDbType.SmallInt, CShort(intShotYear)), P(OleDbType.UnsignedTinyInt, CByte(If(faces Is Nothing, 2, 1))),
                                P(OleDbType.SmallInt, CShort(If(faces Is Nothing, 0, faces.Count))), P(OleDbType.Date, DateTime.Now), Txt(Quartz.FaceEngine.Version))
                           If faces IsNot Nothing Then
@@ -93,7 +93,7 @@ Partial Public Class Database
         Dim marks(39) As Byte
         Buffer.BlockCopy(f.Landmarks.SelectMany(Function(p) {p.X, p.Y}).ToArray(), 0, marks, 0, 40)
         Exec(tx, "Insert Into FaceRegion (FileName, X, Y, W, H, Landmarks, Score, Embedding, State, ShotYear, CreateTime, UpdateTime) Values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-             Txt(strFileDesc), P(OleDbType.Single, f.Box.X), P(OleDbType.Single, f.Box.Y), P(OleDbType.Single, f.Box.Width), P(OleDbType.Single, f.Box.Height),
+             Pth(strFileDesc), P(OleDbType.Single, f.Box.X), P(OleDbType.Single, f.Box.Y), P(OleDbType.Single, f.Box.Width), P(OleDbType.Single, f.Box.Height),
              P(OleDbType.Binary, marks), P(OleDbType.Single, f.Score), P(OleDbType.LongVarBinary, If(Quartz.FaceEngine.FeatureToBytes(f.Feature), CObj(DBNull.Value))),
              P(OleDbType.UnsignedTinyInt, CByte(state)), P(OleDbType.SmallInt, CShort(intShotYear)), P(OleDbType.Date, DateTime.Now), P(OleDbType.Date, DateTime.Now))
         Using cmd As New OleDbCommand("Select @@IDENTITY", m_lpConnection, tx)
@@ -111,11 +111,11 @@ Partial Public Class Database
         Using cmd As New OleDbCommand("Select r.FaceID, r.FileName, r.X, r.Y, r.W, r.H, r.Score, r.Embedding, r.PersonID, p.FaceName, r.State, r.Similarity, r.ShotYear" &
                                       " From FaceRegion AS r Left Join FacePerson AS p On r.PersonID = p.PersonID" &
                                       " Where r.FileName = ? And r.State <> 9 Order By r.X", m_lpConnection)
-            cmd.Parameters.Add(Txt(strFileDesc))
+            cmd.Parameters.Add(Pth(strFileDesc))
             Using r As OleDbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     result.Add(New FaceRegion With {
-                        .FaceID = CInt(r(0)), .FileName = AsText(r(1)),
+                        .FaceID = CInt(r(0)), .FileName = FromStored(AsText(r(1))),
                         .Box = New RectangleF(Sng(r(2)), Sng(r(3)), Sng(r(4)), Sng(r(5))),
                         .Score = Sng(r(6)),
                         .Feature = If(IsDBNull(r(7)), Nothing, Quartz.FaceEngine.BytesToFeature(CType(r(7), Byte()))),
@@ -134,11 +134,11 @@ Partial Public Class Database
         Return WithRetry(Function()
                              Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
                                  Using cmd As New OleDbCommand("Select Count(*) From FacePhoto Where FileName = ?", m_lpConnection, tx)
-                                     cmd.Parameters.Add(Txt(strFileDesc))
+                                     cmd.Parameters.Add(Pth(strFileDesc))
                                      If CInt(cmd.ExecuteScalar()) = 0 Then Return 0
                                  End Using
                                  Dim id As Integer = InsertFaceRegion(tx, strFileDesc, f, FaceRegion.enumFaceState.fsManual, intShotYear)
-                                 Exec(tx, "Update FacePhoto Set FaceCount = FaceCount + 1 Where FileName = ?", Txt(strFileDesc))
+                                 Exec(tx, "Update FacePhoto Set FaceCount = FaceCount + 1 Where FileName = ?", Pth(strFileDesc))
                                  tx.Commit()
                                  Return id
                              End Using
@@ -157,7 +157,7 @@ Partial Public Class Database
     Public Function PhotoHasPerson(ByVal strFileDesc As String, ByVal intPersonID As Integer, ByVal intExceptFaceID As Integer) As Boolean
         If Not FaceTablesReady Then Return False
         Using cmd As New OleDbCommand("Select Count(*) From FaceRegion Where FileName = ? And PersonID = ? And FaceID <> ? And State = 3", m_lpConnection)
-            cmd.Parameters.Add(Txt(strFileDesc))
+            cmd.Parameters.Add(Pth(strFileDesc))
             cmd.Parameters.Add(P(OleDbType.Integer, intPersonID))
             cmd.Parameters.Add(P(OleDbType.Integer, intExceptFaceID))
             Return CInt(cmd.ExecuteScalar()) > 0
@@ -223,7 +223,7 @@ Partial Public Class Database
             Using r As OleDbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     result.Add(New FaceRegion With {
-                        .FaceID = CInt(r(0)), .FileName = AsText(r(1)),
+                        .FaceID = CInt(r(0)), .FileName = FromStored(AsText(r(1))),
                         .Box = New RectangleF(Sng(r(2)), Sng(r(3)), Sng(r(4)), Sng(r(5))),
                         .Score = Sng(r(6)),
                         .Feature = If(IsDBNull(r(7)), Nothing, Quartz.FaceEngine.BytesToFeature(CType(r(7), Byte()))),
@@ -267,7 +267,7 @@ Partial Public Class Database
         Using cmd As New OleDbCommand("Select FileName, Exif_Character From " & mc_strTableName & " Where Exif_Character <> ''", m_lpConnection)
             Using r As OleDbDataReader = cmd.ExecuteReader()
                 While r.Read()
-                    result(AsText(r(0))) = AsText(r(1))
+                    result(FromStored(AsText(r(0)))) = AsText(r(1))
                 End While
             End Using
         End Using
@@ -390,9 +390,9 @@ Partial Public Class Database
                       Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
                           Exec(tx, "Insert Into FacePhoto (FileName, FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer)" &
                                    " Select ?, FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer From FacePhoto Where FileName = ?",
-                               Txt(strNew), Txt(strOld))
-                          Exec(tx, "Update FaceRegion Set FileName = ? Where FileName = ?", Txt(strNew), Txt(strOld))
-                          Exec(tx, "Delete From FacePhoto Where FileName = ?", Txt(strOld))
+                               Pth(strNew), Pth(strOld))
+                          Exec(tx, "Update FaceRegion Set FileName = ? Where FileName = ?", Pth(strNew), Pth(strOld))
+                          Exec(tx, "Delete From FacePhoto Where FileName = ?", Pth(strOld))
                           tx.Commit()
                       End Using
                   End Sub)
@@ -403,9 +403,9 @@ Partial Public Class Database
         If Not FaceTablesReady Then Return
         WithRetry(Sub()
                       Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
-                          Exec(tx, "Delete From FaceReject Where FaceID In (Select FaceID From FaceRegion Where FileName = ?)", Txt(strFileDesc))
-                          Exec(tx, "Delete From FaceRegion Where FileName = ?", Txt(strFileDesc))
-                          Exec(tx, "Delete From FacePhoto Where FileName = ?", Txt(strFileDesc))
+                          Exec(tx, "Delete From FaceReject Where FaceID In (Select FaceID From FaceRegion Where FileName = ?)", Pth(strFileDesc))
+                          Exec(tx, "Delete From FaceRegion Where FileName = ?", Pth(strFileDesc))
+                          Exec(tx, "Delete From FacePhoto Where FileName = ?", Pth(strFileDesc))
                           tx.Commit()
                       End Using
                   End Sub)
@@ -468,7 +468,7 @@ Partial Public Class Database
                       Using cmd As New OleDbCommand("Update " & mc_strTableName & " Set Exif_Character = ?, ModifyTime = ? Where FileName = ?", m_lpConnection)
                           cmd.Parameters.Add(Txt(lpPhoto.Exif(enumPhotoExif.peCharacter)))
                           cmd.Parameters.Add(P(OleDbType.Date, DateTime.Now))
-                          cmd.Parameters.Add(Txt(lpPhoto.FileDesc))
+                          cmd.Parameters.Add(Pth(lpPhoto.FileDesc))
                           updated = cmd.ExecuteNonQuery()
                       End Using
                   End Sub)
@@ -511,8 +511,71 @@ Partial Public Class Database
         If Not m_bolImplement Then Return ""
         Using cmd As New OleDbCommand("Select FileName From FaceIndex Where FaceName = ?", m_lpConnection)
             cmd.Parameters.Add(Txt(strName))
-            Return AsText(cmd.ExecuteScalar())
+            Return CoverFile(FromStored(AsText(cmd.ExecuteScalar())))
         End Using
+    End Function
+
+    '==================================================================================================
+    ' The name cards go with the library (new in the .NET port): cards made outside 生活剪輯 (VB6's
+    ' iPhoto\System\FaceCover) are copied into the cards' folder once (Config: 生活剪輯\System\FaceIndex
+    ' by default), so a library copied to a USB stick keeps them.
+    '==================================================================================================
+    Private m_strCoverFolder As String = ""
+
+    ''' <summary>Sets the cards' folder and copies the cards that are outside the library into it, their
+    ''' FaceIndex rows then naming the copy. Nothing is deleted or overwritten: a card of that file name
+    ''' already in the folder is used as it is. A card whose file is gone stays as it was. Called at start.</summary>
+    Public Sub UseFaceCoverFolder(ByVal strFolder As String)
+        m_strCoverFolder = If(strFolder, "").Trim()
+        If Not m_bolImplement OrElse m_strCoverFolder.Length = 0 Then Return
+        If g_lpConfig IsNot Nothing AndAlso g_lpConfig.ReadOnly Then Return
+        ' the library: the folder above System\Database (生活剪輯)
+        Dim systemFolder As String = IO.Path.GetDirectoryName(m_strBaseFolder)
+        Dim root As String = If(String.IsNullOrEmpty(systemFolder), Nothing, IO.Path.GetDirectoryName(systemFolder))
+        If String.IsNullOrEmpty(root) Then root = m_strBaseFolder
+        root = root.TrimEnd("\"c) & "\"
+        Dim cards As New List(Of (Name As String, File As String))
+        Try
+            Using cmd As New OleDbCommand("Select FaceName, FileName From FaceIndex", m_lpConnection)
+                Using r As OleDbDataReader = cmd.ExecuteReader()
+                    While r.Read()
+                        cards.Add((AsText(r(0)), FromStored(AsText(r(1)))))
+                    End While
+                End Using
+            End Using
+        Catch ex As OleDbException
+            Return   ' no FaceIndex
+        End Try
+        For Each c In cards
+            If c.File.Length = 0 OrElse c.File.StartsWith(root, StringComparison.OrdinalIgnoreCase) Then Continue For   ' goes with the library
+            Dim dst As String
+            Try
+                dst = IO.Path.Combine(m_strCoverFolder, IO.Path.GetFileName(c.File))
+                If Not IO.File.Exists(dst) Then
+                    If Not IO.File.Exists(c.File) Then Continue For
+                    IO.Directory.CreateDirectory(m_strCoverFolder)
+                    IO.File.Copy(c.File, dst)
+                End If
+            Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is ArgumentException
+                Continue For
+            End Try
+            Try
+                Exec(Nothing, "Update FaceIndex Set FileName = ? Where FaceName = ?", Pth(dst), Txt(c.Name))
+            Catch ex As OleDbException
+            End Try
+        Next
+    End Sub
+
+    ''' <summary>A card's file as FaceIndex names it, or when that file is gone the one of the same name
+    ''' in the cards' folder (a card copied there by hand still shows).</summary>
+    Private Function CoverFile(ByVal strFileDesc As String) As String
+        If String.IsNullOrEmpty(strFileDesc) OrElse m_strCoverFolder.Length = 0 OrElse IO.File.Exists(strFileDesc) Then Return strFileDesc
+        Try
+            Dim alt As String = IO.Path.Combine(m_strCoverFolder, IO.Path.GetFileName(strFileDesc))
+            Return If(IO.File.Exists(alt), alt, strFileDesc)
+        Catch ex As ArgumentException
+            Return strFileDesc
+        End Try
     End Function
 
     ''' <summary>Moves a FaceIndex name card to a new name (the card file itself keeps its name).</summary>
@@ -590,6 +653,11 @@ Partial Public Class Database
 
     Private Shared Function Sng(ByVal v As Object) As Single
         Return If(v Is Nothing OrElse IsDBNull(v), 0.0F, CSng(v))
+    End Function
+
+    ''' <summary>A FileName parameter: the full path as stored (ToStored).</summary>
+    Private Function Pth(ByVal strFileDesc As String) As OleDbParameter
+        Return Txt(ToStored(strFileDesc))
     End Function
 
 End Class

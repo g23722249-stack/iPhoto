@@ -72,6 +72,7 @@ Friend Class frmSetup
         g_lpConfig.Attached(Config.enumAttachedFile.filKeyWord) = txtAttached(1).Text
         g_lpConfig.Attached(Config.enumAttachedFile.filAddressBook) = txtAttached(2).Text
         g_lpConfig.Attached(Config.enumAttachedFile.filFaceCover) = txtAttached(3).Text
+        g_lpDatabase?.UseFaceCoverFolder(g_lpConfig.Attached(Config.enumAttachedFile.filFaceCover))
 
         SaveFacePage()   ' frmSetup.Faces.vb
         SaveImportOption()   ' frmSetup.Import.vb

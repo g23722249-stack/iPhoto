@@ -52,7 +52,7 @@ Public Class Book
         Dim files() As String = Nothing
         Dim count As Integer = LoadProfileSectionValues(m_szFavoriteAlbumFile, "Photos", "File", files)
         For i = 0 To count - 1
-            files(i) = files(i).Trim()
+            files(i) = FullPath(files(i).Trim())
         Next
         count = SortPhotoFileByCreateDateTime(enumSortOrder.Ascending, files, count)
         Dim total As Long = 0
@@ -103,14 +103,14 @@ Public Class Book
             w.WriteLine("Date=" & noteDate)
             w.WriteLine("Spot=" & spot)
             w.WriteLine("Icon=" & icon)
-            w.WriteLine("Music=" & music)
+            w.WriteLine("Music=" & StoredPath(music))
             w.WriteLine("Remark=" & remark)
-            If cover <> "" Then w.WriteLine("Cover=" & cover)   ' 設為相本封面 (new in the .NET port)
+            If cover <> "" Then w.WriteLine("Cover=" & StoredPath(cover))   ' 設為相本封面 (new in the .NET port)
             w.WriteLine(" ")
             w.WriteLine("//相片")
             w.WriteLine("[Photos]")
             For Each p In m_lpPhoto
-                w.WriteLine("File=" & p.FileDesc.Trim())
+                w.WriteLine("File=" & StoredPath(p.FileDesc.Trim()))
             Next
             w.WriteLine(" ")
         End Using

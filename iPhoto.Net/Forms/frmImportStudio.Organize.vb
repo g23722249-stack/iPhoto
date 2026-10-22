@@ -199,7 +199,7 @@ Partial Class frmImportStudio
                 cboAlbum.Items.Add(New AlbumTarget With {.Path = s, .Text = IO.Path.GetFileName(root.TrimEnd("\"c)) & " › " & IO.Path.GetFileName(s)})
             Next
         Next
-        Dim recent As String = GetSetting(AppName, "Import Recent", "Album", "")
+        Dim recent As String = g_lpConfig.FromLocalPath(GetSetting(AppName, "Import Recent", "Album", ""))
         Dim idx As Integer = -1
         For i = 0 To cboAlbum.Items.Count - 1
             If String.Equals(CType(cboAlbum.Items(i), AlbumTarget).Path, recent, StringComparison.OrdinalIgnoreCase) Then idx = i

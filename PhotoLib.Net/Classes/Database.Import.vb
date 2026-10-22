@@ -11,7 +11,7 @@ Partial Public Class Database
         WithRetry(Sub()
                       Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
                           Using cmd As New OleDbCommand("Delete From " & mc_strTableName & " Where FileName = ?", m_lpConnection, tx)
-                              cmd.Parameters.Add(Txt(lpPhoto.FileDesc))
+                              cmd.Parameters.Add(Pth(lpPhoto.FileDesc))
                               cmd.ExecuteNonQuery()
                           End Using
                           InsertPhoto(lpPhoto, tx)
@@ -24,7 +24,7 @@ Partial Public Class Database
     Public Function PhotoIndexed(ByVal strFileDesc As String) As Boolean
         If Not m_bolImplement Then Return False
         Using cmd As New OleDbCommand("Select Count(*) From " & mc_strTableName & " Where FileName = ?", m_lpConnection)
-            cmd.Parameters.Add(Txt(strFileDesc))
+            cmd.Parameters.Add(Pth(strFileDesc))
             Return CInt(cmd.ExecuteScalar()) > 0
         End Using
     End Function
@@ -55,9 +55,9 @@ Partial Public Class Database
         WithRetry(Sub()
                       faceIDs.Clear()
                       Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
-                          Exec(tx, "Delete From FacePhoto Where FileName = ?", Txt(strFileDesc))
+                          Exec(tx, "Delete From FacePhoto Where FileName = ?", Pth(strFileDesc))
                           Exec(tx, "Insert Into FacePhoto (FileName, FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer) Values (?, ?, ?, ?, ?, ?, ?, ?)",
-                               Txt(strFileDesc), P(OleDbType.Integer, CInt(Math.Min(lngSize, Integer.MaxValue))), P(OleDbType.Date, dtFileTime),
+                               Pth(strFileDesc), P(OleDbType.Integer, CInt(Math.Min(lngSize, Integer.MaxValue))), P(OleDbType.Date, dtFileTime),
                                P(OleDbType.SmallInt, CShort(intShotYear)), P(OleDbType.UnsignedTinyInt, CByte(1)),
                                P(OleDbType.SmallInt, CShort(faces.Count)), P(OleDbType.Date, DateTime.Now), Txt(Quartz.FaceEngine.Version))
                           For Each f In faces

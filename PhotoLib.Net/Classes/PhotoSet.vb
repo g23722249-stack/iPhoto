@@ -103,7 +103,7 @@ Public MustInherit Class PhotoSet
                     Dim icon As String = ini.SimpleGetValue("Note", "Icon")
                     Return If(icon.Trim().Length = 0, "icoOther", icon)
                 Case enumNote.ntSelIcon : Return "icoFilm"
-                Case enumNote.ntMusic : Return ini.SimpleGetValue("Note", "Music")
+                Case enumNote.ntMusic : Return FullPath(ini.SimpleGetValue("Note", "Music"))
                 Case enumNote.ntRemark : Return ini.SimpleGetValue("Note", "Remark").Replace(vbCrLf, vbTab)
             End Select
             Return ""
@@ -117,7 +117,7 @@ Public MustInherit Class PhotoSet
                 Case enumNote.ntSopt : ini.SimpleSetValue("Note", "Spot", value)
                 Case enumNote.ntIcon : ini.SimpleSetValue("Note", "Icon", value)
                 Case enumNote.ntSelIcon
-                Case enumNote.ntMusic : ini.SimpleSetValue("Note", "Music", value)
+                Case enumNote.ntMusic : ini.SimpleSetValue("Note", "Music", StoredPath(value))
                 Case enumNote.ntRemark : ini.SimpleSetValue("Note", "Remark", If(value, "").Replace(vbCrLf, vbTab))
             End Select
         End Set
@@ -129,14 +129,29 @@ Public MustInherit Class PhotoSet
         Get
             If Not CheckCreate() Then Return ""
             Dim ini As New Carbon.IniFile With {.FileName = NoteFile}
-            Return If(ini.SimpleGetValue("Note", "Cover"), "").Trim()
+            Return FullPath(If(ini.SimpleGetValue("Note", "Cover"), "").Trim())
         End Get
         Set(value As String)
             If Not CheckCreate() Then Return
             Dim ini As New Carbon.IniFile With {.FileName = NoteFile}
-            ini.SimpleSetValue("Note", "Cover", If(value, ""))
+            ini.SimpleSetValue("Note", "Cover", StoredPath(If(value, "")))
         End Set
     End Property
+
+    ''' <summary>A full path as the note ini / .Alm keeps it: relative to that file's folder when on its
+    ''' drive (LibraryPath), so the album still finds its photos from another drive letter.</summary>
+    Protected Function StoredPath(ByVal strFileDesc As String) As String
+        Return LibraryPath.ToRelative(strFileDesc, NoteFolder())
+    End Function
+
+    ''' <summary>A path read from the note ini / .Alm as a full path (an old absolute one as it is).</summary>
+    Protected Function FullPath(ByVal strStored As String) As String
+        Return LibraryPath.FromRelative(strStored, NoteFolder())
+    End Function
+
+    Private Function NoteFolder() As String
+        Return If(String.IsNullOrEmpty(NoteFile), "", IO.Path.GetDirectoryName(IO.Path.GetFullPath(NoteFile)))
+    End Function
 
     Public Sub Clear()
         m_lpPhoto.Clear()

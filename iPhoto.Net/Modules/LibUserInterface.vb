@@ -250,21 +250,21 @@ Friend Module LibUserInterface
     '//紀錄最近的 Album or Favorite By TreeView
     Public Sub SaveRecentSection(ByVal enumExe As enumExeMode, ByVal lpStorage As Storage, ByVal iSectionIndex As Integer)
         Select Case enumExe
-            Case enumExeMode.exeAlbums : SaveSetting(AppName, "Recent", "Album", lpStorage.Album(iSectionIndex).Path)
-            Case enumExeMode.exeFavorites : SaveSetting(AppName, "Recent", "Favorite", lpStorage.Favorite(iSectionIndex).Path)
+            Case enumExeMode.exeAlbums : SaveSetting(AppName, "Recent", "Album", g_lpConfig.ToLocalPath(lpStorage.Album(iSectionIndex).Path))
+            Case enumExeMode.exeFavorites : SaveSetting(AppName, "Recent", "Favorite", g_lpConfig.ToLocalPath(lpStorage.Favorite(iSectionIndex).Path))
         End Select
     End Sub
 
     Public Sub SaveRecentSectionValue(ByVal enumExe As enumExeMode, ByVal strSectionValue As String)
         Select Case enumExe
-            Case enumExeMode.exeAlbums : SaveSetting(AppName, "Recent", "Album", strSectionValue)
-            Case enumExeMode.exeFavorites : SaveSetting(AppName, "Recent", "Favorite", strSectionValue)
+            Case enumExeMode.exeAlbums : SaveSetting(AppName, "Recent", "Album", g_lpConfig.ToLocalPath(strSectionValue))
+            Case enumExeMode.exeFavorites : SaveSetting(AppName, "Recent", "Favorite", g_lpConfig.ToLocalPath(strSectionValue))
         End Select
     End Sub
 
     '//紀錄最近匯入的 Album By TreeView
     Public Sub SaveImportRecentSectionValue(ByVal strSectionValue As String)
-        SaveSetting(AppName, "Import Recent", "Album", strSectionValue)
+        SaveSetting(AppName, "Import Recent", "Album", g_lpConfig.ToLocalPath(strSectionValue))
     End Sub
 
     ''' <summary>Selects and expands the node with that key (case-insensitive, as VB6 compared UCase$).</summary>
@@ -287,7 +287,7 @@ Friend Module LibUserInterface
     '//將 TreeView 設在最近匯入的 Album
     Public Function LoadTreeViewImportRecentSection(ByVal lpStorage As Storage, ByVal lpTreeView As TreeView) As Boolean
         Dim bolFind As Boolean = False
-        Dim szSection As String = GetSetting(AppName, "Import Recent", "Album", "")
+        Dim szSection As String = g_lpConfig.FromLocalPath(GetSetting(AppName, "Import Recent", "Album", ""))
         If szSection.Trim() <> "" Then
             Dim strParentFolder As String = g_lpFileSystem.AnalyseFile(fsParentFolderName, szSection)
             If SelectNodeByKey(lpTreeView, strParentFolder, True) Then
@@ -317,8 +317,8 @@ Friend Module LibUserInterface
     Public Function LoadTreeViewRecentSection(ByVal enumExe As enumExeMode, ByVal lpStorage As Storage, ByVal lpTreeView As TreeView) As Boolean
         Dim szSection As String
         Select Case enumExe
-            Case enumExeMode.exeFavorites : szSection = GetSetting(AppName, "Recent", "Favorite", "")
-            Case Else : szSection = GetSetting(AppName, "Recent", "Album", "")
+            Case enumExeMode.exeFavorites : szSection = g_lpConfig.FromLocalPath(GetSetting(AppName, "Recent", "Favorite", ""))
+            Case Else : szSection = g_lpConfig.FromLocalPath(GetSetting(AppName, "Recent", "Album", ""))
         End Select
         Dim bolFind As Boolean = SelectNodeByKey(lpTreeView, szSection, True)
         If Not bolFind Then ExpandFirstNode(lpTreeView)

@@ -9,6 +9,8 @@ Imports System.IO
 '     deletes &lt;app&gt;\~Dock.dck now.
 '   - SortRecordSet returns a sorted DataTable (FileDesc, SortDate, SortTime) instead of an ADODB.Recordset.
 '   - A docked file deleted meanwhile no longer raises an error when its size is subtracted.
+'   - The files are written relative to the .dck's folder when on its drive (LibraryPath), so the dock
+'     survives a new drive letter; full paths (older .dck files) are still read.
 Public Class Dock
 
     Private Class DockFile
@@ -37,9 +39,10 @@ Public Class Dock
         If strFileDesc.Trim().Length = 0 Then strFileDesc = DefaultFile
         m_lpFileSystem.DeleteFile(strFileDesc)
         If m_lpDockImage.Count = 0 Then Return
+        Dim folder As String = Path.GetDirectoryName(Path.GetFullPath(strFileDesc))   ' paths relative to the .dck (LibraryPath)
         Using w As New StreamWriter(strFileDesc, False, AnsiText.Encoding)
             For Each d In m_lpDockImage
-                w.WriteLine(d.FileDesc & "|" & d.CreateDate & "|" & d.CreateTime)
+                w.WriteLine(LibraryPath.ToRelative(d.FileDesc, folder) & "|" & d.CreateDate & "|" & d.CreateTime)
             Next
         End Using
     End Sub
@@ -50,11 +53,13 @@ Public Class Dock
         If Not m_lpFileSystem.FileExists(strFileDesc) Then Return
         m_lpDockImage.Clear()
         m_lngFilelengthByte = 0
+        Dim folder As String = Path.GetDirectoryName(Path.GetFullPath(strFileDesc))
         For Each line In File.ReadAllLines(strFileDesc, AnsiText.Encoding)
             If line.Trim().Length = 0 Then Continue For
             Dim parts As String() = line.Split("|"c)
             ReDim Preserve parts(2)
-            If m_lpFileSystem.FileExists(parts(0)) Then AddItem(parts(0), If(parts(1), ""), If(parts(2), ""))
+            Dim f As String = LibraryPath.FromRelative(parts(0), folder)   ' an old full path as it is
+            If m_lpFileSystem.FileExists(f) Then AddItem(f, If(parts(1), ""), If(parts(2), ""))
         Next
     End Sub
 

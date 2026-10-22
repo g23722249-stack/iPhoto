@@ -153,9 +153,12 @@ Public Class Config
         LoadFaceParameter()
         LoadPlaceParameter()
         LoadImportParameter()
+        ' paths found on the app's drive instead (RebuildPathFile): written as "$LOCAL$\..." now
+        If m_bolPathsMoved AndAlso Not m_bolReadOnly Then Save()
     End Sub
 
     Private Sub Clear()
+        m_bolPathsMoved = False
         m_strImportFinish = ""
         m_lpAlbum.Clear()
         m_lpFavorite.Clear()
@@ -167,10 +170,54 @@ Public Class Config
         Return GetClearText(m_lpProfile.SimpleGetValue(section, key))
     End Function
 
-    ''' <summary>"$LOCAL$\生活剪輯\..." is relative to the app folder (so a copied disc keeps working).</summary>
+    Private Const LocalToken As String = "$LOCAL$"
+
+    ''' <summary>"$LOCAL$\生活剪輯\..." is relative to the app folder (so a copied disc keeps working);
+    ''' "$LOCAL$\..\Album" (new in the .NET port) goes up from it. A full path that is gone but is
+    ''' there with the app's drive letter (iPhoto and 生活剪輯 copied to a USB stick: D:\生活剪輯\Album
+    ''' is now E:\生活剪輯\Album) is taken with that letter; Refresh then saves the profile once, as
+    ''' "$LOCAL$\..." from then on (new in the .NET port).</summary>
     Private Function RebuildPathFile(ByVal strPath As String) As String
-        If strPath.StartsWith("$LOCAL$", StringComparison.OrdinalIgnoreCase) Then Return m_strAppPath & strPath.Substring(7)
-        Return strPath
+        Dim full As String = FromLocalPath(strPath)
+        Dim moved As String = OnAppDrive(full)
+        If moved Is Nothing Then Return full
+        m_bolPathsMoved = True
+        Return moved
+    End Function
+
+    Private m_bolPathsMoved As Boolean   ' Refresh took a path with the app's drive letter
+
+    ''' <summary>A full path on another drive that isn't there, but is on the app's drive: that path;
+    ''' otherwise Nothing (also for a path that is there, a blank one or a network one).</summary>
+    Private Function OnAppDrive(ByVal strPath As String) As String
+        If String.IsNullOrWhiteSpace(strPath) OrElse strPath.Length < 3 OrElse strPath(1) <> ":"c OrElse strPath(2) <> "\"c Then Return Nothing
+        Dim appRoot As String = Path.GetPathRoot(m_strAppPath)
+        If String.IsNullOrEmpty(appRoot) OrElse appRoot.Length < 2 OrElse appRoot(1) <> ":"c Then Return Nothing
+        If Char.ToUpperInvariant(strPath(0)) = Char.ToUpperInvariant(appRoot(0)) Then Return Nothing
+        If PathExists(strPath) Then Return Nothing
+        Dim swapped As String = appRoot.Substring(0, 2) & strPath.Substring(2)
+        Return If(PathExists(swapped), swapped, Nothing)
+    End Function
+
+    Private Shared Function PathExists(ByVal strPath As String) As Boolean
+        Return File.Exists(strPath) OrElse Directory.Exists(strPath)
+    End Function
+
+    ''' <summary>A "$LOCAL$\..." path as a full path; any other path as it is.</summary>
+    Public Function FromLocalPath(ByVal strPath As String) As String
+        If strPath Is Nothing OrElse Not strPath.StartsWith(LocalToken, StringComparison.OrdinalIgnoreCase) Then Return strPath
+        Dim rest As String = strPath.Substring(LocalToken.Length).TrimStart("\"c)
+        If rest.Length = 0 Then Return m_strAppPath
+        Return LibraryPath.FromRelative(rest, m_strAppPath)
+    End Function
+
+    ''' <summary>A full path on the app's drive as "$LOCAL$\..." (relative to the app folder, so iPhoto
+    ''' and 生活剪輯 copied together to another drive letter still find it); any other path as it is.
+    ''' Written by Save, and by the recent albums kept in the registry.</summary>
+    Public Function ToLocalPath(ByVal strPath As String) As String
+        Dim rel As String = LibraryPath.ToRelative(strPath, m_strAppPath)
+        If String.IsNullOrEmpty(rel) OrElse IO.Path.IsPathRooted(rel) Then Return strPath
+        Return LocalToken & "\" & rel
     End Function
 
     Private Sub LoadInterfaceParameter()
@@ -390,13 +437,13 @@ Public Class Config
             w.WriteLine("//相片庫")
             w.WriteLine("[Album]")
             For Each p In m_lpAlbum
-                w.WriteLine("Path=" & p.Trim())
+                w.WriteLine("Path=" & ToLocalPath(p.Trim()))
             Next
             w.WriteLine(" ")
             w.WriteLine("//攝影集")
             w.WriteLine("[Favorite]")
             For Each p In m_lpFavorite
-                w.WriteLine("Path=" & p.Trim())
+                w.WriteLine("Path=" & ToLocalPath(p.Trim()))
             Next
             w.WriteLine(" ")
             w.WriteLine("//By 類別 說明備註檔")
@@ -410,17 +457,17 @@ Public Class Config
             w.WriteLine(" ")
             w.WriteLine("//音效")
             w.WriteLine("[Sound]")
-            w.WriteLine("ButtonEnter=" & m_strButtonEnter)
-            w.WriteLine("ButtonExit=" & m_strButtonExit)
-            w.WriteLine("ButtonClick=" & m_strButtonClick)
-            w.WriteLine("OpenDialogBox=" & m_strOpenDialogBox)
-            w.WriteLine("ImportFinish=" & m_strImportFinish)
-            w.WriteLine("ExportFinish=" & m_strExportFinish)
+            w.WriteLine("ButtonEnter=" & ToLocalPath(m_strButtonEnter))
+            w.WriteLine("ButtonExit=" & ToLocalPath(m_strButtonExit))
+            w.WriteLine("ButtonClick=" & ToLocalPath(m_strButtonClick))
+            w.WriteLine("OpenDialogBox=" & ToLocalPath(m_strOpenDialogBox))
+            w.WriteLine("ImportFinish=" & ToLocalPath(m_strImportFinish))
+            w.WriteLine("ExportFinish=" & ToLocalPath(m_strExportFinish))
             w.WriteLine(" ")
             w.WriteLine("//幻燈片")
             w.WriteLine("[Slide]")
             w.WriteLine("ShowTime=" & m_intSlideShowTimes)
-            w.WriteLine("MusicPath=" & m_strSlideMusicPath)
+            w.WriteLine("MusicPath=" & ToLocalPath(m_strSlideMusicPath))
             w.WriteLine(" ")
             w.WriteLine("//外掛應用程式")
             w.WriteLine("[Application]")
@@ -431,10 +478,10 @@ Public Class Config
             w.WriteLine("HomePage=" & m_strAppHomePage)
             w.WriteLine(" ")
             w.WriteLine("[Attached]")
-            w.WriteLine("KeyWordBook=" & m_strKeyWord)
-            w.WriteLine("AddressBook=" & m_strAddressBook)
-            w.WriteLine("Database=" & m_strDataBase)
-            w.WriteLine("FaceCover=" & m_strFaceCover)
+            w.WriteLine("KeyWordBook=" & ToLocalPath(m_strKeyWord))
+            w.WriteLine("AddressBook=" & ToLocalPath(m_strAddressBook))
+            w.WriteLine("Database=" & ToLocalPath(m_strDataBase))
+            w.WriteLine("FaceCover=" & ToLocalPath(m_strFaceCover))
             w.WriteLine(" ")
             w.WriteLine("//權限")
             w.WriteLine("[Privilege]")
@@ -519,13 +566,25 @@ Public Class Config
         End Set
     End Property
 
+    ''' <summary>The name cards' folder when [Attached] FaceCover is blank (new in the .NET port): FaceIndex
+    ''' beside the database's folder (生活剪輯\System\FaceIndex), so the cards go with the library.</summary>
+    Private Function DefaultFaceCover() As String
+        If m_strDataBase.Trim().Length = 0 Then Return ""
+        Try
+            Dim system As String = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetFullPath(m_strDataBase)))
+            Return If(String.IsNullOrEmpty(system), "", Path.Combine(system, "FaceIndex"))
+        Catch ex As Exception When TypeOf ex Is ArgumentException OrElse TypeOf ex Is NotSupportedException OrElse TypeOf ex Is PathTooLongException
+            Return ""
+        End Try
+    End Function
+
     Public Property Attached(ByVal Mode As enumAttachedFile) As String
         Get
             Select Case Mode
                 Case enumAttachedFile.filAddressBook : Return m_strAddressBook
                 Case enumAttachedFile.filKeyWord : Return m_strKeyWord
                 Case enumAttachedFile.filDatabase : Return m_strDataBase
-                Case enumAttachedFile.filFaceCover : Return m_strFaceCover
+                Case enumAttachedFile.filFaceCover : Return If(m_strFaceCover.Trim().Length > 0, m_strFaceCover, DefaultFaceCover())
             End Select
             Return ""
         End Get

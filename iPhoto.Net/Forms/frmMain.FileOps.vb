@@ -368,11 +368,12 @@ Partial Class frmMain
                 Try
                     Dim lines() As String = IO.File.ReadAllLines(alm, AnsiText.Encoding)
                     Dim changed As Boolean = False
+                    Dim folder As String = IO.Path.GetDirectoryName(alm)   ' File= is relative to it (LibraryPath)
                     For i = 0 To lines.Length - 1
                         If Not lines(i).StartsWith("File=", StringComparison.OrdinalIgnoreCase) Then Continue For
                         Dim dst As String = Nothing
-                        If moved.TryGetValue(lines(i).Substring(5).Trim(), dst) Then
-                            lines(i) = "File=" & dst
+                        If moved.TryGetValue(LibraryPath.FromRelative(lines(i).Substring(5).Trim(), folder), dst) Then
+                            lines(i) = "File=" & LibraryPath.ToRelative(dst, folder)
                             changed = True
                         End If
                     Next

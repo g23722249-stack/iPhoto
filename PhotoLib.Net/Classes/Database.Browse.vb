@@ -178,7 +178,7 @@ Partial Public Class Database
             Using r As OleDbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     Dim row As New IndexRow With {
-                        .FileName = AsText(r("FileName")),
+                        .FileName = FromStored(AsText(r("FileName"))),
                         .DateText = PadNum(AsText(r("Exif_Date")), 8),
                         .Ranking = CInt(Val(AsText(r("Exif_Ranking")))),
                         .Spot = AsText(r("Exif_Spot")).Trim()}
