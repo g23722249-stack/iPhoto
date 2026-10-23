@@ -15,8 +15,8 @@ Imports Microsoft.Data.Sqlite
 '   - SqliteSchema: the tables iPhoto.mdb has, made by code: text compared without case (as Jet does), the
 '     same relationships (FaceRegion -> FacePhoto on update/delete cascade ...), AUTOINCREMENT ids (Jet
 '     never reuses an AutoNumber), and indexes on FileName.
-' CopyMdbToSqlite makes iPhoto.db from iPhoto.mdb row by row (the ids kept). For now iPhoto still opens
-' iPhoto.mdb: iPhoto.db is used by the tests that compare the two.
+' CopyMdbToSqlite makes iPhoto.db from iPhoto.mdb row by row (the ids kept); iPhoto does it once, at the
+' first start of this version (DatabaseUpgrade), and opens iPhoto.db from then on.
 Partial Public Class Database
 
     Private m_bolSqlite As Boolean
@@ -48,7 +48,16 @@ Partial Public Class Database
             .ForeignKeys = True,
             .DefaultTimeout = 30}   ' seconds a statement waits for another connection's write
         Dim cn As New SqliteConnection(cs.ToString())
-        cn.Open()
+        Try
+            cn.Open()
+        Catch ex As SqliteException When readOnlyLib
+            ' a CD or a write-protected stick: SQLite can't make the WAL index (-shm) there; nothing can change
+            ' the file, so it is opened as it is
+            cn.Dispose()
+            cs.DataSource = New Uri(IO.Path.GetFullPath(strFile)).AbsoluteUri & "?immutable=1"
+            cn = New SqliteConnection(cs.ToString())
+            cn.Open()
+        End Try
         cn.CreateCollation(SortCollation, AddressOf CompareAsJet)
         If Not readOnlyLib Then
             Using cmd As SqliteCommand = cn.CreateCommand()
@@ -415,6 +424,19 @@ Partial Public Class Database
                             counts(table) = n
                             progress?.Invoke(table, n)
                         Next
+                        ' the .mdb's own queries (查詢1 ...) as views, when SQLite takes their SQL
+                        For Each v As DataRow In src.GetOleDbSchemaTable(OleDbSchemaGuid.Views, Nothing).Rows
+                            Try
+                                Using cmd As SqliteCommand = dst.CreateCommand()
+                                    cmd.Transaction = tx
+                                    cmd.CommandText = "Create View """ & CStr(v("TABLE_NAME")).Replace("""", """""") & """ As " & CStr(v("VIEW_DEFINITION")).Trim().TrimEnd(";"c)
+                                    cmd.ExecuteNonQuery()
+                                End Using
+                                counts("view " & CStr(v("TABLE_NAME"))) = 1
+                            Catch ex As SqliteException
+                                counts("view " & CStr(v("TABLE_NAME"))) = 0   ' Jet SQL SQLite doesn't take: left out
+                            End Try
+                        Next
                         tx.Commit()
                     End Using
                 End Using
@@ -430,6 +452,34 @@ Partial Public Class Database
             Throw
         End Try
     End Function
+
+    ''' <summary>"" when <paramref name="strDb"/> is sound (PRAGMA integrity_check and foreign_key_check), else
+    ''' what is wrong.</summary>
+    Public Shared Function CheckSqlite(ByVal strDb As String) As String
+        Using cn As SqliteConnection = OpenSqlite(strDb, create:=False)
+            Using cmd As SqliteCommand = cn.CreateCommand()
+                cmd.CommandText = "PRAGMA integrity_check"
+                Dim ok As String = Convert.ToString(cmd.ExecuteScalar())
+                If ok <> "ok" Then Return "integrity_check: " & ok
+                cmd.CommandText = "PRAGMA foreign_key_check"
+                Using r = cmd.ExecuteReader()
+                    If r.Read() Then Return $"foreign_key_check: {r.GetValue(0)} row {r.GetValue(1)} -> {r.GetValue(2)}"
+                End Using
+            End Using
+        End Using
+        Return ""
+    End Function
+
+    ''' <summary>A copy of the SQLite file <paramref name="strDb"/> as <paramref name="strTarget"/> made with SQLite's
+    ''' backup, so what is still in its -wal file goes along (copying the file alone would miss it).</summary>
+    Public Shared Sub BackupSqlite(ByVal strDb As String, ByVal strTarget As String)
+        Using src As SqliteConnection = OpenSqlite(strDb, create:=False)
+            Using dst As New SqliteConnection(New SqliteConnectionStringBuilder With {.DataSource = strTarget, .Mode = SqliteOpenMode.ReadWriteCreate, .Pooling = False}.ToString())
+                dst.Open()
+                src.BackupDatabase(dst)
+            End Using
+        End Using
+    End Sub
 
     '==================================================================================================
     ' SQLite values as Jet types them

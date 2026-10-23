@@ -122,9 +122,9 @@ Partial Class frmSetup
         Dim mdb As String = MdbFile
         Dim ok As Boolean = Not String.IsNullOrEmpty(mdb) AndAlso IO.File.Exists(mdb)
         Dim folder As String = If(ok, Maintenance.BackupFolder(mdb), "")
-        Dim dbs = If(ok, Maintenance.Backups(folder, "iPhoto_*.mdb"), New List(Of IO.FileInfo))
+        Dim dbs = If(ok, Maintenance.Backups(folder, Maintenance.DatabaseBackupPattern(mdb)), New List(Of IO.FileInfo))
         Dim zips = If(ok, Maintenance.Backups(folder, "Exif_*.zip"), New List(Of IO.FileInfo))
-        lblDbBackup.Text = $"每次開啟 iPhoto 時自動備份 iPhoto.mdb，保留最近 {Maintenance.DatabaseKeep} 份。" & vbCrLf &
+        lblDbBackup.Text = $"每次開啟 iPhoto 時自動備份 {IO.Path.GetFileName(mdb)}，保留最近 {Maintenance.DatabaseKeep} 份。" & vbCrLf &
                            If(dbs.Count = 0, "還沒有備份。", $"最近一次：{dbs(0).CreationTime:yyyy/MM/dd HH:mm}（共 {dbs.Count} 份）")
         lblExifBackup.Text = $"每 {Maintenance.ExifEveryDays} 天在背景自動備份一次所有 .Exif，保留最近 {Maintenance.ExifKeep} 份。" & vbCrLf &
                              If(zips.Count = 0, "還沒有備份。", $"最近一次：{zips(0).LastWriteTime:yyyy/MM/dd HH:mm}（共 {zips.Count} 份）")

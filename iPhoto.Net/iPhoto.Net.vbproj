@@ -78,6 +78,14 @@
   <Target Name="RemoveLibVlcX64" AfterTargets="Build">
     <RemoveDir Directories="$(OutDir)libvlc\win-x64" />
   </Target>
+  <!-- Microsoft.Data.Sqlite (PhotoLib, iPhoto.db) brings SQLite for every platform (runtimes\linux-*,
+       osx-* ... about 20 MB): only the Windows ones are copied, to the output and to the publish folder. -->
+  <Target Name="DropNonWindowsNatives" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)"
+                                    Condition="!$([System.String]::Copy('%(RuntimeTargetsCopyLocalItems.RuntimeIdentifier)').StartsWith('win'))" />
+    </ItemGroup>
+  </Target>
 
   <!-- A form's other partial files (the converter's <form>.Vb6.vb (Sub New, control arrays) and the
        ones added since (<form>.Faces.vb, .Help.vb, .Covers.vb, .Info.vb ...) open as code, not in the

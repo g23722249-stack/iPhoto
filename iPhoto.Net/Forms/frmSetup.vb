@@ -155,7 +155,7 @@ Friend Class frmSetup
         Flash(imgAttached(Index), 20)
 
         Select Case Index
-            Case 0 : txtAttached(Index).Text = frmBrowserFile.GetFile("選擇資料庫檔案", "Access 資料庫 (*.Mdb)|*.Mdb", True).Trim()
+            Case 0 : txtAttached(Index).Text = frmBrowserFile.GetFile("選擇資料庫檔案", "資料庫 (*.db;*.Mdb)|*.db;*.Mdb", True).Trim()
             Case 1 : txtAttached(Index).Text = frmBrowserFile.GetFile("選擇關鍵字檔案", "關鍵字 (*.Kwd)|*.Kwd", True).Trim()
             Case 2 : txtAttached(Index).Text = frmBrowserFile.GetFile("選擇通訊錄", "通訊錄 (*.Adb)|*.Adb", True).Trim()
             Case 3

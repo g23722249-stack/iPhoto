@@ -2,8 +2,9 @@ Imports System.IO
 Imports System.IO.Compression
 
 ' Keeping the data safe (new in the .NET port), all into <database folder>\Backup:
-'   iPhoto_yyyyMMdd_HHmmss.mdb   a copy of iPhoto.mdb made at every start before it is opened (unless it
+'   iPhoto_yyyyMMdd_HHmmss.db    a copy of iPhoto.db made at every start before it is opened (unless it
 '                                hasn't changed since the newest copy); the newest DatabaseKeep are kept.
+'                                (iPhoto_....mdb while the database was still iPhoto.mdb.)
 '   Exif_yyyyMMdd_HHmmss.zip     every .Exif side file under the album roots (entry names are the full
 '                                paths without the drive colon, "D\生活剪輯\Album\...\x.Exif", so a file
 '                                can be put back where it was); made every ExifEveryDays days in the
@@ -21,8 +22,13 @@ Public Module Maintenance
     End Function
 
     '==================================================================================================
-    ' iPhoto.mdb
+    ' iPhoto.db (iPhoto.mdb)
     '==================================================================================================
+    ''' <summary>The backups' file pattern for this database: iPhoto_*.db or iPhoto_*.mdb.</summary>
+    Public Function DatabaseBackupPattern(ByVal strDatabase As String) As String
+        Return "iPhoto_*" & If(Database.IsSqliteFile(strDatabase), ".db", ".mdb")
+    End Function
+
     ''' <summary>Copies the database into Backup (before it is opened). Nothing is copied when the newest
     ''' copy is the same (size and time). Returns the copy made, or "" (none needed / failed).</summary>
     Public Function BackupDatabase(ByVal strDatabase As String) As String
@@ -30,8 +36,10 @@ Public Module Maintenance
             If String.IsNullOrEmpty(strDatabase) OrElse Not File.Exists(strDatabase) Then Return ""
             Dim folder As String = BackupFolder(strDatabase)
             Directory.CreateDirectory(folder)
+            Dim pattern As String = DatabaseBackupPattern(strDatabase)
+            If Database.IsSqliteFile(strDatabase) Then Return BackupSqlite(strDatabase, folder, pattern)
             Dim src As New FileInfo(strDatabase)
-            Dim newest As FileInfo = Backups(folder, "iPhoto_*.mdb").FirstOrDefault()
+            Dim newest As FileInfo = Backups(folder, pattern).FirstOrDefault()
             If newest IsNot Nothing AndAlso newest.Length = src.Length AndAlso newest.LastWriteTimeUtc = src.LastWriteTimeUtc Then Return ""
             Dim target As String = Path.Combine(folder, "iPhoto_" & DateTime.Now.ToString("yyyyMMdd_HHmmss") & ".mdb")
             ' shared read: another program may have it open; the copy keeps the source's time (see above)
@@ -41,11 +49,32 @@ Public Module Maintenance
             End Using
             File.Move(target & ".tmp", target)
             File.SetLastWriteTimeUtc(target, src.LastWriteTimeUtc)
-            Prune(folder, "iPhoto_*.mdb", DatabaseKeep)
+            Prune(folder, pattern, DatabaseKeep)
             Return target
         Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
             Return ""
         End Try
+    End Function
+
+    ''' <summary>iPhoto.db through SQLite's backup (what is still in its -wal file goes along). It changed
+    ''' when iPhoto.db or iPhoto.db-wal is newer than the newest copy, which gets their time.</summary>
+    Private Function BackupSqlite(ByVal strDatabase As String, ByVal folder As String, ByVal pattern As String) As String
+        Dim wal As String = strDatabase & "-wal"
+        Dim changed As DateTime = File.GetLastWriteTimeUtc(strDatabase)
+        If File.Exists(wal) AndAlso File.GetLastWriteTimeUtc(wal) > changed Then changed = File.GetLastWriteTimeUtc(wal)
+        Dim newest As FileInfo = Backups(folder, pattern).FirstOrDefault()
+        If newest IsNot Nothing AndAlso newest.LastWriteTimeUtc = changed Then Return ""
+        Dim target As String = Path.Combine(folder, "iPhoto_" & DateTime.Now.ToString("yyyyMMdd_HHmmss") & ".db")
+        Try
+            Database.BackupSqlite(strDatabase, target & ".tmp")
+            File.Move(target & ".tmp", target)
+            File.SetLastWriteTimeUtc(target, changed)
+        Catch ex As Data.Common.DbException
+            If File.Exists(target & ".tmp") Then File.Delete(target & ".tmp")
+            Return ""
+        End Try
+        Prune(folder, pattern, DatabaseKeep)
+        Return target
     End Function
 
     '==================================================================================================
