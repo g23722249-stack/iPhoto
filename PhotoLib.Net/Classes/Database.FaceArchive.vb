@@ -1,4 +1,5 @@
 Imports System.Data
+Imports System.Data.Common
 Imports System.Data.OleDb
 Imports System.Globalization
 Imports System.Xml.Linq
@@ -23,9 +24,9 @@ Partial Public Class Database
         Dim result As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
         If Not FaceTablesReady Then Return result.ToList()
         Dim add = Sub(sql As String)
-                      Using cmd As New OleDbCommand(sql, m_lpConnection)
+                      Using cmd As DbCmd = NewCmd(sql)
                           If since.HasValue Then cmd.Parameters.Add(P(OleDbType.Date, since.Value))
-                          Using r As OleDbDataReader = cmd.ExecuteReader()
+                          Using r As DbDataReader = cmd.ExecuteReader()
                               While r.Read()
                                   result.Add(FromStored(AsText(r(0))))
                               End While
@@ -47,9 +48,9 @@ Partial Public Class Database
     Public Function FaceArchiveOf(ByVal strFileDesc As String) As XElement
         If Not FaceTablesReady Then Return Nothing
         Dim e As XElement = Nothing
-        Using cmd As New OleDbCommand("Select FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer From FacePhoto Where FileName = ?", m_lpConnection)
+        Using cmd As DbCmd = NewCmd("Select FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer From FacePhoto Where FileName = ?")
             cmd.Parameters.Add(Pth(strFileDesc))
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+            Using r As DbDataReader = cmd.ExecuteReader()
                 If Not r.Read() Then Return Nothing
                 e = New XElement("Faces",
                                  Attr("fileSize", r(0)), Attr("fileTime", r(1)), Attr("shotYear", r(2)), Attr("status", r(3)),
@@ -57,10 +58,10 @@ Partial Public Class Database
             End Using
         End Using
         Dim byFace As New Dictionary(Of Integer, XElement)
-        Using cmd As New OleDbCommand("Select r.FaceID, r.X, r.Y, r.W, r.H, r.Score, r.State, r.Similarity, p.FaceName, r.ShotYear, r.CreateTime, r.UpdateTime, r.Landmarks, r.Embedding" &
-                                      " From FaceRegion AS r Left Join FacePerson AS p On r.PersonID = p.PersonID Where r.FileName = ? Order By r.FaceID", m_lpConnection)
+        Using cmd As DbCmd = NewCmd("Select r.FaceID, r.X, r.Y, r.W, r.H, r.Score, r.State, r.Similarity, p.FaceName, r.ShotYear, r.CreateTime, r.UpdateTime, r.Landmarks, r.Embedding" &
+                                      " From FaceRegion AS r Left Join FacePerson AS p On r.PersonID = p.PersonID Where r.FileName = ? Order By r.FaceID")
             cmd.Parameters.Add(Pth(strFileDesc))
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+            Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     Dim f As New XElement("Face",
                                           Attr("x", r(1)), Attr("y", r(2)), Attr("w", r(3)), Attr("h", r(4)), Attr("score", r(5)),
@@ -74,10 +75,10 @@ Partial Public Class Database
             End Using
         End Using
         If byFace.Count > 0 AndAlso HasTable("FaceReject") Then
-            Using cmd As New OleDbCommand("Select j.FaceID, p.FaceName From (FaceReject AS j Inner Join FaceRegion AS r On j.FaceID = r.FaceID)" &
-                                          " Inner Join FacePerson AS p On j.PersonID = p.PersonID Where r.FileName = ?", m_lpConnection)
+            Using cmd As DbCmd = NewCmd("Select j.FaceID, p.FaceName From (FaceReject AS j Inner Join FaceRegion AS r On j.FaceID = r.FaceID)" &
+                                          " Inner Join FacePerson AS p On j.PersonID = p.PersonID Where r.FileName = ?")
                 cmd.Parameters.Add(Pth(strFileDesc))
-                Using r As OleDbDataReader = cmd.ExecuteReader()
+                Using r As DbDataReader = cmd.ExecuteReader()
                     While r.Read()
                         Dim f As XElement = Nothing
                         If byFace.TryGetValue(CInt(r(0)), f) AndAlso AsText(r(1)) <> "" Then f.Add(New XElement("Rejected", AsText(r(1))))
@@ -93,9 +94,9 @@ Partial Public Class Database
     Public Function PeopleArchive(ByVal strFolder As String) As List(Of XElement)
         Dim result As New List(Of XElement)
         If FaceTablesReady Then
-            Using cmd As New OleDbCommand("Select p.FaceName, p.BirthYear, p.Hidden, p.CreateTime, p.UpdateTime, r.FileName, r.X, r.Y" &
-                                          " From FacePerson AS p Left Join FaceRegion AS r On p.CoverFaceID = r.FaceID Order By p.PersonID", m_lpConnection)
-                Using r As OleDbDataReader = cmd.ExecuteReader()
+            Using cmd As DbCmd = NewCmd("Select p.FaceName, p.BirthYear, p.Hidden, p.CreateTime, p.UpdateTime, r.FileName, r.X, r.Y" &
+                                          " From FacePerson AS p Left Join FaceRegion AS r On p.CoverFaceID = r.FaceID Order By p.PersonID")
+                Using r As DbDataReader = cmd.ExecuteReader()
                     While r.Read()
                         Dim person As New XElement("Person", Attr("name", r(0)), Attr("birthYear", r(1)), Attr("hidden", r(2)),
                                                    Attr("created", r(3)), Attr("updated", r(4)))
@@ -110,14 +111,14 @@ Partial Public Class Database
         End If
         If m_bolImplement Then
             Try
-                Using cmd As New OleDbCommand("Select FaceName, FileName From FaceIndex", m_lpConnection)
-                    Using r As OleDbDataReader = cmd.ExecuteReader()
+                Using cmd As DbCmd = NewCmd("Select FaceName, FileName From FaceIndex")
+                    Using r As DbDataReader = cmd.ExecuteReader()
                         While r.Read()
                             result.Add(New XElement("Card", Attr("name", r(0)), New XAttribute("file", LibraryPath.ToRelative(FromStored(AsText(r(1))), strFolder))))
                         End While
                     End Using
                 End Using
-            Catch ex As OleDbException
+            Catch ex As DbException
                 ' no FaceIndex
             End Try
         End If
@@ -165,7 +166,7 @@ Partial Public Class Database
         For Each ph In photos
             Dim fx As XElement = ph.Faces
             If fx Is Nothing Then Continue For
-            Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+            Using tx As DbTransaction = m_lpConnection.BeginTransaction()
                 Exec(tx, "Insert Into FacePhoto (FileName, FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer) Values (?, ?, ?, ?, ?, ?, ?, ?)",
                      Pth(ph.File), P(OleDbType.Integer, IntOrNull(fx, "fileSize")), P(OleDbType.Date, DateOr(fx, "fileTime")),
                      P(OleDbType.SmallInt, IntOrNull(fx, "shotYear")), P(OleDbType.UnsignedTinyInt, IntOrNull(fx, "status")),
@@ -201,7 +202,7 @@ Partial Public Class Database
         Next
         If cards.Count > 0 Then
             Dim empty As Boolean
-            Using cmd As New OleDbCommand("Select Count(*) From FaceIndex", m_lpConnection)
+            Using cmd As DbCmd = NewCmd("Select Count(*) From FaceIndex")
                 empty = CInt(cmd.ExecuteScalar()) = 0
             End Using
             If empty Then
@@ -216,19 +217,16 @@ Partial Public Class Database
     '==================================================================================================
     ' Helpers
     '==================================================================================================
-    Private Function LastIdentity(ByVal tx As OleDbTransaction) As Integer
-        Using cmd As New OleDbCommand("Select @@IDENTITY", m_lpConnection, tx)
+    Private Function LastIdentity(ByVal tx As DbTransaction) As Integer
+        Using cmd As DbCmd = NewCmd("Select @@IDENTITY", tx)
             Return CInt(cmd.ExecuteScalar())
         End Using
     End Function
 
     Private Function HasTable(ByVal table As String) As Boolean
         Try
-            Using cmd As New OleDbCommand("Select Top 1 * From " & table, m_lpConnection)
-                cmd.ExecuteScalar()
-            End Using
-            Return True
-        Catch ex As OleDbException
+            Return TableExists(table)
+        Catch ex As DbException
             Return False
         End Try
     End Function

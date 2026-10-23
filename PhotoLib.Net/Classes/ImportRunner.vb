@@ -200,7 +200,7 @@ Public Class ImportRunner
                     ImportOne(db, w.Job, w.Item)
                     Imported.Add(w.Item)
                 Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse
-                                           TypeOf ex Is Data.OleDb.OleDbException OrElse TypeOf ex Is InvalidOperationException OrElse
+                                           TypeOf ex Is Data.Common.DbException OrElse TypeOf ex Is InvalidOperationException OrElse
                                            TypeOf ex Is ArgumentException
                     Failures.Add(New Failure With {.Job = w.Job, .Item = w.Item, .Message = ex.Message})
                     Log(Stamp() & " " & w.Item.FileName & " 失敗：" & ex.Message, True)
@@ -209,7 +209,7 @@ Public Class ImportRunner
                 Post(Sub() RaiseEvent Progress(Me, EventArgs.Empty))
             Next
         Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse
-                                   TypeOf ex Is Data.OleDb.OleDbException OrElse TypeOf ex Is ArgumentException OrElse
+                                   TypeOf ex Is Data.Common.DbException OrElse TypeOf ex Is ArgumentException OrElse
                                    TypeOf ex Is NotSupportedException
             _FatalError = ex.Message
         Finally

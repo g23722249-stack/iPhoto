@@ -212,7 +212,7 @@ Public Class FaceLibrary
                 ' photos imported while this scan ran (RequestScan)
                 roots = Interlocked.Exchange(m_lpRootsAgain, Nothing)
             Loop While roots IsNot Nothing AndAlso Not m_bolStop
-        Catch ex As Exception When TypeOf ex Is Data.OleDb.OleDbException OrElse TypeOf ex Is InvalidOperationException OrElse
+        Catch ex As Exception When TypeOf ex Is Data.Common.DbException OrElse TypeOf ex Is InvalidOperationException OrElse
                                    TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException
             errorText = ex.Message
             Dim err As String = errorText
@@ -239,7 +239,7 @@ Public Class FaceLibrary
             Try
                 AnalyseAndSave(db, f)
                 analysed += 1
-            Catch ex As Exception When TypeOf ex Is Data.OleDb.OleDbException OrElse TypeOf ex Is IO.IOException OrElse
+            Catch ex As Exception When TypeOf ex Is Data.Common.DbException OrElse TypeOf ex Is IO.IOException OrElse
                                        TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is OpenCvSharp.OpenCVException
                 ' the same photo saved by the UI thread at this moment, the file just went away, or a
                 ' picture OpenCV chokes on: skipped, tried again on the next scan
@@ -385,7 +385,7 @@ Public Class FaceLibrary
         If NeedsAnalysis(strFileDesc, states) Then
             Try
                 AnalyseAndSave(g_lpDatabase, strFileDesc)
-            Catch ex As Exception When TypeOf ex Is Data.OleDb.OleDbException OrElse TypeOf ex Is IO.IOException OrElse
+            Catch ex As Exception When TypeOf ex Is Data.Common.DbException OrElse TypeOf ex Is IO.IOException OrElse
                                        TypeOf ex Is OpenCvSharp.OpenCVException
                 ' the scan thread is saving it right now: show what is there
             End Try

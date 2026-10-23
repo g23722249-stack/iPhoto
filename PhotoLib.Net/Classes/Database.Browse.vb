@@ -1,4 +1,5 @@
 Imports System.Data
+Imports System.Data.Common
 Imports System.Data.OleDb
 
 ' Browsing the photo index by time and place (new in the .NET port):
@@ -125,8 +126,8 @@ Partial Public Class Database
         Dim c As New LibraryCounts
         If Not m_bolImplement Then Return c
         Dim cols As String = "FileName" & If(m_bolGpsColumns, ", Exif_Latitude, Exif_Longitude", "")
-        Using cmd As OleDbCommand = NewCommand("Select " & cols & " From " & mc_strTableName, Array.Empty(Of Object)())
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+        Using cmd As DbCmd = NewCommand("Select " & cols & " From " & mc_strTableName, Array.Empty(Of Object)())
+            Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     Dim gps As Boolean = m_bolGpsColumns AndAlso r(1) IsNot DBNull.Value AndAlso r(2) IsNot DBNull.Value
                     Select Case IO.Path.GetExtension(AsText(r(0))).TrimStart("."c).ToUpperInvariant()
@@ -158,8 +159,8 @@ Partial Public Class Database
     Private Function Counts(ByVal sql As String, ParamArray values As Object()) As List(Of KeyValuePair(Of String, Integer))
         Dim result As New List(Of KeyValuePair(Of String, Integer))
         If Not m_bolImplement Then Return result
-        Using cmd As OleDbCommand = NewCommand(sql, values)
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+        Using cmd As DbCmd = NewCommand(sql, values)
+            Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     result.Add(New KeyValuePair(Of String, Integer)(AsText(r(0)), CInt(r(1))))
                 End While
@@ -174,8 +175,8 @@ Partial Public Class Database
         Dim cols As String = "FileName, Exif_Date, Exif_Ranking, Exif_Spot" &
                              If(m_bolPlaceColumns, ", Exif_City, Exif_Town", "") &
                              If(m_bolGpsColumns, ", Exif_Latitude, Exif_Longitude", "")
-        Using cmd As OleDbCommand = NewCommand("Select " & cols & " From " & mc_strTableName & " Where " & where & " Order By " & orderBy, values)
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+        Using cmd As DbCmd = NewCommand("Select " & cols & " From " & mc_strTableName & " Where " & where & " Order By " & SortedBy(orderBy, "FileName"), values)
+            Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     Dim row As New IndexRow With {
                         .FileName = FromStored(AsText(r("FileName"))),

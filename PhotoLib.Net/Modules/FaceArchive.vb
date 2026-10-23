@@ -104,7 +104,7 @@ Public Module FaceArchive
                             r.Written += 1
                         End If
                     End If
-                Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is Data.OleDb.OleDbException
+                Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is Data.Common.DbException
                     r.Failed += 1
                     r.LastError = Path.GetFileName(f) & "：" & ex.Message
                 End Try

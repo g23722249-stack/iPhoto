@@ -37,7 +37,7 @@ Public Module PlaceFill
                     End If
                     If p.Exif(enumPhotoExif.peGps) <> "" Then r.WithGps += 1
                 Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse
-                                           TypeOf ex Is Data.OleDb.OleDbException OrElse TypeOf ex Is ArgumentException
+                                           TypeOf ex Is Data.Common.DbException OrElse TypeOf ex Is ArgumentException
                     r.Failed += 1
                     r.LastError = IO.Path.GetFileName(files(i)) & "：" & ex.Message
                 End Try

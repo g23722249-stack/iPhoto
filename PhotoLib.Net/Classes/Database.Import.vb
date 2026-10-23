@@ -1,3 +1,4 @@
+Imports System.Data.Common
 Imports System.Data.OleDb
 
 ' 輸入照片 (frmImportStudio, ImportRunner): writing an imported photo from the import thread, which has
@@ -9,8 +10,8 @@ Partial Public Class Database
     Public Sub WriteImportedPhoto(ByVal lpPhoto As Photo)
         If Not m_bolImplement Then Return
         WithRetry(Sub()
-                      Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
-                          Using cmd As New OleDbCommand("Delete From " & mc_strTableName & " Where FileName = ?", m_lpConnection, tx)
+                      Using tx As DbTransaction = m_lpConnection.BeginTransaction()
+                          Using cmd As DbCmd = NewCmd("Delete From " & mc_strTableName & " Where FileName = ?", tx)
                               cmd.Parameters.Add(Pth(lpPhoto.FileDesc))
                               cmd.ExecuteNonQuery()
                           End Using
@@ -23,7 +24,7 @@ Partial Public Class Database
     ''' <summary>True when PhotoIndex has a row for the file.</summary>
     Public Function PhotoIndexed(ByVal strFileDesc As String) As Boolean
         If Not m_bolImplement Then Return False
-        Using cmd As New OleDbCommand("Select Count(*) From " & mc_strTableName & " Where FileName = ?", m_lpConnection)
+        Using cmd As DbCmd = NewCmd("Select Count(*) From " & mc_strTableName & " Where FileName = ?")
             cmd.Parameters.Add(Pth(strFileDesc))
             Return CInt(cmd.ExecuteScalar()) > 0
         End Using
@@ -54,7 +55,7 @@ Partial Public Class Database
         Dim faceIDs As New Dictionary(Of ImportFace, Integer)
         WithRetry(Sub()
                       faceIDs.Clear()
-                      Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+                      Using tx As DbTransaction = m_lpConnection.BeginTransaction()
                           Exec(tx, "Delete From FacePhoto Where FileName = ?", Pth(strFileDesc))
                           Exec(tx, "Insert Into FacePhoto (FileName, FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer) Values (?, ?, ?, ?, ?, ?, ?, ?)",
                                Pth(strFileDesc), P(OleDbType.Integer, CInt(Math.Min(lngSize, Integer.MaxValue))), P(OleDbType.Date, dtFileTime),
@@ -98,7 +99,7 @@ Partial Public Class Database
 
     Private Function FacePersonExists(ByVal intPersonID As Integer) As Boolean
         If intPersonID = 0 Then Return False
-        Using cmd As New OleDbCommand("Select Count(*) From FacePerson Where PersonID = ?", m_lpConnection)
+        Using cmd As DbCmd = NewCmd("Select Count(*) From FacePerson Where PersonID = ?")
             cmd.Parameters.Add(P(OleDbType.Integer, intPersonID))
             Return CInt(cmd.ExecuteScalar()) > 0
         End Using

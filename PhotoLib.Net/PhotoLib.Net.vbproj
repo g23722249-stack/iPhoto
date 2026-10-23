@@ -41,6 +41,8 @@
     <!-- iPhoto.mdb is Jet 4.0 (Provider=Microsoft.Jet.OLEDB.4.0), which exists only as 32-bit:
          the app is built x86 so it runs without installing the ACE driver. -->
     <PackageReference Include="System.Data.OleDb" Version="8.0.1" />
+    <!-- iPhoto.db: the same tables in SQLite (Database.Provider.vb), side by side with iPhoto.mdb for now -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.11" />
   </ItemGroup>
 
   <!-- A form's other partial files (the converter's <form>.Vb6.vb (Sub New, control arrays) and the

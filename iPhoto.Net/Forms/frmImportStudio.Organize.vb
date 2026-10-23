@@ -172,7 +172,7 @@ Partial Class frmImportStudio
         If g_lpFaces IsNot Nothing AndAlso g_lpDatabase IsNot Nothing AndAlso g_lpDatabase.FaceTablesReady Then
             Try
                 m_matcher = New ImportFaceMatcher(g_lpDatabase, g_lpConfig.FaceStrictness)
-            Catch ex As Data.OleDb.OleDbException
+            Catch ex As Data.Common.DbException
                 m_matcher = Nothing
             End Try
         End If
@@ -180,7 +180,7 @@ Partial Class frmImportStudio
         If g_lpDatabase IsNot Nothing Then
             Try
                 m_names = g_lpDatabase.LoadPeopleNames()
-            Catch ex As Data.OleDb.OleDbException
+            Catch ex As Data.Common.DbException
                 m_names = New List(Of String)
             End Try
         End If

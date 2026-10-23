@@ -1,8 +1,11 @@
 Imports System.Data
+Imports System.Data.Common
 Imports System.Data.OleDb
 
 ' Port of 電子相簿\Lib\Class\Database.cls: the photo index in iPhoto.mdb (Jet 4.0), used for the
 ' calendar, "faces" and search. ADODB -> System.Data.OleDb (the app is built x86 because Jet is 32-bit).
+' The same tables can be in a SQLite iPhoto.db instead (Database.Provider.vb, chosen by the file's
+' extension); the code below is written once for both.
 '
 ' Tables: PhotoIndex (FileName, Create_*/Exif_Date|Year|Month|Day as text, Exif_Title/Character/Spot/
 '         Remark/KeyWord text, Exif_Ranking integer, ModifyTime date) and FaceIndex (FaceName, FileName).
@@ -23,7 +26,7 @@ Public Class Database
 
     Private Const mc_strTableName As String = "PhotoIndex"
 
-    Private m_lpConnection As OleDbConnection
+    Private m_lpConnection As DbConnection   ' OleDbConnection (iPhoto.mdb) or SqliteConnection (iPhoto.db): Database.Provider.vb
     Private m_bolImplement As Boolean = False
     Private m_strBaseFolder As String = ""   ' the folder of iPhoto.mdb: FileName is relative to it
 
@@ -34,18 +37,34 @@ Public Class Database
         End Get
     End Property
 
-    Public ReadOnly Property Connection As OleDbConnection
+    Public ReadOnly Property Connection As DbConnection
         Get
             Return m_lpConnection
         End Get
     End Property
 
-    ''' <summary>Opens the .mdb; a missing file or a failed open just leaves Implement = False (VB6).</summary>
+    ''' <summary>Opens the .mdb (or a SQLite .db: Database.Provider.vb); a missing file or a failed open just
+    ''' leaves Implement = False (VB6).</summary>
     Public Sub Construct(ByVal szFileDesc As String)
         Close()
         m_bolImplement = False
         If String.IsNullOrEmpty(szFileDesc) OrElse Not IO.File.Exists(szFileDesc) Then Return
         m_strBaseFolder = IO.Path.GetDirectoryName(IO.Path.GetFullPath(szFileDesc))
+        m_bolSqlite = IsSqliteFile(szFileDesc)
+        If m_bolSqlite Then
+            ' made by CreateSqlite with every column, and relative FileName from the start
+            Try
+                m_lpConnection = OpenSqlite(szFileDesc, create:=False)
+                m_bolImplement = True
+            Catch ex As Exception When TypeOf ex Is DbException OrElse TypeOf ex Is InvalidOperationException
+                Close()
+                Return
+            End Try
+            m_bolGpsColumns = True
+            m_bolPlaceColumns = True
+            m_bolRelativeNames = True
+            Return
+        End If
         MigrateToRelativePaths(szFileDesc)   ' before the shared connection: it needs the file to itself
         Try
             m_lpConnection = New OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" & szFileDesc)
@@ -58,7 +77,7 @@ Public Class Database
         EnsureGpsColumns()
         EnsurePlaceColumns()
         ' converted (or nothing to convert): relative; otherwise full paths, as the rows still are
-        m_bolRelativeNames = PendingSteps(m_lpConnection).Count = 0
+        m_bolRelativeNames = PendingSteps(DirectCast(m_lpConnection, OleDbConnection)).Count = 0
     End Sub
 
     '==================================================================================================
@@ -111,7 +130,7 @@ Public Class Database
                     tx.Commit()
                 End Using
             End Using
-        Catch ex As Exception When TypeOf ex Is OleDbException OrElse TypeOf ex Is InvalidOperationException
+        Catch ex As Exception When TypeOf ex Is DbException OrElse TypeOf ex Is InvalidOperationException
             ' in use, or rolled back: still full paths everywhere
         End Try
     End Sub
@@ -168,7 +187,7 @@ Public Class Database
             Dim used As New HashSet(Of Integer)
             Try
                 Using cmd As New OleDbCommand("Select Distinct FileName From " & table & " Where FileName Like '_:\%' Or FileName Like '\\%'", cn)
-                    Using r As OleDbDataReader = cmd.ExecuteReader()
+                    Using r As DbDataReader = cmd.ExecuteReader()
                         While r.Read() AndAlso used.Count < steps.Count
                             Dim f As String = AsText(r(0))
                             Dim i As Integer = steps.FindIndex(Function(s) s.Matches(f))   ' the first that takes it
@@ -176,7 +195,7 @@ Public Class Database
                         End While
                     End Using
                 End Using
-            Catch ex As OleDbException
+            Catch ex As DbException
                 Continue For   ' not there
             End Try
             If used.Count > 0 Then result(table) = used.OrderBy(Function(i) i).Select(Function(i) steps(i)).ToList()
@@ -203,7 +222,7 @@ Public Class Database
                 If Not HasColumn(c) Then Execute("Alter Table " & mc_strTableName & " Add Column " & c & " Text(80)")
             Next
             m_bolPlaceColumns = True
-        Catch ex As OleDbException
+        Catch ex As DbException
             ' as with the GPS columns: the index goes on without them
         End Try
     End Sub
@@ -230,15 +249,13 @@ Public Class Database
             If Not HasColumn("Exif_Latitude") Then Execute("Alter Table " & mc_strTableName & " Add Column Exif_Latitude Double")
             If Not HasColumn("Exif_Longitude") Then Execute("Alter Table " & mc_strTableName & " Add Column Exif_Longitude Double")
             m_bolGpsColumns = True
-        Catch ex As OleDbException
+        Catch ex As DbException
             ' a read-only file, or another program has the table open: the index goes on without them
         End Try
     End Sub
 
     Private Function HasColumn(ByVal name As String) As Boolean
-        Using t As DataTable = m_lpConnection.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, {Nothing, Nothing, mc_strTableName, name})
-            Return t IsNot Nothing AndAlso t.Rows.Count > 0
-        End Using
+        Return HasColumn(mc_strTableName, name)
     End Function
 
     Public Sub Close()
@@ -279,7 +296,7 @@ Public Class Database
             Next
         Next
         TruncateTable()
-        Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+        Using tx As DbTransaction = m_lpConnection.BeginTransaction()
             For n = 0 To photos.Count - 1
                 If fillExif Then FillPlace(photos(n))
                 InsertPhoto(photos(n), tx)
@@ -325,7 +342,7 @@ Public Class Database
     Public Sub AddItem(ByVal lpPhoto As Photo)
         Try
             Delete(lpPhoto.FileDesc)
-            Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+            Using tx As DbTransaction = m_lpConnection.BeginTransaction()
                 InsertPhoto(lpPhoto, tx)
                 tx.Commit()
             End Using
@@ -351,15 +368,15 @@ Public Class Database
 
     ''' <summary>VB6 MovePhotoToRecord: the date columns come from the photo's Exif date (yyyyMMdd); with the
     ''' GPS columns also where it was taken (Nothing when the photo has no [Exif] GPS).</summary>
-    Private Sub InsertPhoto(ByVal p As Photo, ByVal tx As OleDbTransaction)
+    Private Sub InsertPhoto(ByVal p As Photo, ByVal tx As DbTransaction)
         Dim d As String = PadNum(p.Exif(enumPhotoExif.peDate), 8)
         Dim y As String = Mid(d, 1, 4), m As String = Mid(d, 5, 2), dd As String = Mid(d, 7, 2)
         Dim gpsCols As String = If(m_bolGpsColumns, ", Exif_Latitude, Exif_Longitude", "") & If(m_bolPlaceColumns, ", Exif_Country, Exif_City, Exif_Town", "")
         Dim gpsVals As String = If(m_bolGpsColumns, ", ?, ?", "") & If(m_bolPlaceColumns, ", ?, ?, ?", "")
-        Using cmd As New OleDbCommand("Insert Into " & mc_strTableName &
+        Using cmd As DbCmd = NewCmd("Insert Into " & mc_strTableName &
                 " (FileName, Create_Date, Create_Year, Create_Month, Create_Day, Exif_Date, Exif_Year, Exif_Month, Exif_Day," &
                 "  Exif_Title, Exif_Character, Exif_Spot, Exif_Remark, Exif_KeyWord, Exif_Ranking, ModifyTime" & gpsCols & ")" &
-                " Values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?" & gpsVals & ")", m_lpConnection, tx)
+                " Values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?" & gpsVals & ")", tx)
             For Each v In {ToStored(p.FileDesc), d, y, m, dd, d, y, m, dd,
                            p.Exif(enumPhotoExif.peTitle), p.Exif(enumPhotoExif.peCharacter), p.Exif(enumPhotoExif.peSpot),
                            p.Exif(enumPhotoExif.peRemark), p.Exif(enumPhotoExif.peKeyWord)}
@@ -417,8 +434,8 @@ Public Class Database
     Public Function LoadFaceIndex(ByRef strFileDesc() As String, ByRef strName() As String) As Integer
         Dim files As New List(Of String), names As New List(Of String)
         If m_bolImplement Then
-            Using cmd As New OleDbCommand("Select FileName, FaceName From FaceIndex", m_lpConnection)
-                Using r As OleDbDataReader = cmd.ExecuteReader()
+            Using cmd As DbCmd = NewCmd("Select FileName, FaceName From FaceIndex")
+                Using r As DbDataReader = cmd.ExecuteReader()
                     While r.Read()
                         files.Add(CoverFile(FromStored(AsText(r(0)))))
                         names.Add(AsText(r(1)))
@@ -467,8 +484,10 @@ Public Class Database
         objRecordSet = New DataTable(mc_strTableName)
         If Not m_bolImplement Then Return False
         Dim sql As String = "Select * From " & mc_strTableName & If(String.IsNullOrWhiteSpace(strWhereSQL), "", " Where " & strWhereSQL)
-        Using da As New OleDbDataAdapter(sql, m_lpConnection)
-            da.Fill(objRecordSet)
+        Using cmd As DbCmd = NewCmd(sql)
+            Using r As DbDataReader = cmd.ExecuteReader()
+                objRecordSet = ReadTable(r, mc_strTableName)
+            End Using
         End Using
         If objRecordSet.Columns.Contains("FileName") Then
             For Each row As DataRow In objRecordSet.Rows
@@ -484,7 +503,7 @@ Public Class Database
     '==================================================================================================
     Private Sub Execute(ByVal sql As String, ParamArray values As Object())
         If Not m_bolImplement Then Return
-        Using cmd As OleDbCommand = NewCommand(sql, values)
+        Using cmd As DbCmd = NewCommand(sql, values)
             cmd.ExecuteNonQuery()
         End Using
     End Sub
@@ -492,8 +511,8 @@ Public Class Database
     Private Function FileNames(ByVal sql As String, ParamArray values As Object()) As String()
         Dim result As New List(Of String)
         If m_bolImplement Then
-            Using cmd As OleDbCommand = NewCommand(sql, values)
-                Using r As OleDbDataReader = cmd.ExecuteReader()
+            Using cmd As DbCmd = NewCommand(sql, values)
+                Using r As DbDataReader = cmd.ExecuteReader()
                     While r.Read()
                         result.Add(AsText(r(0)))
                     End While
@@ -511,8 +530,8 @@ Public Class Database
     Private Function DistinctNumbers(ByVal sql As String, ParamArray values As Object()) As HashSet(Of Integer)
         Dim result As New HashSet(Of Integer)
         If m_bolImplement Then
-            Using cmd As OleDbCommand = NewCommand(sql, values)
-                Using r As OleDbDataReader = cmd.ExecuteReader()
+            Using cmd As DbCmd = NewCommand(sql, values)
+                Using r As DbDataReader = cmd.ExecuteReader()
                     While r.Read()
                         result.Add(CInt(Val(AsText(r(0)))))
                     End While
@@ -522,8 +541,8 @@ Public Class Database
         Return result
     End Function
 
-    Private Function NewCommand(ByVal sql As String, ByVal values As Object()) As OleDbCommand
-        Dim cmd As New OleDbCommand(sql, m_lpConnection)
+    Private Function NewCommand(ByVal sql As String, ByVal values As Object()) As DbCmd
+        Dim cmd As DbCmd = NewCmd(sql)
         For Each v In values
             cmd.Parameters.Add(New OleDbParameter With {.Value = If(v, DBNull.Value)})
         Next

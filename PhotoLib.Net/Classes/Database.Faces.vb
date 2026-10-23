@@ -1,4 +1,5 @@
 ﻿Imports System.Data
+Imports System.Data.Common
 Imports System.Data.OleDb
 
 ' Face recognition tables of iPhoto.mdb (new in the .NET port; created by hand with a DDL script on
@@ -19,9 +20,7 @@ Partial Public Class Database
             If Not m_bolImplement Then Return False
             If m_intFaceTables < 0 Then
                 Try
-                    Dim t As DataTable = m_lpConnection.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, New Object() {Nothing, Nothing, Nothing, "TABLE"})
-                    Dim names = t.Rows.Cast(Of DataRow)().Select(Function(r) r("TABLE_NAME").ToString()).ToList()
-                    m_intFaceTables = If({"FacePerson", "FacePhoto", "FaceRegion"}.All(Function(n) names.Contains(n, StringComparer.OrdinalIgnoreCase)), 1, 0)
+                    m_intFaceTables = If({"FacePerson", "FacePhoto", "FaceRegion"}.All(Function(n) TableExists(n)), 1, 0)
                 Catch
                     m_intFaceTables = 0
                 End Try
@@ -43,10 +42,10 @@ Partial Public Class Database
     Public Function LoadFacePhotoStates(Optional ByVal strFileDesc As String = Nothing) As Dictionary(Of String, FacePhotoState)
         Dim result As New Dictionary(Of String, FacePhotoState)(StringComparer.OrdinalIgnoreCase)
         If Not FaceTablesReady Then Return result
-        Using cmd As New OleDbCommand("Select FileName, FileSize, FileTime, EngineVer From FacePhoto" &
-                                      If(strFileDesc Is Nothing, "", " Where FileName = ?"), m_lpConnection)
+        Using cmd As DbCmd = NewCmd("Select FileName, FileSize, FileTime, EngineVer From FacePhoto" &
+                                      If(strFileDesc Is Nothing, "", " Where FileName = ?"))
             If strFileDesc IsNot Nothing Then cmd.Parameters.Add(Pth(strFileDesc))
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+            Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     result(FromStored(AsText(r(0)))) = New FacePhotoState With {
                         .FileSize = If(IsDBNull(r(1)), -1L, CLng(r(1))),
@@ -60,7 +59,7 @@ Partial Public Class Database
 
     Public Function FaceAnalyzedCount() As Integer
         If Not FaceTablesReady Then Return 0
-        Using cmd As New OleDbCommand("Select Count(*) From FacePhoto", m_lpConnection)
+        Using cmd As DbCmd = NewCmd("Select Count(*) From FacePhoto")
             Return CInt(cmd.ExecuteScalar())
         End Using
     End Function
@@ -72,7 +71,7 @@ Partial Public Class Database
                                 ByVal intShotYear As Integer, ByVal faces As List(Of Quartz.FaceEngine.Face))
         If Not FaceTablesReady Then Return
         WithRetry(Sub()
-                      Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+                      Using tx As DbTransaction = m_lpConnection.BeginTransaction()
                           Exec(tx, "Delete From FacePhoto Where FileName = ?", Pth(strFileDesc))
                           Exec(tx, "Insert Into FacePhoto (FileName, FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer) Values (?, ?, ?, ?, ?, ?, ?, ?)",
                                Pth(strFileDesc), P(OleDbType.Integer, CInt(Math.Min(lngSize, Integer.MaxValue))), P(OleDbType.Date, dtFileTime),
@@ -88,7 +87,7 @@ Partial Public Class Database
                   End Sub)
     End Sub
 
-    Private Function InsertFaceRegion(ByVal tx As OleDbTransaction, ByVal strFileDesc As String, ByVal f As Quartz.FaceEngine.Face,
+    Private Function InsertFaceRegion(ByVal tx As DbTransaction, ByVal strFileDesc As String, ByVal f As Quartz.FaceEngine.Face,
                                       ByVal state As FaceRegion.enumFaceState, ByVal intShotYear As Integer) As Integer
         Dim marks(39) As Byte
         Buffer.BlockCopy(f.Landmarks.SelectMany(Function(p) {p.X, p.Y}).ToArray(), 0, marks, 0, 40)
@@ -96,7 +95,7 @@ Partial Public Class Database
              Pth(strFileDesc), P(OleDbType.Single, f.Box.X), P(OleDbType.Single, f.Box.Y), P(OleDbType.Single, f.Box.Width), P(OleDbType.Single, f.Box.Height),
              P(OleDbType.Binary, marks), P(OleDbType.Single, f.Score), P(OleDbType.LongVarBinary, If(Quartz.FaceEngine.FeatureToBytes(f.Feature), CObj(DBNull.Value))),
              P(OleDbType.UnsignedTinyInt, CByte(state)), P(OleDbType.SmallInt, CShort(intShotYear)), P(OleDbType.Date, DateTime.Now), P(OleDbType.Date, DateTime.Now))
-        Using cmd As New OleDbCommand("Select @@IDENTITY", m_lpConnection, tx)
+        Using cmd As DbCmd = NewCmd("Select @@IDENTITY", tx)
             Return CInt(cmd.ExecuteScalar())
         End Using
     End Function
@@ -108,11 +107,11 @@ Partial Public Class Database
     Public Function LoadFaceRegions(ByVal strFileDesc As String) As List(Of FaceRegion)
         Dim result As New List(Of FaceRegion)
         If Not FaceTablesReady Then Return result
-        Using cmd As New OleDbCommand("Select r.FaceID, r.FileName, r.X, r.Y, r.W, r.H, r.Score, r.Embedding, r.PersonID, p.FaceName, r.State, r.Similarity, r.ShotYear" &
+        Using cmd As DbCmd = NewCmd("Select r.FaceID, r.FileName, r.X, r.Y, r.W, r.H, r.Score, r.Embedding, r.PersonID, p.FaceName, r.State, r.Similarity, r.ShotYear" &
                                       " From FaceRegion AS r Left Join FacePerson AS p On r.PersonID = p.PersonID" &
-                                      " Where r.FileName = ? And r.State <> 9 Order By r.X", m_lpConnection)
+                                      " Where r.FileName = ? And r.State <> 9 Order By r.X")
             cmd.Parameters.Add(Pth(strFileDesc))
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+            Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     result.Add(New FaceRegion With {
                         .FaceID = CInt(r(0)), .FileName = FromStored(AsText(r(1))),
@@ -132,8 +131,8 @@ Partial Public Class Database
     Public Function AddManualFace(ByVal strFileDesc As String, ByVal f As Quartz.FaceEngine.Face, ByVal intShotYear As Integer) As Integer
         If Not FaceTablesReady Then Return 0
         Return WithRetry(Function()
-                             Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
-                                 Using cmd As New OleDbCommand("Select Count(*) From FacePhoto Where FileName = ?", m_lpConnection, tx)
+                             Using tx As DbTransaction = m_lpConnection.BeginTransaction()
+                                 Using cmd As DbCmd = NewCmd("Select Count(*) From FacePhoto Where FileName = ?", tx)
                                      cmd.Parameters.Add(Pth(strFileDesc))
                                      If CInt(cmd.ExecuteScalar()) = 0 Then Return 0
                                  End Using
@@ -156,7 +155,7 @@ Partial Public Class Database
     ''' <summary>True when another face of the photo is (still) assigned to the person.</summary>
     Public Function PhotoHasPerson(ByVal strFileDesc As String, ByVal intPersonID As Integer, ByVal intExceptFaceID As Integer) As Boolean
         If Not FaceTablesReady Then Return False
-        Using cmd As New OleDbCommand("Select Count(*) From FaceRegion Where FileName = ? And PersonID = ? And FaceID <> ? And State = 3", m_lpConnection)
+        Using cmd As DbCmd = NewCmd("Select Count(*) From FaceRegion Where FileName = ? And PersonID = ? And FaceID <> ? And State = 3")
             cmd.Parameters.Add(Pth(strFileDesc))
             cmd.Parameters.Add(P(OleDbType.Integer, intPersonID))
             cmd.Parameters.Add(P(OleDbType.Integer, intExceptFaceID))
@@ -172,7 +171,7 @@ Partial Public Class Database
         strName = If(strName, "").Trim()
         If strName = "" OrElse Not FaceTablesReady Then Return 0
         For attempt = 1 To 2
-            Using cmd As New OleDbCommand("Select PersonID From FacePerson Where FaceName = ?", m_lpConnection)
+            Using cmd As DbCmd = NewCmd("Select PersonID From FacePerson Where FaceName = ?")
                 cmd.Parameters.Add(Txt(strName))
                 Dim v As Object = cmd.ExecuteScalar()
                 If v IsNot Nothing AndAlso Not IsDBNull(v) Then Return CInt(v)
@@ -180,10 +179,10 @@ Partial Public Class Database
             Try
                 Exec(Nothing, "Insert Into FacePerson (FaceName, Hidden, CreateTime, UpdateTime) Values (?, False, ?, ?)",
                      Txt(strName), P(OleDbType.Date, DateTime.Now), P(OleDbType.Date, DateTime.Now))
-                Using cmd As New OleDbCommand("Select @@IDENTITY", m_lpConnection)
+                Using cmd As DbCmd = NewCmd("Select @@IDENTITY")
                     Return CInt(cmd.ExecuteScalar())
                 End Using
-            Catch ex As OleDbException When attempt = 1 AndAlso ex.Errors.Cast(Of OleDbError)().Any(Function(e) e.NativeError = 3022)
+            Catch ex As DbException When attempt = 1 AndAlso IsDuplicateKey(ex)
                 ' the other thread added the same name a moment ago: read its ID
                 Threading.Thread.Sleep(LockWaitMs * 4)
             End Try
@@ -218,9 +217,9 @@ Partial Public Class Database
     Public Function LoadAllFaces() As List(Of FaceRegion)
         Dim result As New List(Of FaceRegion)
         If Not FaceTablesReady Then Return result
-        Using cmd As New OleDbCommand("Select r.FaceID, r.FileName, r.X, r.Y, r.W, r.H, r.Score, r.Embedding, r.PersonID, p.FaceName, r.State, r.Similarity, r.ShotYear" &
-                                      " From FaceRegion AS r Left Join FacePerson AS p On r.PersonID = p.PersonID Where r.State <> 9", m_lpConnection)
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+        Using cmd As DbCmd = NewCmd("Select r.FaceID, r.FileName, r.X, r.Y, r.W, r.H, r.Score, r.Embedding, r.PersonID, p.FaceName, r.State, r.Similarity, r.ShotYear" &
+                                      " From FaceRegion AS r Left Join FacePerson AS p On r.PersonID = p.PersonID Where r.State <> 9")
+            Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     result.Add(New FaceRegion With {
                         .FaceID = CInt(r(0)), .FileName = FromStored(AsText(r(1))),
@@ -247,8 +246,8 @@ Partial Public Class Database
     Public Function LoadFacePersons() As List(Of FacePersonInfo)
         Dim result As New List(Of FacePersonInfo)
         If Not FaceTablesReady Then Return result
-        Using cmd As New OleDbCommand("Select PersonID, FaceName, BirthYear, CoverFaceID, Hidden From FacePerson", m_lpConnection)
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+        Using cmd As DbCmd = NewCmd("Select PersonID, FaceName, BirthYear, CoverFaceID, Hidden From FacePerson")
+            Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     result.Add(New FacePersonInfo With {
                         .PersonID = CInt(r(0)), .Name = AsText(r(1)),
@@ -264,8 +263,8 @@ Partial Public Class Database
     Public Function LoadCharacters() As Dictionary(Of String, String)
         Dim result As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
         If Not m_bolImplement Then Return result
-        Using cmd As New OleDbCommand("Select FileName, Exif_Character From " & mc_strTableName & " Where Exif_Character <> ''", m_lpConnection)
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+        Using cmd As DbCmd = NewCmd("Select FileName, Exif_Character From " & mc_strTableName & " Where Exif_Character <> ''")
+            Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     result(FromStored(AsText(r(0)))) = AsText(r(1))
                 End While
@@ -278,8 +277,8 @@ Partial Public Class Database
     Public Function LoadFaceRejects() As HashSet(Of String)
         Dim result As New HashSet(Of String)
         If Not FaceTablesReady Then Return result
-        Using cmd As New OleDbCommand("Select FaceID, PersonID From FaceReject", m_lpConnection)
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+        Using cmd As DbCmd = NewCmd("Select FaceID, PersonID From FaceReject")
+            Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     result.Add(CInt(r(0)) & "|" & CInt(r(1)))
                 End While
@@ -306,8 +305,8 @@ Partial Public Class Database
             Dim done As HashSet(Of Integer) =
                 WithRetry(Function()
                               Dim ids As New HashSet(Of Integer)
-                              Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
-                                  Using cmd As New OleDbCommand("Update FaceRegion Set PersonID = ?, State = ?, Similarity = ?, UpdateTime = ? Where FaceID = ? And State = ?", m_lpConnection, tx)
+                              Using tx As DbTransaction = m_lpConnection.BeginTransaction()
+                                  Using cmd As DbCmd = NewCmd("Update FaceRegion Set PersonID = ?, State = ?, Similarity = ?, UpdateTime = ? Where FaceID = ? And State = ?", tx)
                                       Dim pPerson = cmd.Parameters.Add(P(OleDbType.Integer, Nothing))
                                       Dim pState = cmd.Parameters.Add(P(OleDbType.UnsignedTinyInt, Nothing))
                                       Dim pSim = cmd.Parameters.Add(P(OleDbType.Single, Nothing))
@@ -345,7 +344,7 @@ Partial Public Class Database
     Public Sub ReplaceFaceTemplates(ByVal rows As IEnumerable(Of FaceTemplateRow))
         If Not FaceTablesReady Then Return
         WithRetry(Sub()
-                      Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+                      Using tx As DbTransaction = m_lpConnection.BeginTransaction()
                           Exec(tx, "Delete From FaceTemplate")
                           For Each t In rows
                               Exec(tx, "Insert Into FaceTemplate (PersonID, YearFrom, YearTo, Embedding, FaceCount, UpdateTime) Values (?, ?, ?, ?, ?, ?)",
@@ -361,7 +360,7 @@ Partial Public Class Database
     Public Sub ClearFaceTables()
         If Not FaceTablesReady Then Return
         WithRetry(Sub()
-                      Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+                      Using tx As DbTransaction = m_lpConnection.BeginTransaction()
                           For Each tbl In {"FaceReject", "FaceTemplate", "FaceRegion", "FacePhoto", "FacePerson"}
                               Exec(tx, "Delete From " & tbl)
                           Next
@@ -374,7 +373,7 @@ Partial Public Class Database
     Public Function FaceCounts() As (Photos As Integer, Faces As Integer, Persons As Integer)
         If Not FaceTablesReady Then Return (0, 0, 0)
         Dim n = Function(sql As String) As Integer
-                    Using cmd As New OleDbCommand(sql, m_lpConnection)
+                    Using cmd As DbCmd = NewCmd(sql)
                         Return CInt(cmd.ExecuteScalar())
                     End Using
                 End Function
@@ -387,7 +386,7 @@ Partial Public Class Database
         WithRetry(Sub()
                       ' FaceRegion.FileName must name a FacePhoto row (relationship without cascading
                       ' updates): the new row first, then the faces, then the old row
-                      Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+                      Using tx As DbTransaction = m_lpConnection.BeginTransaction()
                           Exec(tx, "Insert Into FacePhoto (FileName, FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer)" &
                                    " Select ?, FileSize, FileTime, ShotYear, Status, FaceCount, AnalyzeTime, EngineVer From FacePhoto Where FileName = ?",
                                Pth(strNew), Pth(strOld))
@@ -402,7 +401,7 @@ Partial Public Class Database
     Public Sub DeleteFacePhoto(ByVal strFileDesc As String)
         If Not FaceTablesReady Then Return
         WithRetry(Sub()
-                      Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+                      Using tx As DbTransaction = m_lpConnection.BeginTransaction()
                           Exec(tx, "Delete From FaceReject Where FaceID In (Select FaceID From FaceRegion Where FileName = ?)", Pth(strFileDesc))
                           Exec(tx, "Delete From FaceRegion Where FileName = ?", Pth(strFileDesc))
                           Exec(tx, "Delete From FacePhoto Where FileName = ?", Pth(strFileDesc))
@@ -415,8 +414,8 @@ Partial Public Class Database
     Public Function LoadTemplateFeatures() As Dictionary(Of Integer, List(Of Single()))
         Dim result As New Dictionary(Of Integer, List(Of Single()))
         If Not FaceTablesReady Then Return result
-        Using cmd As New OleDbCommand("Select PersonID, Embedding From FaceTemplate", m_lpConnection)
-            Using r As OleDbDataReader = cmd.ExecuteReader()
+        Using cmd As DbCmd = NewCmd("Select PersonID, Embedding From FaceTemplate")
+            Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
                     If IsDBNull(r(0)) OrElse IsDBNull(r(1)) Then Continue While
                     Dim id As Integer = CInt(r(0))
@@ -431,7 +430,7 @@ Partial Public Class Database
     ''' <summary>Faces marked 我不認識 (State 8).</summary>
     Public Function StrangerCount() As Integer
         If Not FaceTablesReady Then Return 0
-        Using cmd As New OleDbCommand("Select Count(*) From FaceRegion Where State = 8", m_lpConnection)
+        Using cmd As DbCmd = NewCmd("Select Count(*) From FaceRegion Where State = 8")
             Return CInt(cmd.ExecuteScalar())
         End Using
     End Function
@@ -440,7 +439,7 @@ Partial Public Class Database
     Public Function RestoreStrangers() As Integer
         If Not FaceTablesReady Then Return 0
         Return WithRetry(Function()
-                             Using cmd As New OleDbCommand("Update FaceRegion Set State = 0, UpdateTime = ? Where State = 8", m_lpConnection)
+                             Using cmd As DbCmd = NewCmd("Update FaceRegion Set State = 0, UpdateTime = ? Where State = 8")
                                  cmd.Parameters.Add(P(OleDbType.Date, DateTime.Now))
                                  Return cmd.ExecuteNonQuery()
                              End Using
@@ -453,7 +452,7 @@ Partial Public Class Database
         Try
             Exec(Nothing, "Insert Into FaceReject (FaceID, PersonID, CreateTime) Values (?, ?, ?)",
                  P(OleDbType.Integer, intFaceID), P(OleDbType.Integer, intPersonID), P(OleDbType.Date, DateTime.Now))
-        Catch ex As OleDbException When ex.Errors.Cast(Of OleDbError)().Any(Function(e) e.NativeError = 3022)
+        Catch ex As DbException When IsDuplicateKey(ex)
             ' already there
         End Try
     End Sub
@@ -465,7 +464,7 @@ Partial Public Class Database
         If Not m_bolImplement Then Return
         Dim updated As Integer = 0
         WithRetry(Sub()
-                      Using cmd As New OleDbCommand("Update " & mc_strTableName & " Set Exif_Character = ?, ModifyTime = ? Where FileName = ?", m_lpConnection)
+                      Using cmd As DbCmd = NewCmd("Update " & mc_strTableName & " Set Exif_Character = ?, ModifyTime = ? Where FileName = ?")
                           cmd.Parameters.Add(Txt(lpPhoto.Exif(enumPhotoExif.peCharacter)))
                           cmd.Parameters.Add(P(OleDbType.Date, DateTime.Now))
                           cmd.Parameters.Add(Pth(lpPhoto.FileDesc))
@@ -487,7 +486,7 @@ Partial Public Class Database
     ''' the first person (its templates and rejections go with it).</summary>
     Public Sub MergeFacePerson(ByVal intFromID As Integer, ByVal intToID As Integer)
         WithRetry(Sub()
-                      Using tx As OleDbTransaction = m_lpConnection.BeginTransaction()
+                      Using tx As DbTransaction = m_lpConnection.BeginTransaction()
                           Exec(tx, "Update FaceRegion Set PersonID = ?, UpdateTime = ? Where PersonID = ?",
                                P(OleDbType.Integer, intToID), P(OleDbType.Date, DateTime.Now), P(OleDbType.Integer, intFromID))
                           Exec(tx, "Delete From FacePerson Where PersonID = ?", P(OleDbType.Integer, intFromID))
@@ -509,7 +508,7 @@ Partial Public Class Database
     ''' <summary>The name card made with frmCover (FaceIndex), or "" when there is none.</summary>
     Public Function LoadFaceCover(ByVal strName As String) As String
         If Not m_bolImplement Then Return ""
-        Using cmd As New OleDbCommand("Select FileName From FaceIndex Where FaceName = ?", m_lpConnection)
+        Using cmd As DbCmd = NewCmd("Select FileName From FaceIndex Where FaceName = ?")
             cmd.Parameters.Add(Txt(strName))
             Return CoverFile(FromStored(AsText(cmd.ExecuteScalar())))
         End Using
@@ -536,14 +535,14 @@ Partial Public Class Database
         root = root.TrimEnd("\"c) & "\"
         Dim cards As New List(Of (Name As String, File As String))
         Try
-            Using cmd As New OleDbCommand("Select FaceName, FileName From FaceIndex", m_lpConnection)
-                Using r As OleDbDataReader = cmd.ExecuteReader()
+            Using cmd As DbCmd = NewCmd("Select FaceName, FileName From FaceIndex")
+                Using r As DbDataReader = cmd.ExecuteReader()
                     While r.Read()
                         cards.Add((AsText(r(0)), FromStored(AsText(r(1)))))
                     End While
                 End Using
             End Using
-        Catch ex As OleDbException
+        Catch ex As DbException
             Return   ' no FaceIndex
         End Try
         For Each c In cards
@@ -561,7 +560,7 @@ Partial Public Class Database
             End Try
             Try
                 Exec(Nothing, "Update FaceIndex Set FileName = ? Where FaceName = ?", Pth(dst), Txt(c.Name))
-            Catch ex As OleDbException
+            Catch ex As DbException
             End Try
         Next
     End Sub
@@ -595,22 +594,11 @@ Partial Public Class Database
     Private Const LockRetries As Integer = 40
     Private Const LockWaitMs As Integer = 150
 
-    Private Shared Function IsLockError(ByVal ex As OleDbException) As Boolean
-        For Each e As OleDbError In ex.Errors
-            Select Case e.NativeError
-                Case 3006, 3008, 3009, 3187, 3188, 3189, 3197, 3211, 3218, 3260, 3262 : Return True
-                Case 3709 : Return True   ' "search key was not found": a cascade hit rows the other connection was replacing
-            End Select
-        Next
-        Return ex.Message.IndexOf("locked", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
-               ex.Message.IndexOf("search key was not found", StringComparison.OrdinalIgnoreCase) >= 0
-    End Function
-
     Private Shared Function WithRetry(Of T)(ByVal work As Func(Of T)) As T
         For attempt = 1 To LockRetries
             Try
                 Return work()
-            Catch ex As OleDbException When attempt < LockRetries AndAlso IsLockError(ex)
+            Catch ex As DbException When attempt < LockRetries AndAlso IsLockError(ex)
                 Threading.Thread.Sleep(LockWaitMs)
             End Try
         Next
@@ -629,9 +617,9 @@ Partial Public Class Database
     '==================================================================================================
     ''' <summary>One statement. Outside a transaction it retries while the other connection holds a
     ''' lock; inside one the caller retries the whole transaction.</summary>
-    Private Sub Exec(ByVal tx As OleDbTransaction, ByVal sql As String, ParamArray values As OleDbParameter())
+    Private Sub Exec(ByVal tx As DbTransaction, ByVal sql As String, ParamArray values As OleDbParameter())
         Dim run As Action = Sub()
-                                Using cmd As New OleDbCommand(sql, m_lpConnection, tx)
+                                Using cmd As DbCmd = NewCmd(sql, tx)
                                     cmd.Parameters.AddRange(values)
                                     Try
                                         cmd.ExecuteNonQuery()

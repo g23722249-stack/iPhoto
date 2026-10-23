@@ -41,7 +41,7 @@ Partial Class frmMain
         If g_lpConfig.ReadOnly Then Return
         Try
             FaceArchive.Export(g_lpConfig.Attached(Config.enumAttachedFile.filDatabase))
-        Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is Data.OleDb.OleDbException
+        Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is Data.Common.DbException
             ' the next start exports it
         End Try
     End Sub

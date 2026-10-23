@@ -45,7 +45,7 @@ Public Module IndexSync
                     If rows.TryGetValue(f, row) AndAlso Not db.IndexDiffers(p, row) Then Continue For
                     db.WriteImportedPhoto(p)   ' delete + insert, retried while the other connection holds a lock
                     r.Updated += 1
-                Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is Data.OleDb.OleDbException
+                Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is Data.Common.DbException
                     r.Failed += 1
                     r.LastError = Path.GetFileName(f) & "：" & ex.Message
                 End Try

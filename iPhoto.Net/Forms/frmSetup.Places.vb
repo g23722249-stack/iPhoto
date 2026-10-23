@@ -174,7 +174,7 @@ Partial Class frmSetup
             lblLibraryCounts.Text = $"相片庫：照片 {c.Photos:#,0} 張、影片 {c.Videos:#,0} 個" & vbCrLf &
                                     $"有 GPS 的照片 {c.PhotosWithGps:#,0} 張" & pct &
                                     If(c.VideosWithGps > 0, $"、影片 {c.VideosWithGps:#,0} 個", "")
-        Catch ex As Exception When TypeOf ex Is Data.OleDb.OleDbException OrElse TypeOf ex Is InvalidOperationException
+        Catch ex As Exception When TypeOf ex Is Data.Common.DbException OrElse TypeOf ex Is InvalidOperationException
             lblLibraryCounts.Text = "（無法讀取相片庫數量）"
         End Try
     End Sub
