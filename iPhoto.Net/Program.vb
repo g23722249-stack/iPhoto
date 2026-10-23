@@ -56,6 +56,8 @@ Friend Module Program
         g_lpFileSystem = New Carbon.FileSystem
         g_lpConfig = New Config
         g_lpConfig.Construct(Application.StartupPath)
+        ' 設定 › 外觀「顯示字型」 for every window from here on (FontScheme)
+        FontScheme.Install()
 
         ' VB6 skipped the splash on the developer's machine
         Dim logo As frmLogo = Nothing

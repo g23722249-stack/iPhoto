@@ -1,4 +1,3 @@
-Imports System.Drawing.Text
 Imports System.Runtime.InteropServices
 Imports Microsoft.Win32
 
@@ -8,6 +7,8 @@ Imports Microsoft.Win32
 ' installed for the current user -- as Windows' own "Install" does for a user without administrator
 ' rights: the file into %LOCALAPPDATA%\Microsoft\Windows\Fonts, a value under HKCU ...\Fonts, and
 ' AddFontResource so this process (and running programs, WM_FONTCHANGE) can use it at once.
+' A font installed but not loaded in this session (another user's install, a stick moved between
+' computers) is loaded from the file the Fonts keys name before anything is asked.
 Friend Module FontSetup
 
     Private Const FamilyName As String = "華康細圓體"          ' its zh-TW name (the forms ask for this)
@@ -18,6 +19,9 @@ Friend Module FontSetup
     ''' <summary>Makes sure 華康細圓體 is there; True when it is (already, or installed now).</summary>
     Public Function EnsureFont() As Boolean
         If IsInstalled() Then Return True
+        ' installed (by Windows' 「安裝」 for all users or for this one, or by an earlier start) but not loaded
+        ' in this session: loaded for this process from the file it was installed as, no question asked
+        If LoadRegistered() AndAlso IsInstalled() Then Return True
         Dim source As String = IO.Path.Combine(AppContext.BaseDirectory, FontFile)
         If Not IO.File.Exists(source) Then
             Warn("找不到字型「" & FamilyName & "」，iPhoto 資料夾裡也沒有 " & FontFile & "。" & vbCrLf & "畫面文字會改用其他字型顯示。")
@@ -30,15 +34,52 @@ Friend Module FontSetup
         Return False
     End Function
 
-    ''' <summary>The family is among the installed fonts (by its zh-TW or English name).</summary>
+    ''' <summary>Windows has the family: a font asked for by its zh-TW or English name is really that one
+    ''' (GetTextFace; Windows answers with another face when it substitutes). Asked of GDI, not GDI+: GDI+
+    ''' keeps the font list it read first and misses a font loaded after (AddFontResource), which made
+    ''' this say "missing" right after the install.</summary>
     Private Function IsInstalled() As Boolean
-        Using fonts As New InstalledFontCollection()
-            For Each f In fonts.Families
-                If String.Equals(f.Name, EnglishName, StringComparison.OrdinalIgnoreCase) OrElse
-                   String.Equals(f.GetName(&H404), FamilyName, StringComparison.Ordinal) Then Return True
-            Next
-        End Using
-        Return False
+        Return {FamilyName, EnglishName}.Any(Function(n) FaceOf(n).Equals(FamilyName, StringComparison.Ordinal) OrElse
+                                                         FaceOf(n).Equals(EnglishName, StringComparison.OrdinalIgnoreCase))
+    End Function
+
+    ''' <summary>The face Windows uses when asked for <paramref name="name"/>.</summary>
+    Private Function FaceOf(ByVal name As String) As String
+        Dim dc As IntPtr = GetDC(IntPtr.Zero)
+        Dim font As IntPtr = CreateFont(-16, 0, 0, 0, 400, 0, 0, 0, CHINESEBIG5_CHARSET, 0, 0, 0, 0, name)
+        Try
+            Dim old As IntPtr = SelectObject(dc, font)
+            Dim sb As New Text.StringBuilder(64)
+            GetTextFace(dc, sb.Capacity, sb)
+            SelectObject(dc, old)
+            Return sb.ToString()
+        Finally
+            DeleteObject(font)
+            ReleaseDC(IntPtr.Zero, dc)
+        End Try
+    End Function
+
+    ''' <summary>The font files the Fonts keys (all users, this user) list for 華康細圓體 / 細圓體.TTC, loaded
+    ''' into this process (AddFontResource). True when one was.</summary>
+    Private Function LoadRegistered() As Boolean
+        Dim loaded As Boolean = False
+        For Each root In {Registry.LocalMachine, Registry.CurrentUser}
+            Try
+                Using key As RegistryKey = root.OpenSubKey("Software\Microsoft\Windows NT\CurrentVersion\Fonts")
+                    If key Is Nothing Then Continue For
+                    For Each value In key.GetValueNames()
+                        Dim file As String = Convert.ToString(key.GetValue(value))
+                        If value.IndexOf(FamilyName, StringComparison.Ordinal) < 0 AndAlso value.IndexOf("DFYuanLight", StringComparison.OrdinalIgnoreCase) < 0 AndAlso
+                           Not String.Equals(IO.Path.GetFileName(file), FontFile, StringComparison.OrdinalIgnoreCase) Then Continue For
+                        ' all users' entries hold the file name only: it is in %WINDIR%\Fonts
+                        If Not IO.Path.IsPathRooted(file) Then file = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), file)
+                        If IO.File.Exists(file) AndAlso AddFontResource(file) > 0 Then loaded = True
+                    Next
+                End Using
+            Catch ex As Exception When TypeOf ex Is Security.SecurityException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is IO.IOException
+            End Try
+        Next
+        Return loaded
     End Function
 
     ''' <summary>Per-user install; Nothing when it went through, else what failed.</summary>
@@ -69,6 +110,35 @@ Friend Module FontSetup
     Private Const HWND_BROADCAST As Integer = &HFFFF
     Private Const WM_FONTCHANGE As Integer = &H1D
     Private Const SMTO_ABORTIFHUNG As Integer = &H2
+
+    Private Const CHINESEBIG5_CHARSET As Integer = 136
+
+    <DllImport("gdi32.dll", CharSet:=CharSet.Unicode, EntryPoint:="CreateFontW")>
+    Private Function CreateFont(ByVal height As Integer, ByVal width As Integer, ByVal escapement As Integer, ByVal orientation As Integer,
+                                ByVal weight As Integer, ByVal italic As Integer, ByVal underline As Integer, ByVal strikeOut As Integer,
+                                ByVal charSet As Integer, ByVal outPrecision As Integer, ByVal clipPrecision As Integer,
+                                ByVal quality As Integer, ByVal pitchAndFamily As Integer, ByVal face As String) As IntPtr
+    End Function
+
+    <DllImport("gdi32.dll", CharSet:=CharSet.Unicode, EntryPoint:="GetTextFaceW")>
+    Private Function GetTextFace(ByVal dc As IntPtr, ByVal count As Integer, ByVal face As Text.StringBuilder) As Integer
+    End Function
+
+    <DllImport("gdi32.dll")>
+    Private Function SelectObject(ByVal dc As IntPtr, ByVal obj As IntPtr) As IntPtr
+    End Function
+
+    <DllImport("gdi32.dll")>
+    Private Function DeleteObject(ByVal obj As IntPtr) As Boolean
+    End Function
+
+    <DllImport("user32.dll")>
+    Private Function GetDC(ByVal hWnd As IntPtr) As IntPtr
+    End Function
+
+    <DllImport("user32.dll")>
+    Private Function ReleaseDC(ByVal hWnd As IntPtr, ByVal dc As IntPtr) As Integer
+    End Function
 
     <DllImport("gdi32.dll", CharSet:=CharSet.Unicode)>
     Private Function AddFontResource(ByVal lpFileName As String) As Integer

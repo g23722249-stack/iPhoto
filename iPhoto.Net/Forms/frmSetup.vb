@@ -46,7 +46,7 @@ Friend Class frmSetup
         g_lpConfig.AddFavoriteFolders({txtFavorite.Text})
 
         '字型
-        g_lpConfig.InterfaceFontName = txtFont.Text
+        Dim fontChanged As Boolean = SaveFontOption()   ' frmSetup.Font.vb
 
         '風格
         g_lpConfig.Style = If(rbStyle(0).Checked, "0", "1")
@@ -85,7 +85,11 @@ Friend Class frmSetup
         m_lpChanged = True
         ThumbCache.Apply()
         Close()
-        If screenChanged Then AskRestartForScreen()
+        If screenChanged Then
+            AskRestartForScreen()   ' a restart for the screens takes the font along
+        ElseIf fontChanged Then
+            AskRestartForFont()
+        End If
     End Sub
 
     ''' <summary>VB6 "BorderStyle = 1 : Wait : BorderStyle = 0" press effect of the small browse icons.</summary>

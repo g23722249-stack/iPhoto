@@ -444,11 +444,18 @@ Public Class Config
         Next
     End Sub
 
+    ''' <summary>The font named can be used (GDI+ finds the family, by its name in any language Windows has
+    ''' for it: comparing with FontFamily.Families' names, in the UI language only, missed 華康細圓體 on an
+    ''' English Windows, where it is DFYuanLight-B5).</summary>
     Private Function CheckSystemFont() As Boolean
-        For Each ff In FontFamily.Families
-            If ff.Name = m_strFontName Then Return True
-        Next
-        Return False
+        If m_strFontName.Trim().Length = 0 Then Return False
+        Try
+            Using ff As New FontFamily(m_strFontName.Trim())
+                Return True
+            End Using
+        Catch ex As ArgumentException
+            Return False
+        End Try
     End Function
 
     '==================================================================================================
