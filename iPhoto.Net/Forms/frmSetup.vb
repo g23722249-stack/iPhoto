@@ -80,8 +80,10 @@ Friend Class frmSetup
         SaveViewerPage()     ' frmSetup.Viewer.vb
         SavePlacesPage()     ' frmSetup.Places.vb
         Dim screenChanged As Boolean = SaveScreenPage()   ' frmSetup.Screen.vb
+        SaveThumbCacheOption()   ' frmSetup.Maintenance.vb
         g_lpConfig.Save()
         m_lpChanged = True
+        ThumbCache.Apply()
         Close()
         If screenChanged Then AskRestartForScreen()
     End Sub

@@ -211,29 +211,48 @@ Friend Module LibUserInterface
         End Select
 
         lpKey.Load()
-        For I As Integer = 0 To lpKey.PhotoCount - 1
-            Dim lpPhoto As Photo = lpKey.Photo(I)
-            Dim strToolTipText As String = "時間：" & FormatDigits(lpPhoto.Exif(enumPhotoExif.peDate), "0000/00/00") & " " & FormatDigits(lpPhoto.Exif(enumPhotoExif.peTime), "00:00:00")
-            strToolTipText &= vbCrLf & "人物：" & lpPhoto.Exif(enumPhotoExif.peCharacter)
-            strToolTipText &= vbCrLf & "備註：" & lpPhoto.Exif(enumPhotoExif.peRemark)
+        lpMediaList.BeginUpdate()
+        Dim lpShown As Stopwatch = Stopwatch.StartNew()
+        Try
+            For I As Integer = 0 To lpKey.PhotoCount - 1
+                Dim lpPhoto As Photo = lpKey.Photo(I)
+                Dim strToolTipText As String = "時間：" & FormatDigits(lpPhoto.Exif(enumPhotoExif.peDate), "0000/00/00") & " " & FormatDigits(lpPhoto.Exif(enumPhotoExif.peTime), "00:00:00")
+                strToolTipText &= vbCrLf & "人物：" & lpPhoto.Exif(enumPhotoExif.peCharacter)
+                strToolTipText &= vbCrLf & "備註：" & lpPhoto.Exif(enumPhotoExif.peRemark)
 
-            ' a video shows its Thumb\<name>.jpg when there is one
-            Dim strShowFile As String = lpPhoto.FileDesc
-            If GetMediaType(g_lpFileSystem, lpPhoto.FileDesc) = enumPhotoMediaType.mdVideo Then
-                Dim strThumbFile As String = g_lpFileSystem.AnalyseFile(fsParentFolderName, lpPhoto.FileDesc) & "\Thumb\" & g_lpFileSystem.AnalyseFile(fsBaseName, lpPhoto.FileDesc) & ".jpg"
-                If g_lpFileSystem.FileExists(strThumbFile) Then strShowFile = strThumbFile
-            End If
+                ' a video shows its Thumb\<name>.jpg when there is one
+                Dim strShowFile As String = lpPhoto.FileDesc
+                If GetMediaType(g_lpFileSystem, lpPhoto.FileDesc) = enumPhotoMediaType.mdVideo Then
+                    Dim strThumbFile As String = g_lpFileSystem.AnalyseFile(fsParentFolderName, lpPhoto.FileDesc) & "\Thumb\" & g_lpFileSystem.AnalyseFile(fsBaseName, lpPhoto.FileDesc) & ".jpg"
+                    If g_lpFileSystem.FileExists(strThumbFile) Then strShowFile = strThumbFile
+                End If
 
-            Try
-                Dim lpItem As Aqua.MediaItem = lpMediaList.AddItem(strShowFile, strToolTipText)
-                lpItem.Ranking = RankingOf(lpPhoto)
-            Catch ex As Exception
-                Debug.Print(ex.Message)   ' VB6: On Error Resume Next semantics via Err.Number check
-            End Try
-            ' VB6 scrolled to the end after every photo (so each one was loaded as it went by); the list
-            ' now stays where it is and only loads what is on screen
-            Application.DoEvents()
-        Next
+                Try
+                    Dim lpItem As Aqua.MediaItem = lpMediaList.AddItem(strShowFile, strToolTipText)
+                    lpItem.Ranking = RankingOf(lpPhoto)
+                Catch ex As Exception
+                    Debug.Print(ex.Message)   ' VB6: On Error Resume Next semantics via Err.Number check
+                End Try
+                ' VB6 scrolled to the end after every photo (so each one was loaded as it went by); the list
+                ' now stays where it is and only loads what is on screen
+                ShowAddedSoFar(lpMediaList, lpShown)
+            Next
+        Finally
+            lpMediaList.EndUpdate()
+        End Try
+    End Sub
+
+    Private Const ShowAddedEveryMs As Integer = 250
+
+    ''' <summary>Called after each AddItem between BeginUpdate and EndUpdate: every ShowAddedEveryMs the
+    ''' photos added so far are shown (the scroll bar updated, the window painted). Updating the list
+    ''' and pumping the messages after every photo made a big album three times slower.</summary>
+    Friend Sub ShowAddedSoFar(ByVal lpMediaList As Aqua.MediaList, ByVal lpShown As Stopwatch)
+        If lpShown.ElapsedMilliseconds < ShowAddedEveryMs Then Return
+        lpMediaList.EndUpdate()
+        Application.DoEvents()
+        lpMediaList.BeginUpdate()
+        lpShown.Restart()
     End Sub
 
     '//Dock MediaList 的檔案

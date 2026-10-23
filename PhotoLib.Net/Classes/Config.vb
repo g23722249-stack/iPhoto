@@ -300,9 +300,36 @@ Public Class Config
         End Select
         ' [Viewer] StripOrder=Oldest (default) / Newest: the order of the 地點 strip
         m_bolStripNewestFirst = String.Equals(Setting("Viewer", "StripOrder"), "Newest", StringComparison.OrdinalIgnoreCase)
+        ' [Viewer] ThumbCache=Y (default) / N: the MediaList thumbnails kept on disk; ThumbCacheMB its limit
+        m_bolThumbCache = Not String.Equals(Setting("Viewer", "ThumbCache"), "N", StringComparison.OrdinalIgnoreCase)
+        Dim mb As Integer
+        m_intThumbCacheMB = If(Integer.TryParse(Setting("Viewer", "ThumbCacheMB"), mb) AndAlso mb >= 50, mb, 500)
     End Sub
 
     Private m_bolStripNewestFirst As Boolean
+    Private m_bolThumbCache As Boolean = True
+    Private m_intThumbCacheMB As Integer = 500
+
+    ''' <summary>The thumbnails of the photo lists kept on disk (System\ThumbCache of the library), so an
+    ''' album opened again shows them at once. On by default.</summary>
+    Public Property ThumbCache As Boolean
+        Get
+            Return m_bolThumbCache
+        End Get
+        Set(value As Boolean)
+            m_bolThumbCache = value
+        End Set
+    End Property
+
+    ''' <summary>The most the thumbnail cache may hold, in MB (at least 50; 500 by default).</summary>
+    Public Property ThumbCacheMB As Integer
+        Get
+            Return m_intThumbCacheMB
+        End Get
+        Set(value As Integer)
+            m_intThumbCacheMB = Math.Max(50, value)
+        End Set
+    End Property
     Private m_enumStripDockSingle As DockStyle = DockStyle.Top
 
     ''' <summary>Where the strip of 全圖 in the main window (單螢幕) sits; its own place, apart from the
@@ -514,6 +541,9 @@ Public Class Config
             w.WriteLine("StripDock=" & m_enumStripDock.ToString())
             w.WriteLine("StripOrder=" & If(m_bolStripNewestFirst, "Newest", "Oldest"))
             w.WriteLine("StripDockSingle=" & m_enumStripDockSingle.ToString())
+            w.WriteLine("//相片清單的縮圖存在相片庫的 System\ThumbCache（Y 存，開過的相簿再開很快 / N 不存）；ThumbCacheMB 上限")
+            w.WriteLine("ThumbCache=" & If(m_bolThumbCache, "Y", "N"))
+            w.WriteLine("ThumbCacheMB=" & m_intThumbCacheMB)
             w.WriteLine(" ")
         End Using
         Return True

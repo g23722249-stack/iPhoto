@@ -1171,15 +1171,21 @@ Friend Class frmMain
         sliSize.Value = LimitFor(intCount)
         Application.DoEvents()
 
-        For I As Integer = 0 To intCount - 1
-            If g_lpFileSystem.FileExists(strFileName(I)) Then
-                Dim lpPhoto As New Photo
-                lpPhoto.Construct(strFileName(I))
-                Dim lpItem As Aqua.MediaItem = mlList.AddItem(strFileName(I))
-                lpItem.Ranking = RankingOf(lpPhoto)
-                Application.DoEvents()   ' no scrolling to each new photo (VB6 did): only what is on screen loads
-            End If
-        Next
+        mlList.BeginUpdate()
+        Dim lpShown As Stopwatch = Stopwatch.StartNew()
+        Try
+            For I As Integer = 0 To intCount - 1
+                If g_lpFileSystem.FileExists(strFileName(I)) Then
+                    Dim lpPhoto As New Photo
+                    lpPhoto.Construct(strFileName(I))
+                    Dim lpItem As Aqua.MediaItem = mlList.AddItem(strFileName(I))
+                    lpItem.Ranking = RankingOf(lpPhoto)
+                    ShowAddedSoFar(mlList, lpShown)   ' no scrolling to each new photo (VB6 did): only what is on screen loads
+                End If
+            Next
+        Finally
+            mlList.EndUpdate()
+        End Try
 
         DockedMediaList(g_lpDock, mlList)
         MoveNoteToScreen(m_lpAppEnv.ExeMode, -1, -1)

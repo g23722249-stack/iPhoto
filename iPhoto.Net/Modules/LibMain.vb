@@ -34,6 +34,7 @@ Friend Module LibMain
         g_lpDatabase.Construct(g_lpConfig.Attached(Config.enumAttachedFile.filDatabase))
         ' name cards made outside the library are copied into it once (Database.UseFaceCoverFolder)
         g_lpDatabase.UseFaceCoverFolder(g_lpConfig.Attached(Config.enumAttachedFile.filFaceCover))
+        ThumbCache.Apply()   ' the photo lists' thumbnails kept on disk (設定 › 維護)
 
         ' face recognition: Nothing when it is switched off (設定 › 面孔), the database has no face tables
         ' or the models are missing

@@ -1,6 +1,7 @@
 ﻿' 設定 › 維護 (new in the .NET port; PhotoLib Maintenance): what is backed up and when, the backup
 ' folder, a .Exif backup on request, and clearing the records of photos that are gone. Made in code so
-' the designer file stays as ported. Everything here happens at once (not on 儲存).
+' the designer file stays as ported. Everything here happens at once (not on 儲存), except the 縮圖快取
+' switch and limit.
 Partial Class frmSetup
 
     Private pageMaint As Aqua.TabPage
@@ -37,8 +38,60 @@ Partial Class frmSetup
         lblDuplicates = AddLink("尋找重複照片…", x + 480, 340, big, Color.FromArgb(42, 116, 208))
         lblPeopleNames = AddLink("全部人物名字…", x + 250, 380, big, Color.FromArgb(42, 116, 208))
 
+        ' the photo lists' thumbnails kept on disk (Modules\ThumbCache.vb): on / off and the limit with 儲存,
+        ' 清除 at once
+        AddHeading("縮圖快取", x, 424, big)
+        chkThumbCache = New Aqua.CheckBox With {
+            .TextValue = "保存縮圖，再開相簿很快", .TextGap = chkPrivilege.TextGap, .Font = small, .ForeColor = Color.DimGray,
+            .BackColor = Color.Transparent, .Location = New Point(x + 120, 425),
+            .ImageChecked = chkPrivilege.ImageChecked, .ImageUnChecked = chkPrivilege.ImageUnChecked,
+            .ImageCheckDisabled = chkPrivilege.ImageCheckDisabled, .ImageUnCheckDisabled = chkPrivilege.ImageUnCheckDisabled,
+            .Checked = g_lpConfig.ThumbCache}
+        pageMaint.Controls.Add(chkThumbCache)
+        vb6ToolTip.SetToolTip(chkThumbCache, "相片清單的縮圖存在相片庫的 System\ThumbCache，跟著相片庫走；" & vbCrLf &
+                                             "開過的相簿下次（重開 iPhoto 也一樣）不必再從照片檔產生縮圖。照片改過會自動重做。")
+        pageMaint.Controls.Add(New Label With {.AutoSize = True, .Font = small, .ForeColor = Color.DimGray, .Text = "上限", .Location = New Point(x + 360, 428), .BackColor = Color.Transparent})
+        cboThumbCache = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Font = small, .Location = New Point(x + 400, 424), .Width = 100}
+        cboThumbCache.Items.AddRange({"200 MB", "500 MB", "1 GB", "2 GB"})
+        Dim at As Integer = Array.IndexOf(ThumbCacheMBs, g_lpConfig.ThumbCacheMB)
+        cboThumbCache.SelectedIndex = If(at >= 0, at, 1)
+        pageMaint.Controls.Add(cboThumbCache)
+        lblThumbCache = New Label With {.AutoSize = True, .Font = small, .ForeColor = Color.DimGray, .Location = New Point(x + 515, 428), .BackColor = Color.Transparent}
+        pageMaint.Controls.Add(lblThumbCache)
+        lblClearThumbCache = AddLink("清除縮圖快取", x + 650, 426, big, Color.FromArgb(42, 116, 208))
+
         tabSetup.TabPages.Add(pageMaint)
+        ShowThumbCacheState()
         ShowBackupState()
+    End Sub
+
+    Private chkThumbCache As Aqua.CheckBox
+    Private cboThumbCache As ComboBox
+    Private lblThumbCache As Label
+    Private WithEvents lblClearThumbCache As Label
+    Private Shared ReadOnly ThumbCacheMBs() As Integer = {200, 500, 1024, 2048}
+
+    ''' <summary>How much the thumbnail cache holds now (counted in the background).</summary>
+    Private Sub ShowThumbCacheState()
+        lblThumbCache.Text = "計算中…"
+        Threading.Tasks.Task.Run(Function() ThumbCache.Bytes()).ContinueWith(
+            Sub(t)
+                If IsDisposed Then Return
+                BeginInvoke(Sub() lblThumbCache.Text = "已存 " & (t.Result / 1024.0 / 1024.0).ToString("#,0.0") & " MB")
+            End Sub)
+    End Sub
+
+    Private Sub lblClearThumbCache_Click(sender As Object, e As EventArgs) Handles lblClearThumbCache.Click
+        If Not frmQueryMsgBox.ShowMessage("清除存起來的縮圖？" & vbCrLf & "照片不受影響；之後開相簿時縮圖會重新產生。", "清除縮圖快取") Then Return
+        ThumbCache.Clear()
+        ShowThumbCacheState()
+    End Sub
+
+    ''' <summary>Called by butSave_Click before g_lpConfig.Save.</summary>
+    Private Sub SaveThumbCacheOption()
+        If chkThumbCache Is Nothing Then Return
+        g_lpConfig.ThumbCache = chkThumbCache.Checked
+        g_lpConfig.ThumbCacheMB = ThumbCacheMBs(Math.Max(0, cboThumbCache.SelectedIndex))
     End Sub
 
     Private Sub AddHeading(ByVal text As String, ByVal x As Integer, ByVal y As Integer, ByVal f As Font)
