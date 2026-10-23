@@ -54,13 +54,14 @@ Friend Module LibMain
     ''' can't be done iPhoto goes on with the .mdb this time and tries again at the next start.</summary>
     Private Sub UpgradeDatabase()
         Dim mdb As String = g_lpConfig.Attached(Config.enumAttachedFile.filDatabase)
-        If String.IsNullOrEmpty(mdb) OrElse Database.IsSqliteFile(mdb) OrElse Not IO.File.Exists(mdb) Then Return
+        If String.IsNullOrEmpty(mdb) OrElse Database.IsSqliteFile(mdb) Then Return
         Dim r As DatabaseUpgrade.Result
-        frmLoading.StartLoading("正在把資料庫轉換為新格式（只有第一次）…")
+        Dim converting As Boolean = IO.File.Exists(mdb)   ' else only to find an iPhoto.db made by another iPhoto
+        If converting Then frmLoading.StartLoading("正在把資料庫轉換為新格式（只有第一次）…")
         Try
             r = DatabaseUpgrade.ToSqlite(mdb)
         Finally
-            frmLoading.EndLoading()
+            If converting Then frmLoading.EndLoading()
         End Try
         If Not String.Equals(r.Database, mdb, StringComparison.OrdinalIgnoreCase) Then
             g_lpConfig.Attached(Config.enumAttachedFile.filDatabase) = r.Database

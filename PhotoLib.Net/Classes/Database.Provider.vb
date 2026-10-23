@@ -36,6 +36,48 @@ Partial Public Class Database
         End Select
     End Function
 
+    '==================================================================================================
+    ' iPhoto.mdb: Jet 4.0 exists only as 32-bit; a 64-bit iPhoto reads a .mdb (to convert it) with the
+    ' Access Database Engine, which 64-bit Office brings (or its redistributable). The first of these
+    ' that this process has is used.
+    '==================================================================================================
+    Private Shared ReadOnly MdbProviders As String() = {"Microsoft.Jet.OLEDB.4.0", "Microsoft.ACE.OLEDB.16.0", "Microsoft.ACE.OLEDB.12.0"}
+    Private Shared s_mdbProvider As String
+    Private Shared s_mdbProviderKnown As Boolean
+
+    ''' <summary>Why a .mdb can't be opened here (DatabaseUpgrade shows it).</summary>
+    Public Const NoMdbProviderMessage As String =
+        "這台電腦沒有讀取 .mdb 的元件：64 位元的 iPhoto 需要 Microsoft Access 資料庫引擎（64 位元的 Office 已內含）。" &
+        "也可以先用 32 位元版的 iPhoto 開啟一次，把資料庫轉成新格式（iPhoto.db）。"
+
+    ''' <summary>The OLE DB provider for a .mdb in this process, or Nothing when there is none.</summary>
+    Public Shared ReadOnly Property MdbProvider As String
+        Get
+            If Not s_mdbProviderKnown Then
+                Dim have As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+                Try
+                    Using t As DataTable = New OleDbEnumerator().GetElements()
+                        For Each r As DataRow In t.Rows
+                            have.Add(Convert.ToString(r("SOURCES_NAME")))
+                        Next
+                    End Using
+                Catch ex As Exception When TypeOf ex Is OleDbException OrElse TypeOf ex Is InvalidOperationException
+                End Try
+                s_mdbProvider = MdbProviders.FirstOrDefault(Function(p) have.Contains(p))
+                s_mdbProviderKnown = True
+            End If
+            Return s_mdbProvider
+        End Get
+    End Property
+
+    ''' <summary>The connection string for the .mdb <paramref name="strFile"/> (with <paramref name="options"/>,
+    ''' such as ";Mode=Read"); InvalidOperationException (NoMdbProviderMessage) when it can't be read here.</summary>
+    Friend Shared Function MdbConnectionString(ByVal strFile As String, Optional ByVal options As String = "") As String
+        Dim provider As String = MdbProvider
+        If provider Is Nothing Then Throw New InvalidOperationException(NoMdbProviderMessage)
+        Return "Provider=" & provider & ";Data Source=" & strFile & options
+    End Function
+
     ''' <summary>A connection to a SQLite file: relationships enforced, WAL (readers don't wait for the
     ''' writer: the UI, the face scan and an import each have a connection). No pooling: a closed
     ''' connection lets go of the file.</summary>
@@ -238,8 +280,7 @@ Partial Public Class Database
                 Case 3709 : Return True   ' "search key was not found": a cascade hit rows the other connection was replacing
             End Select
         Next
-        Return ex.Message.IndexOf("locked", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
-               ex.Message.IndexOf("search key was not found", StringComparison.OrdinalIgnoreCase) >= 0
+        Return MessageHas(ex, LockMessages)
     End Function
 
     ''' <summary>A row with that key is there already (Jet 3022, SQLite's UNIQUE / PRIMARY KEY constraint). Jet's
@@ -251,7 +292,15 @@ Partial Public Class Database
         Dim o As OleDbException = TryCast(ex, OleDbException)
         If o Is Nothing Then Return False
         Return o.Errors.Cast(Of OleDbError)().Any(Function(e) e.NativeError = 3022 OrElse e.SQLState = "3022") OrElse
-               o.Message.IndexOf("duplicate values", StringComparison.OrdinalIgnoreCase) >= 0
+               MessageHas(ex, DuplicateMessages)
+    End Function
+
+    ' The messages say it in the language of the engine: Jet 4.0 English; ACE (64-bit) that of Office.
+    Private Shared ReadOnly LockMessages As String() = {"locked", "search key was not found", "鎖定", "锁定", "找不到搜尋索引鍵", "找不到搜索键"}
+    Private Shared ReadOnly DuplicateMessages As String() = {"duplicate values", "重複的值", "重复的值"}
+
+    Private Shared Function MessageHas(ByVal ex As DbException, ByVal words As String()) As Boolean
+        Return words.Any(Function(w) ex.Message.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0)
     End Function
 
     '==================================================================================================
@@ -375,7 +424,7 @@ Partial Public Class Database
         Dim counts As New Dictionary(Of String, Integer)
         Try
             CreateSqlite(strDb)
-            Using src As New OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" & strMdb & ";Mode=Read")
+            Using src As New OleDbConnection(MdbConnectionString(strMdb, ";Mode=Read"))
                 src.Open()
                 Using dst As SqliteConnection = OpenSqlite(strDb, create:=False)
                     Dim srcTables As DataTable = src.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, {Nothing, Nothing, Nothing, "TABLE"})

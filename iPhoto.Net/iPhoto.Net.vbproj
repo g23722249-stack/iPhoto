@@ -7,8 +7,9 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
-    <!-- Jet 4.0 (iPhoto.mdb) is 32-bit only -->
-    <PlatformTarget>x86</PlatformTarget>
+    <!-- 64-bit: the database is SQLite (iPhoto.db). Jet 4.0 is 32-bit only: a .mdb still to convert is read
+         with the Access Database Engine (Database.MdbProvider). -->
+    <PlatformTarget>x64</PlatformTarget>
     <RootNamespace>iPhoto</RootNamespace>
     <AssemblyName>iPhoto</AssemblyName>
     <StartupObject>iPhoto.Program</StartupObject>
@@ -53,12 +54,12 @@
     <ProjectReference Include="..\..\RunTime\Aqua.Net\Aqua.Net.vbproj" />
   </ItemGroup>
 
-  <!-- Native LibVLC for Aqua.MediaViewerControl (video). The package copies libvlc\win-x86\ only into
+  <!-- Native LibVLC for Aqua.MediaViewerControl (video). The package copies libvlc\win-x64\ only into
        the output of a project that references it directly (its .targets are not transitive), so the
-       app references it too. The app is x86: the 64-bit copy is left out. -->
+       app references it too. The app is x64: the 32-bit copy is left out. -->
   <PropertyGroup>
-    <VlcWindowsX64Enabled>false</VlcWindowsX64Enabled>
-    <VlcWindowsX86Enabled>true</VlcWindowsX86Enabled>
+    <VlcWindowsX64Enabled>true</VlcWindowsX64Enabled>
+    <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
@@ -74,9 +75,9 @@
       <LogicalName>iPhoto.Map\%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <!-- Aqua.Net (AnyCPU) still brings the 64-bit copy along with its content files; an x86 app can't use it. -->
-  <Target Name="RemoveLibVlcX64" AfterTargets="Build">
-    <RemoveDir Directories="$(OutDir)libvlc\win-x64" />
+  <!-- Aqua.Net (AnyCPU) still brings the 32-bit copy along with its content files; an x64 app can't use it. -->
+  <Target Name="RemoveLibVlcX86" AfterTargets="Build">
+    <RemoveDir Directories="$(OutDir)libvlc\win-x86" />
   </Target>
   <!-- Microsoft.Data.Sqlite (PhotoLib, iPhoto.db) brings SQLite for every platform (runtimes\linux-*,
        osx-* ... about 20 MB): only the Windows ones are copied, to the output and to the publish folder. -->

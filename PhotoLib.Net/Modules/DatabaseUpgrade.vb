@@ -11,6 +11,8 @@ Imports System.IO
 '   4. the .mdb goes into Backup\ as iPhoto_before_SQLite_<time>.mdb -- kept, not used any more.
 ' An iPhoto.db already beside the .mdb (the settings couldn't be saved last time) is used as it is,
 ' unless the .mdb was changed after it was made: then it is set aside (.old-<time>) and made again.
+' Settings still naming a .mdb that is gone while iPhoto.db is there: another iPhoto with its own
+' iPhoto.Ini on the same library converted it (it moved the .mdb away); iPhoto.db is used.
 ' Nothing is done in read-only mode or for a SQLite file. Jet is needed for the .mdb: an x86 process.
 Public Module DatabaseUpgrade
 
@@ -27,9 +29,15 @@ Public Module DatabaseUpgrade
 
     Public Function ToSqlite(ByVal strDatabase As String, Optional ByVal progress As Action(Of String, Integer) = Nothing) As Result
         Dim r As New Result With {.Database = strDatabase, .Error = ""}
-        If String.IsNullOrEmpty(strDatabase) OrElse Database.IsSqliteFile(strDatabase) OrElse Not File.Exists(strDatabase) Then Return r
-        If g_lpConfig IsNot Nothing AndAlso g_lpConfig.ReadOnly Then Return r
+        If String.IsNullOrEmpty(strDatabase) OrElse Database.IsSqliteFile(strDatabase) Then Return r
         Dim db As String = Path.ChangeExtension(strDatabase, ".db")
+        If Not File.Exists(strDatabase) Then
+            ' another iPhoto with its own settings on the same library (the Visual Studio build, a second
+            ' copy) has converted it already: its iPhoto.db is the database now
+            If File.Exists(db) Then r.Database = db
+            Return r
+        End If
+        If g_lpConfig IsNot Nothing AndAlso g_lpConfig.ReadOnly Then Return r
         Dim stamp As String = DateTime.Now.ToString("yyyyMMdd_HHmmss")
         Try
             If File.Exists(db) Then

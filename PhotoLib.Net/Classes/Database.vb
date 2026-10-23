@@ -3,7 +3,7 @@ Imports System.Data.Common
 Imports System.Data.OleDb
 
 ' Port of 電子相簿\Lib\Class\Database.cls: the photo index in iPhoto.mdb (Jet 4.0), used for the
-' calendar, "faces" and search. ADODB -> System.Data.OleDb (the app is built x86 because Jet is 32-bit).
+' calendar, "faces" and search. ADODB -> System.Data.OleDb (Jet, 32-bit only; a 64-bit process uses ACE: MdbProvider).
 ' The same tables can be in a SQLite iPhoto.db instead (Database.Provider.vb, chosen by the file's
 ' extension); the code below is written once for both.
 '
@@ -67,7 +67,7 @@ Public Class Database
         End If
         MigrateToRelativePaths(szFileDesc)   ' before the shared connection: it needs the file to itself
         Try
-            m_lpConnection = New OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" & szFileDesc)
+            m_lpConnection = New OleDbConnection(MdbConnectionString(szFileDesc))
             m_lpConnection.Open()
             m_bolImplement = True
         Catch
@@ -112,7 +112,7 @@ Public Class Database
     Private Sub MigrateToRelativePaths(ByVal szFileDesc As String)
         If g_lpConfig IsNot Nothing AndAlso g_lpConfig.ReadOnly Then Return
         Try
-            Using cn As New OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" & szFileDesc & ";Mode=Share Exclusive")
+            Using cn As New OleDbConnection(MdbConnectionString(szFileDesc, ";Mode=Share Exclusive"))
                 cn.Open()
                 Dim pending As Dictionary(Of String, List(Of MigrationStep)) = PendingSteps(cn)
                 If pending.Count = 0 Then Return
