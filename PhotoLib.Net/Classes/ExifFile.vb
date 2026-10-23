@@ -105,9 +105,10 @@ Public Class ExifFile
     Public Function SimpleGetValue(ByVal section As String, ByVal key As String) As String
         SyncLock s_lock
             Dim doc As XDocument = Nothing
-            Select Case Peek(m_strSidecar, doc)
+            Dim ini As IniData = Nothing
+            Select Case Peek(m_strSidecar, doc, ini)
                 Case Format.Missing : Return ""
-                Case Format.Ini : Return If(New Carbon.IniFile With {.FileName = m_strSidecar}.SimpleGetValue(section, key), "")
+                Case Format.Ini : Return ini.GetValue(section, key)
                 Case Else
                     Dim v As XElement = EntryOf(doc, m_strMedia)?.Element(section)?.Element(XmlName(key))
                     Return If(v Is Nothing, "", v.Value)
@@ -119,9 +120,10 @@ Public Class ExifFile
     Public Function EnumerateKeys(ByVal section As String) As String()
         SyncLock s_lock
             Dim doc As XDocument = Nothing
-            Select Case Peek(m_strSidecar, doc)
+            Dim ini As IniData = Nothing
+            Select Case Peek(m_strSidecar, doc, ini)
                 Case Format.Missing : Return New String() {}
-                Case Format.Ini : Return If(New Carbon.IniFile With {.FileName = m_strSidecar}.EnumerateKeys(section), New String() {})
+                Case Format.Ini : Return ini.Keys(section)
                 Case Else
                     Dim s As XElement = EntryOf(doc, m_strMedia)?.Element(section)
                     If s Is Nothing Then Return New String() {}
@@ -288,41 +290,61 @@ Public Class ExifFile
 
     ' Parsed side files for reading, by path, while the file's time and size stay the same (a sort or
     ' the index sync reads every field of thousands of photos); a write or delete here drops its entry.
-    ' Never changed in place: the writers parse afresh (Load).
-    Private Shared ReadOnly s_cache As New Dictionary(Of String, (Stamp As DateTime, Size As Long, Kind As Format, Doc As XDocument))(StringComparer.OrdinalIgnoreCase)
+    ' Never changed in place: the writers parse afresh (Load). The old format is kept parsed too (IniData):
+    ' read through GetPrivateProfileString, every field opened and parsed the file again.
+    Private Shared ReadOnly s_cache As New Dictionary(Of String, (Stamp As DateTime, Size As Long, Kind As Format, Doc As XDocument, Ini As IniData))(StringComparer.OrdinalIgnoreCase)
     Private Const CacheMax As Integer = 2000
 
     ''' <summary>Load for reading only (the document must not be changed): from the cache when the file is unchanged.</summary>
     Private Shared Function Peek(ByVal strSidecar As String, ByRef doc As XDocument) As Format
+        Dim ini As IniData = Nothing
+        Return Peek(strSidecar, doc, ini)
+    End Function
+
+    ''' <summary>As Peek, with the parsed old-format file when it is one.</summary>
+    Private Shared Function Peek(ByVal strSidecar As String, ByRef doc As XDocument, ByRef ini As IniData) As Format
         doc = Nothing
+        ini = Nothing
         Dim fi As New FileInfo(strSidecar)
         If Not fi.Exists Then
             s_cache.Remove(strSidecar)
             Return Format.Missing
         End If
-        Dim hit As (Stamp As DateTime, Size As Long, Kind As Format, Doc As XDocument) = Nothing
+        Dim hit As (Stamp As DateTime, Size As Long, Kind As Format, Doc As XDocument, Ini As IniData) = Nothing
         If s_cache.TryGetValue(strSidecar, hit) AndAlso hit.Stamp = fi.LastWriteTimeUtc AndAlso hit.Size = fi.Length Then
             doc = hit.Doc
+            ini = hit.Ini
             Return hit.Kind
         End If
-        Dim k As Format = Load(strSidecar, doc)
+        Dim k As Format = Load(strSidecar, doc, ini)
         If s_cache.Count >= CacheMax Then s_cache.Clear()
-        s_cache(strSidecar) = (fi.LastWriteTimeUtc, fi.Length, k, doc)
+        s_cache(strSidecar) = (fi.LastWriteTimeUtc, fi.Length, k, doc, ini)
         Return k
     End Function
 
     ''' <summary>Which format the side file is, with the document when XML (a broken XML file counts as missing).</summary>
     Private Shared Function Load(ByVal strSidecar As String, ByRef doc As XDocument) As Format
+        Dim ini As IniData = Nothing
+        Return Load(strSidecar, doc, ini)
+    End Function
+
+    ''' <summary>As Load, with the old-format file parsed when it is one.</summary>
+    Private Shared Function Load(ByVal strSidecar As String, ByRef doc As XDocument, ByRef ini As IniData) As Format
         doc = Nothing
+        ini = Nothing
         If Not File.Exists(strSidecar) Then Return Format.Missing
-        Dim content As String
+        Dim bytes As Byte()
         Try
-            content = File.ReadAllText(strSidecar, System.Text.Encoding.UTF8)   ' a BOM-less ANSI ini still shows its first "["
+            bytes = File.ReadAllBytes(strSidecar)
         Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
             Return Format.Missing
         End Try
+        Dim content As String = System.Text.Encoding.UTF8.GetString(bytes)   ' a BOM-less ANSI ini still shows its first "["
         Dim t As String = content.TrimStart(ChrW(&HFEFF), " "c, ControlChars.Tab, ControlChars.Cr, ControlChars.Lf)
-        If Not t.StartsWith("<") Then Return Format.Ini
+        If Not t.StartsWith("<") Then
+            ini = IniData.Parse(bytes)
+            Return Format.Ini
+        End If
         Try
             doc = XDocument.Parse(t)
             If doc.Root Is Nothing OrElse doc.Root.Name.LocalName <> RootName Then doc = Nothing : Return Format.Missing
@@ -337,10 +359,10 @@ Public Class ExifFile
     ''' entry with a copy of it for every album file of the name, and for <paramref name="strAlso"/>).</summary>
     Private Shared Function OpenForWrite(ByVal strSidecar As String, Optional ByVal strAlso As String = Nothing) As XDocument
         Dim doc As XDocument = Nothing
-        Select Case Load(strSidecar, doc)
+        Dim ini As IniData = Nothing
+        Select Case Load(strSidecar, doc, ini)
             Case Format.Xml : Return doc
             Case Format.Ini
-                Dim ini As New Carbon.IniFile With {.FileName = strSidecar}
                 Dim stamp As DateTime = File.GetLastWriteTime(strSidecar)
                 doc = NewDocument()
                 Dim owners As List(Of String) = SiblingsOf(strSidecar)
@@ -348,11 +370,11 @@ Public Class ExifFile
                 For Each owner In owners
                     Dim e As XElement = EnsureEntry(doc, owner)
                     For Each section In {"Create", "Exif"}
-                        Dim keys As String() = If(ini.EnumerateKeys(section), New String() {})
+                        Dim keys As String() = ini.Keys(section)
                         If keys.Length = 0 Then Continue For
                         Dim s As New XElement(section)
                         For Each k In keys
-                            s.Add(New XElement(XmlName(k), If(ini.SimpleGetValue(section, k), "")))
+                            s.Add(New XElement(XmlName(k), ini.GetValue(section, k)))
                         Next
                         e.Add(s)
                     Next
@@ -428,5 +450,72 @@ Public Class ExifFile
         Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
         End Try
     End Sub
+
+    ''' <summary>An old-format side file parsed once, read as GetPrivateProfileString (Carbon.IniFile) reads
+    ''' it: the ANSI code page unless the file starts with a UTF-16 byte-order mark; names compared without
+    ''' case, the names asked for trimmed; only the first of a repeated section; the first value of a
+    ''' repeated key (EnumerateKeys lists it twice); a line without "=" is no key; name and value
+    ''' trimmed, one pair of enclosing quotes taken off the value; a value cut at 4,095 characters
+    ''' (IniFile's buffer).</summary>
+    Private NotInheritable Class IniData
+
+        Private Const MaxValue As Integer = 4095
+        Private ReadOnly m_sections As New Dictionary(Of String, (Keys As List(Of String), Values As Dictionary(Of String, String)))(StringComparer.OrdinalIgnoreCase)
+
+        Public Shared Function Parse(ByVal bytes As Byte()) As IniData
+            Dim text As String
+            If bytes.Length >= 2 AndAlso bytes(0) = &HFF AndAlso bytes(1) = &HFE Then
+                text = System.Text.Encoding.Unicode.GetString(bytes, 2, bytes.Length - 2)
+            ElseIf bytes.Length >= 2 AndAlso bytes(0) = &HFE AndAlso bytes(1) = &HFF Then
+                text = System.Text.Encoding.BigEndianUnicode.GetString(bytes, 2, bytes.Length - 2)
+            Else
+                text = AnsiText.Encoding.GetString(bytes)
+            End If
+            Dim data As New IniData
+            Dim current As (Keys As List(Of String), Values As Dictionary(Of String, String)) = Nothing
+            Dim inSection As Boolean = False
+            For Each raw As String In text.Split({vbCrLf, vbLf, vbCr}, StringSplitOptions.None)
+                Dim line As String = raw.Trim()
+                If line.Length = 0 Then Continue For
+                If line.StartsWith("[") Then
+                    Dim close As Integer = line.IndexOf("]"c)
+                    Dim name As String = If(close < 0, line.Substring(1), line.Substring(1, close - 1)).Trim()
+                    ' a repeated section is not read at all: only the first one counts
+                    inSection = Not data.m_sections.ContainsKey(name)
+                    If inSection Then
+                        current = (New List(Of String), New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase))
+                        data.m_sections(name) = current
+                    End If
+                    Continue For
+                End If
+                If Not inSection OrElse line.StartsWith(";") Then Continue For
+                Dim eq As Integer = line.IndexOf("="c)
+                If eq < 0 Then Continue For   ' not a key
+                Dim key As String = line.Substring(0, eq).Trim()
+                Dim value As String = line.Substring(eq + 1).Trim()
+                If value.Length >= 2 AndAlso (value(0) = """"c OrElse value(0) = "'"c) AndAlso value(value.Length - 1) = value(0) Then
+                    value = value.Substring(1, value.Length - 2)
+                End If
+                If value.Length > MaxValue Then value = value.Substring(0, MaxValue)
+                If key.Length > 0 Then current.Keys.Add(key)   ' "=value" is no key to list (it is still read by "")
+                If Not current.Values.ContainsKey(key) Then current.Values(key) = value.Trim()
+            Next
+            Return data
+        End Function
+
+        Public Function GetValue(ByVal section As String, ByVal key As String) As String
+            Dim s As (Keys As List(Of String), Values As Dictionary(Of String, String)) = Nothing
+            Dim v As String = Nothing
+            If m_sections.TryGetValue(section.Trim(), s) AndAlso s.Values.TryGetValue(key.Trim(), v) Then Return v
+            Return ""
+        End Function
+
+        Public Function Keys(ByVal section As String) As String()
+            Dim s As (Keys As List(Of String), Values As Dictionary(Of String, String)) = Nothing
+            If m_sections.TryGetValue(section.Trim(), s) Then Return s.Keys.ToArray()
+            Return New String() {}
+        End Function
+
+    End Class
 
 End Class
