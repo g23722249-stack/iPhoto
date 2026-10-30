@@ -28,19 +28,20 @@ Partial Class frmMain
     End Property
 
     Private _imgToolBox As Aqua.PngButton()
-    ''' <summary>VB6 control array imgToolBox(0..13), plus 14 同步備份 (new in the .NET version).</summary>
+    ''' <summary>VB6 control array imgToolBox(0..13), plus (new in the .NET version) 14 同步備份, 15 那年今日,
+    ''' 16 年度回顧, 17 整理清單. 11 沖印 is hidden.</summary>
     Friend ReadOnly Property imgToolBox As Aqua.PngButton()
         Get
-            If _imgToolBox Is Nothing Then _imgToolBox = New Aqua.PngButton() {Me.imgToolBox_0, Me.imgToolBox_1, Me.imgToolBox_2, Me.imgToolBox_3, Me.imgToolBox_4, Me.imgToolBox_5, Me.imgToolBox_6, Me.imgToolBox_7, Me.imgToolBox_8, Me.imgToolBox_9, Me.imgToolBox_10, Me.imgToolBox_11, Me.imgToolBox_12, Me.imgToolBox_13, Me.imgToolBox_14}
+            If _imgToolBox Is Nothing Then _imgToolBox = New Aqua.PngButton() {Me.imgToolBox_0, Me.imgToolBox_1, Me.imgToolBox_2, Me.imgToolBox_3, Me.imgToolBox_4, Me.imgToolBox_5, Me.imgToolBox_6, Me.imgToolBox_7, Me.imgToolBox_8, Me.imgToolBox_9, Me.imgToolBox_10, Me.imgToolBox_11, Me.imgToolBox_12, Me.imgToolBox_13, Me.imgToolBox_14, Me.imgToolBox_15, Me.imgToolBox_16, Me.imgToolBox_17}
             Return _imgToolBox
         End Get
     End Property
 
     Private _lblToolBox As System.Windows.Forms.Label()
-    ''' <summary>VB6 control array lblToolBox(0..13), plus 14 同步備份 (new in the .NET version).</summary>
+    ''' <summary>VB6 control array lblToolBox(0..13), plus 14..17 (see imgToolBox).</summary>
     Friend ReadOnly Property lblToolBox As System.Windows.Forms.Label()
         Get
-            If _lblToolBox Is Nothing Then _lblToolBox = New System.Windows.Forms.Label() {Me.lblToolBox_0, Me.lblToolBox_1, Me.lblToolBox_2, Me.lblToolBox_3, Me.lblToolBox_4, Me.lblToolBox_5, Me.lblToolBox_6, Me.lblToolBox_7, Me.lblToolBox_8, Me.lblToolBox_9, Me.lblToolBox_10, Me.lblToolBox_11, Me.lblToolBox_12, Me.lblToolBox_13, Me.lblToolBox_14}
+            If _lblToolBox Is Nothing Then _lblToolBox = New System.Windows.Forms.Label() {Me.lblToolBox_0, Me.lblToolBox_1, Me.lblToolBox_2, Me.lblToolBox_3, Me.lblToolBox_4, Me.lblToolBox_5, Me.lblToolBox_6, Me.lblToolBox_7, Me.lblToolBox_8, Me.lblToolBox_9, Me.lblToolBox_10, Me.lblToolBox_11, Me.lblToolBox_12, Me.lblToolBox_13, Me.lblToolBox_14, Me.lblToolBox_15, Me.lblToolBox_16, Me.lblToolBox_17}
             Return _lblToolBox
         End Get
     End Property

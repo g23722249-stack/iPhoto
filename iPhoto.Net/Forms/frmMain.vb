@@ -280,10 +280,14 @@ Friend Class frmMain
 
         imgToolBox(9).Enabled = Not g_lpConfig.ReadOnly
         lblToolBox(9).Enabled = Not g_lpConfig.ReadOnly
-        imgToolBox(10).Enabled = g_lpFileSystem.FileExists(g_lpConfig.Application(Config.enumApplication.AppImageEdit))
-        imgToolBox(11).Enabled = g_lpFileSystem.FileExists(g_lpConfig.Application(Config.enumApplication.AppPrint))
-        imgToolBox(12).Enabled = g_lpFileSystem.FileExists(g_lpConfig.Application(Config.enumApplication.AppMail))
+        ' PhotoEdit beside iPhoto (frmMain.Edit.vb), else the program iPhoto.Ini names
+        imgToolBox(10).Enabled = PhotoEditLink.Available OrElse g_lpFileSystem.FileExists(g_lpConfig.Application(Config.enumApplication.AppImageEdit))
+        imgToolBox(11).Enabled = False   ' 沖印: hidden (2026-10; 列印 and 蒙太奇拼貼 print)
+        imgToolBox(12).Enabled = True   ' 蒙太奇拼貼 (was 郵件), frmMain.Montage.vb
         imgToolBox(13).Enabled = True   ' 地點 (was 燒錄)
+        imgToolBox(15).Enabled = True   ' 那年今日, frmMain.Browse.vb
+        imgToolBox(16).Enabled = True   ' 年度回顧, frmMain.YearReview.vb
+        imgToolBox(17).Enabled = Not g_lpConfig.ReadOnly   ' 整理清單 (deletes), frmMain.Cleanup.vb
 
         For I As Integer = 10 To imgToolBox.Length - 1
             lblToolBox(I).Enabled = imgToolBox(I).Enabled
@@ -458,6 +462,7 @@ Friend Class frmMain
         LibUserInterface.AddSectionFakeKeyToTreeView(m_lpAppEnv.ExeMode, g_lpStorage, tvList)
         AddFaceNode()   ' frmMain.Faces.vb (last, so the 'first node' fallbacks still pick an album)
         AddBrowseNodes()   ' 時間軸 / 地點: frmMain.Browse.vb
+        AddSearchNode()    ' 搜尋結果: frmMain.Search.vb
         If tvList.Nodes.Count > 0 Then
             If LibUserInterface.LoadTreeViewRecentSection(m_lpAppEnv.ExeMode, g_lpStorage, tvList) Then
                 tvList.Focus()
@@ -490,6 +495,7 @@ Friend Class frmMain
         If tvList.SelectedNode Is Nothing Then Return
         If FaceNodeClick(tvList.SelectedNode) Then Return   ' the 面孔 node and its children
         If BrowseNodeClick(tvList.SelectedNode) Then Return   ' 時間軸 / 地點 (frmMain.Browse.vb)
+        If SearchNodeClick(tvList.SelectedNode) Then Return   ' 搜尋結果 (frmMain.Search.vb)
 
         If m_lpAppEnv.ExeMode = enumExeMode.exeCalendar Then
             imgButton_Click(imgButton(3), EventArgs.Empty)   ' VB6 passed 1 (batch info) -- 3 is standard mode
@@ -548,6 +554,7 @@ Friend Class frmMain
             End If
 
             AddPhotoToMediaList(m_lpAppEnv.ExeMode, g_lpStorage, mlList, sliSize.Value, m_lpAppEnv.SectionIndex, m_lpAppEnv.KeyIndex)
+            PhotoEditLink.TakeInEdits()   ' edited pictures the listing just took in: their index rows (frmMain.Edit.vb)
 
             DockedMediaList(g_lpDock, mlList)
             MoveNoteToScreen(m_lpAppEnv.ExeMode, m_lpAppEnv.SectionIndex, m_lpAppEnv.KeyIndex)
@@ -556,6 +563,7 @@ Friend Class frmMain
                 mlList.SelectedIndex = 0
             End If
             m_strShownKey = NodeKey(tvList.SelectedNode)
+            SetBookDrag(TypeOf lpKey Is Book)   ' a book: its photos can be dragged into another order (frmMain.Books.vb)
             Enabled = True
             If mlList.Visible Then mlList.Focus()
         Finally
@@ -740,9 +748,12 @@ Friend Class frmMain
     End Sub
 
     '==================================================================================================
-    ' Tool box (imgToolBox 0..14; 14 同步備份 is new, placed before 13; 13 was 燒錄, now 地點)
+    ' Tool box (imgToolBox 0..17; the designer places them, in groups: 輸入 匯出 幻燈片 Dock | 搜尋 建立攝影集
+    ' 地點 那年今日 相片後製 | 列印 蒙太奇拼貼 年度目錄 年度回顧 | 編輯照片資訊 整理清單 設定 同步備份.
+    ' New in the .NET version: 14 同步備份, 15 那年今日, 16 年度回顧, 17 整理清單; 13 was 燒錄, now 地點;
+    ' 12 was 郵件, now 蒙太奇拼貼; 11 沖印 is hidden.)
     '==================================================================================================
-    Private Sub imgToolBox_Click(sender As Object, e As EventArgs) Handles imgToolBox_0.Click, imgToolBox_1.Click, imgToolBox_2.Click, imgToolBox_3.Click, imgToolBox_4.Click, imgToolBox_5.Click, imgToolBox_6.Click, imgToolBox_7.Click, imgToolBox_8.Click, imgToolBox_9.Click, imgToolBox_10.Click, imgToolBox_11.Click, imgToolBox_12.Click, imgToolBox_13.Click, imgToolBox_14.Click
+    Private Sub imgToolBox_Click(sender As Object, e As EventArgs) Handles imgToolBox_0.Click, imgToolBox_1.Click, imgToolBox_2.Click, imgToolBox_3.Click, imgToolBox_4.Click, imgToolBox_5.Click, imgToolBox_6.Click, imgToolBox_7.Click, imgToolBox_8.Click, imgToolBox_9.Click, imgToolBox_10.Click, imgToolBox_11.Click, imgToolBox_12.Click, imgToolBox_13.Click, imgToolBox_14.Click, imgToolBox_15.Click, imgToolBox_16.Click, imgToolBox_17.Click
         Dim Index = Array.IndexOf(imgToolBox, sender)
         Dim strArray() As String = Nothing
         Dim I As Integer
@@ -753,10 +764,12 @@ Friend Class frmMain
             Case 0 '基本設置
                 Using f As New frmSetup
                     f.ShowDialog(Me)
+                    ' 「現在重新開啟 iPhoto」(字型或螢幕模式改了) 已關閉這個視窗，g_lpConfig 等也已釋放
+                    If IsDisposed OrElse g_lpConfig Is Nothing Then Return
                     If f.Changed Then
-                        SetToolBarProperty
-                        SetDockProperty
-                        ApplyFaceSettings   ' frmMain.Faces.vb
+                        SetToolBarProperty()
+                        SetDockProperty()
+                        ApplyFaceSettings()   ' frmMain.Faces.vb
                     End If
                 End Using
 
@@ -768,29 +781,16 @@ Friend Class frmMain
                         For I = 0 To mlList.Count - 1
                             mlList.Item(I).Marked = False
                         Next
-                        SetDockProperty
+                        SetDockProperty()
                     End If
                 End If
 
-            Case 2 '建立攝影集
-                If g_lpDock.Count <= 0 Then Return   ' VB6 left the button disabled here too (SetDockProperty agrees)
-                ReDim strArray(g_lpDock.Count - 1)
-                For I = 0 To g_lpDock.Count - 1
-                    strArray(I) = g_lpDock.FileName(I)
-                Next
-                Using f As New frmBuildBook : f.BuildBook(strArray, g_lpDock.Count) : End Using
-                If m_lpAppEnv.ExeMode = enumExeMode.exeFavorites Then
-                    g_lpStorage.Refresh
-                    butMode_SelectedChanged(butMode, EventArgs.Empty)
-                    If LoadTreeViewRecentKey(enumExeMode.exeAlbums, g_lpStorage, tvList) Then
-                        tvList_Click
-                    End If
-                End If
+            Case 2 '建立攝影集: the Dock's photos, or the ones selected; the book opens after (frmMain.Books.vb)
+                BuildBookFromToolBar()
 
             Case 3 '搜尋
-                Using f As New frmSearch : f.ShowDialog(Me) : End Using
-                SetDockProperty
-                mlList.Focus
+                ShowSearch()   ' frmMain.Search.vb
+                SetDockProperty()
 
             Case 4 '匯出
                 If g_lpDock.Count > 0 Then
@@ -799,12 +799,13 @@ Friend Class frmMain
 
             Case 5 '輸入
                 If g_lpConfig.ImportNewStyle Then
-                    ImportWithStudio   ' the new window, frmMain.Import.vb (設定 › 相片庫 can go back to frmImport)
+                    ImportWithStudio()   ' the new window, frmMain.Import.vb (設定 › 相片庫 can go back to frmImport)
                 Else
                     Using f As New frmImport
                         f.ShowDialog(Me)
                     End Using
-                    ImportAlbumFiles
+                    ImportAlbumFiles()
+
                     If g_lpImport.Count > 0 Then
                         '打開匯入的相簿
                         SaveRecentSectionValue(enumExeMode.exeAlbums, g_lpImport.AlbumPath)
@@ -812,10 +813,10 @@ Friend Class frmMain
                     End If
                 End If
                 If m_lpAppEnv.ExeMode = enumExeMode.exeAlbums Then
-                    g_lpStorage.Refresh
+                    g_lpStorage.Refresh()
                     butMode_SelectedChanged(butMode, EventArgs.Empty)
                     If LoadTreeViewRecentKey(enumExeMode.exeAlbums, g_lpStorage, tvList) Then
-                        tvList_Click
+                        tvList_Click()
                     End If
                 End If
 
@@ -838,26 +839,49 @@ Friend Class frmMain
             Case 14 '同步備份 (new in the .NET version, see frmBackup)
                 Using f As New frmBackup : f.ShowDialog(Me) : End Using
 
-            Case Else
-                Dim strFileDesc = ""
-                Select Case Index
-                    Case 10 : strFileDesc = g_lpConfig.Application(Config.enumApplication.AppImageEdit) '編輯
-                    Case 11 : strFileDesc = g_lpConfig.Application(Config.enumApplication.AppPrint)     '沖印
-                    Case 12 : strFileDesc = g_lpConfig.Application(Config.enumApplication.AppMail)      '郵件
-                End Select
-                If Not g_lpFileSystem.FileExists(strFileDesc) Then Return
-
-                Try
-                    Process.Start(New ProcessStartInfo(strFileDesc) With {.UseShellExecute = True, .WindowStyle = ProcessWindowStyle.Maximized})
-                Catch ex As Exception
-                    frmMsgBox.ShowCriticalMessage("無法啟動" & vbCrLf & strFileDesc, "")
-                End Try
-
-                If g_lpDock.Count > 0 Then
-                    Using f As New frmDock : f.ShowDialog(Me) : End Using
+            Case 10 '編輯
+                If PhotoEditLink.Available Then
+                    EditCurrentPhoto()   ' frmMain.Edit.vb
+                Else
+                    RunExternalTool(Index)
                 End If
+
+            Case 12 '蒙太奇拼貼 (was 郵件)
+                ShowMontage()   ' frmMain.Montage.vb
+
+            Case 15 '那年今日
+                OpenOnThisDay()   ' frmMain.Browse.vb
+
+            Case 16 '年度回顧
+                ShowYearReview()   ' frmMain.YearReview.vb
+
+            Case 17 '整理清單
+                ShowCleanup()   ' frmMain.Cleanup.vb
+
+            Case Else
+                RunExternalTool(Index)
         End Select
         imgToolBox(Index).Enabled = True
+    End Sub
+
+    ''' <summary>相片後製 without PhotoEdit: the program iPhoto.Ini names, then the Dock list to hand the
+    ''' photos over.</summary>
+    Private Sub RunExternalTool(ByVal Index As Integer)
+        Dim strFileDesc = ""
+        Select Case Index
+            Case 10 : strFileDesc = g_lpConfig.Application(Config.enumApplication.AppImageEdit) '相片後製
+        End Select
+        If Not g_lpFileSystem.FileExists(strFileDesc) Then Return
+
+        Try
+            Process.Start(New ProcessStartInfo(strFileDesc) With {.UseShellExecute = True, .WindowStyle = ProcessWindowStyle.Maximized})
+        Catch ex As Exception
+            frmMsgBox.ShowCriticalMessage("無法啟動" & vbCrLf & strFileDesc, "")
+        End Try
+
+        If g_lpDock.Count > 0 Then
+            Using f As New frmDock : f.ShowDialog(Me) : End Using
+        End If
     End Sub
 
     Private Sub ImportAlbumFiles()
@@ -930,45 +954,22 @@ Friend Class frmMain
         End Try
     End Sub
 
-    Private Sub imgToolBox_MouseEnter(sender As Object, e As EventArgs) Handles imgToolBox_0.MouseEnter, imgToolBox_1.MouseEnter, imgToolBox_2.MouseEnter, imgToolBox_3.MouseEnter, imgToolBox_4.MouseEnter, imgToolBox_5.MouseEnter, imgToolBox_6.MouseEnter, imgToolBox_7.MouseEnter, imgToolBox_8.MouseEnter, imgToolBox_9.MouseEnter, imgToolBox_10.MouseEnter, imgToolBox_11.MouseEnter, imgToolBox_12.MouseEnter, imgToolBox_13.MouseEnter, imgToolBox_14.MouseEnter
+    Private Sub imgToolBox_MouseEnter(sender As Object, e As EventArgs) Handles imgToolBox_0.MouseEnter, imgToolBox_1.MouseEnter, imgToolBox_2.MouseEnter, imgToolBox_3.MouseEnter, imgToolBox_4.MouseEnter, imgToolBox_5.MouseEnter, imgToolBox_6.MouseEnter, imgToolBox_7.MouseEnter, imgToolBox_8.MouseEnter, imgToolBox_9.MouseEnter, imgToolBox_10.MouseEnter, imgToolBox_11.MouseEnter, imgToolBox_12.MouseEnter, imgToolBox_13.MouseEnter, imgToolBox_14.MouseEnter, imgToolBox_15.MouseEnter, imgToolBox_16.MouseEnter, imgToolBox_17.MouseEnter
         g_lpConfig.PlaySound(Config.enumSound.snButtonEnter)
         lblToolBox(Array.IndexOf(imgToolBox, sender)).ForeColor = LabelHover
     End Sub
 
-    Private Sub imgToolBox_MouseLeave(sender As Object, e As EventArgs) Handles imgToolBox_0.MouseLeave, imgToolBox_1.MouseLeave, imgToolBox_2.MouseLeave, imgToolBox_3.MouseLeave, imgToolBox_4.MouseLeave, imgToolBox_5.MouseLeave, imgToolBox_6.MouseLeave, imgToolBox_7.MouseLeave, imgToolBox_8.MouseLeave, imgToolBox_9.MouseLeave, imgToolBox_10.MouseLeave, imgToolBox_11.MouseLeave, imgToolBox_12.MouseLeave, imgToolBox_13.MouseLeave, imgToolBox_14.MouseLeave
+    Private Sub imgToolBox_MouseLeave(sender As Object, e As EventArgs) Handles imgToolBox_0.MouseLeave, imgToolBox_1.MouseLeave, imgToolBox_2.MouseLeave, imgToolBox_3.MouseLeave, imgToolBox_4.MouseLeave, imgToolBox_5.MouseLeave, imgToolBox_6.MouseLeave, imgToolBox_7.MouseLeave, imgToolBox_8.MouseLeave, imgToolBox_9.MouseLeave, imgToolBox_10.MouseLeave, imgToolBox_11.MouseLeave, imgToolBox_12.MouseLeave, imgToolBox_13.MouseLeave, imgToolBox_14.MouseLeave, imgToolBox_15.MouseLeave, imgToolBox_16.MouseLeave, imgToolBox_17.MouseLeave
         lblToolBox(Array.IndexOf(imgToolBox, sender)).ForeColor = LabelNormal
     End Sub
 
     '==================================================================================================
     ' Search box
     '==================================================================================================
+    ''' <summary>The quick search box: the same search as 搜尋's box (frmMain.Search.vb), without 進階.</summary>
     Private Sub iTextBox1_ImageClick(sender As Object, e As EventArgs) Handles iTextBox1.ImageClick
-        '尋找
-        If iTextBox1.Text.Trim() = "" Then Return
-
-        With m_lpAppEnv
-            .ExeMode = enumExeMode.exeSearch
-            .SectionIndex = -1
-            .KeyIndex = -1
-        End With
-
-        Dim word As String = RTrim(iTextBox1.Text).Replace("'", "''")
-        Dim strSQL As String = String.Join(" Or ",
-            {"Exif_Title", "Exif_Character", "Exif_Spot", "Exif_Remark", "Exif_KeyWord"}.Concat(If(g_lpDatabase.HasPlaceColumns, New String() {"Exif_City"}, New String() {})).Select(Function(c) c & " Like '%" & word & "%'"))
-
-        SetBusy(True)
-        Enabled = False
-        Try
-            Dim strFileName() As String = Nothing
-            Dim intCount As Integer = g_lpDatabase.SearchFileArrayList(strSQL, strFileName)
-            If intCount > 0 Then MoveFilesToMediaList(strFileName, intCount)
-        Finally
-            SetBusy(False)
-            SetImageButtonState(enumImageButton.ibDelete, False)
-            Enabled = True
-        End Try
-
-        If mlList.Visible Then mlList.Focus()
+        QuickSearch(iTextBox1.Text)
+        SetImageButtonState(enumImageButton.ibDelete, False)
     End Sub
 
     Private Sub iTextBox1_KeyDown(sender As Object, e As KeyEventArgs) Handles iTextBox1.KeyDown
@@ -1159,10 +1160,13 @@ Friend Class frmMain
             lblSelCount.Text = "已選取 " & g_lpDock.Count & " 張相片 共 " & g_lpDock.FileLength & " " & g_lpDock.FileLengthUnit
             bolValue = True
         End If
-        For Each i As Integer In {1, 2, 4, 8}   ' Dock, 建立攝影集, 匯出, 列印
+        For Each i As Integer In {1, 4, 8}   ' Dock, 匯出, 列印
             imgToolBox(i).Enabled = bolValue
             lblToolBox(i).Enabled = bolValue
         Next
+        ' 建立攝影集 also takes the photos selected in the list (frmMain.Books.vb)
+        imgToolBox(2).Enabled = Not g_lpConfig.ReadOnly
+        lblToolBox(2).Enabled = imgToolBox(2).Enabled
     End Sub
 
     Private Sub MoveFilesToMediaList(ByVal strFileName() As String, ByVal intCount As Integer)
@@ -1203,6 +1207,7 @@ Friend Class frmMain
         EndFaceView()   ' frmMain.Faces.vb
         EndCoverWall()  ' frmMain.Covers.vb
         EndBrowseView() ' frmMain.Browse.vb
+        SetBookDrag(False)   ' frmMain.Books.vb
         mlList.Clear()
 
         txtTitle.Text = ""

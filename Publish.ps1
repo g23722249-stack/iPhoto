@@ -21,6 +21,9 @@
 .PARAMETER DryRun
   只列出會複製哪些檔案，不實際複製（仍會建置）。
 
+.PARAMETER NoPhotoEdit
+  不一起放 PhotoEdit（C:\專案\PhotoEdit；預設會建置後併入，供工具列「編輯」使用）。
+
 .EXAMPLE
   .\Publish.ps1
   .\Publish.ps1 -DryRun
@@ -29,7 +32,8 @@
 [CmdletBinding()]
 param(
     [string]$Target,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$NoPhotoEdit
 )
 
 $ErrorActionPreference = 'Stop'
@@ -78,6 +82,23 @@ if (Test-Path -LiteralPath $staging) { Remove-Item -LiteralPath $staging -Recurs
 if ($LASTEXITCODE -ne 0) { Fail "dotnet publish 失敗（$LASTEXITCODE）" }
 if (-not (Test-Path -LiteralPath (Join-Path $staging 'iPhoto.exe'))) { Fail '暫存資料夾裡沒有 iPhoto.exe' }
 Write-Host "完成：$staging"
+
+# ---- 3b. PhotoEdit（工具列「編輯」）一起放進去 ----
+# 建置（不是 publish：宮崎風 AI 重繪的 Redraw\ 只在建置時產生），不複製模型（Models\ 約 6.6 GB，
+# 目的地已有，和 iPhoto 共用）；只補上 iPhoto 沒有的檔案，共用的 DLL（Aqua.Net、OpenCvSharp ...）以 iPhoto 的為準；
+# ONNX Runtime 其他平台的原生檔（android、ios、linux、osx，約 150 MB）不放。
+$peProject = Join-Path (Split-Path $repo -Parent) 'PhotoEdit\PhotoEdit\PhotoEdit.vbproj'
+if (-not $NoPhotoEdit -and (Test-Path -LiteralPath $peProject)) {
+    Step 'PhotoEdit 建置到暫存資料夾'
+    $peOut = Join-Path $work 'photoedit'
+    if (Test-Path -LiteralPath $peOut) { Remove-Item -LiteralPath $peOut -Recurse -Force }
+    & dotnet build $peProject -c Release "-p:OutDir=$peOut\" -p:SkipModelCopy=true -nologo -v q -clp:ErrorsOnly
+    if ($LASTEXITCODE -ne 0) { Fail "PhotoEdit 建置失敗（$LASTEXITCODE）；要先發佈 iPhoto 可加 -NoPhotoEdit" }
+    if (-not (Test-Path -LiteralPath (Join-Path $peOut 'PhotoEdit.exe'))) { Fail 'PhotoEdit 的輸出裡沒有 PhotoEdit.exe' }
+    & robocopy $peOut $staging /E /XC /XN /XO /XD (Join-Path $peOut 'Models') android ios 'linux-*' 'osx-*' 'maccatalyst-*' browser-wasm /NJH /NJS /NP /NDL /NFL | Out-Null
+    if ($LASTEXITCODE -ge 8) { Fail "合併 PhotoEdit 失敗（robocopy $LASTEXITCODE）" }
+    Write-Host '完成：PhotoEdit 已併入'
+}
 
 # ---- 4. 複製到目的地 ----
 Step $(if ($DryRun) { '列出會複製的檔案' } else { '複製到目的地' })

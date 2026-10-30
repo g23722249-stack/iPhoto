@@ -1,4 +1,4 @@
-' Application-wide objects and constants. VB6 declared these in each app's LibMain.bas
+﻿' Application-wide objects and constants. VB6 declared these in each app's LibMain.bas
 ' (iPhoto\Module\LibMain.bas), but the shared Lib classes and forms use them too; a .NET library
 ' can't reach back into the exe, so they live here and every app (iPhoto, later iExport/iPrint)
 ' fills them in at startup. Names are kept as-is so ported code compiles unchanged.
@@ -16,9 +16,6 @@ Public Module Globals
 
     Public g_lpDock As Dock
     Public g_lpImport As Import
-
-    Public g_lpSearch() As strSearch
-    Public g_intSearch As Integer
 
     Public g_lpMonitors As CoreMedia.Monitors
     Public g_intMonitorCount As Integer

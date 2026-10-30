@@ -60,6 +60,9 @@ Partial Class frmMain
         imgToolBox_10 = New Aqua.PngButton()
         imgToolBox_11 = New Aqua.PngButton()
         imgToolBox_12 = New Aqua.PngButton()
+        imgToolBox_15 = New Aqua.PngButton()
+        imgToolBox_16 = New Aqua.PngButton()
+        imgToolBox_17 = New Aqua.PngButton()
         imgToolBox_13 = New Aqua.PngButton()
         imgToolBox_14 = New Aqua.PngButton()
         imgToolBox_2 = New Aqua.PngButton()
@@ -77,6 +80,9 @@ Partial Class frmMain
         lblToolBox_10 = New Label()
         lblToolBox_11 = New Label()
         lblToolBox_12 = New Label()
+        lblToolBox_15 = New Label()
+        lblToolBox_16 = New Label()
+        lblToolBox_17 = New Label()
         lblToolBox_13 = New Label()
         lblToolBox_14 = New Label()
         lblToolBox_2 = New Label()
@@ -492,6 +498,9 @@ Partial Class frmMain
         pnlToolBar.Controls.Add(imgToolBox_10)
         pnlToolBar.Controls.Add(imgToolBox_11)
         pnlToolBar.Controls.Add(imgToolBox_12)
+        pnlToolBar.Controls.Add(imgToolBox_15)
+        pnlToolBar.Controls.Add(imgToolBox_16)
+        pnlToolBar.Controls.Add(imgToolBox_17)
         pnlToolBar.Controls.Add(imgToolBox_13)
         pnlToolBar.Controls.Add(imgToolBox_14)
         pnlToolBar.Controls.Add(imgToolBox_2)
@@ -509,6 +518,9 @@ Partial Class frmMain
         pnlToolBar.Controls.Add(lblToolBox_10)
         pnlToolBar.Controls.Add(lblToolBox_11)
         pnlToolBar.Controls.Add(lblToolBox_12)
+        pnlToolBar.Controls.Add(lblToolBox_15)
+        pnlToolBar.Controls.Add(lblToolBox_16)
+        pnlToolBar.Controls.Add(lblToolBox_17)
         pnlToolBar.Controls.Add(lblToolBox_13)
         pnlToolBar.Controls.Add(lblToolBox_14)
         pnlToolBar.Controls.Add(lblToolBox_2)
@@ -533,18 +545,18 @@ Partial Class frmMain
         imgToolBox_9.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_9.ForeColor = SystemColors.WindowText
         imgToolBox_9.Image = CType(resources.GetObject("imgToolBox_9.Image"), Image)
-        imgToolBox_9.Location = New Point(275, -4)
+        imgToolBox_9.Location = New Point(980, -4)
         imgToolBox_9.Name = "imgToolBox_9"
         imgToolBox_9.Size = New Size(58, 58)
         imgToolBox_9.TabIndex = 42
-        vb6ToolTip.SetToolTip(imgToolBox_9, "設定")
+        vb6ToolTip.SetToolTip(imgToolBox_9, "編輯照片資訊")
         ' 
         ' imgToolBox_0
         ' 
         imgToolBox_0.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_0.ForeColor = SystemColors.WindowText
         imgToolBox_0.Image = CType(resources.GetObject("imgToolBox_0.Image"), Image)
-        imgToolBox_0.Location = New Point(19, -4)
+        imgToolBox_0.Location = New Point(1112, -4)
         imgToolBox_0.Name = "imgToolBox_0"
         imgToolBox_0.Size = New Size(58, 58)
         imgToolBox_0.TabIndex = 20
@@ -555,7 +567,7 @@ Partial Class frmMain
         imgToolBox_1.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_1.ForeColor = SystemColors.WindowText
         imgToolBox_1.Image = CType(resources.GetObject("imgToolBox_1.Image"), Image)
-        imgToolBox_1.Location = New Point(683, -4)
+        imgToolBox_1.Location = New Point(207, -4)
         imgToolBox_1.Name = "imgToolBox_1"
         imgToolBox_1.Size = New Size(58, 58)
         imgToolBox_1.TabIndex = 22
@@ -566,7 +578,7 @@ Partial Class frmMain
         imgToolBox_3.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_3.ForeColor = SystemColors.WindowText
         imgToolBox_3.Image = CType(resources.GetObject("imgToolBox_3.Image"), Image)
-        imgToolBox_3.Location = New Point(123, -4)
+        imgToolBox_3.Location = New Point(311, -4)
         imgToolBox_3.Name = "imgToolBox_3"
         imgToolBox_3.Size = New Size(58, 58)
         imgToolBox_3.TabIndex = 24
@@ -577,7 +589,7 @@ Partial Class frmMain
         imgToolBox_4.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_4.ForeColor = SystemColors.WindowText
         imgToolBox_4.Image = CType(resources.GetObject("imgToolBox_4.Image"), Image)
-        imgToolBox_4.Location = New Point(759, -4)
+        imgToolBox_4.Location = New Point(75, -4)
         imgToolBox_4.Name = "imgToolBox_4"
         imgToolBox_4.Size = New Size(58, 58)
         imgToolBox_4.TabIndex = 26
@@ -588,7 +600,7 @@ Partial Class frmMain
         imgToolBox_5.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_5.ForeColor = SystemColors.WindowText
         imgToolBox_5.Image = CType(resources.GetObject("imgToolBox_5.Image"), Image)
-        imgToolBox_5.Location = New Point(199, -4)
+        imgToolBox_5.Location = New Point(10, -4)
         imgToolBox_5.Name = "imgToolBox_5"
         imgToolBox_5.Size = New Size(58, 58)
         imgToolBox_5.TabIndex = 28
@@ -599,7 +611,7 @@ Partial Class frmMain
         imgToolBox_6.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_6.ForeColor = SystemColors.WindowText
         imgToolBox_6.Image = CType(resources.GetObject("imgToolBox_6.Image"), Image)
-        imgToolBox_6.Location = New Point(351, -4)
+        imgToolBox_6.Location = New Point(141, -4)
         imgToolBox_6.Name = "imgToolBox_6"
         imgToolBox_6.Size = New Size(58, 58)
         imgToolBox_6.TabIndex = 30
@@ -610,18 +622,18 @@ Partial Class frmMain
         imgToolBox_7.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_7.ForeColor = SystemColors.WindowText
         imgToolBox_7.Image = CType(resources.GetObject("imgToolBox_7.Image"), Image)
-        imgToolBox_7.Location = New Point(427, -4)
+        imgToolBox_7.Location = New Point(810, -4)
         imgToolBox_7.Name = "imgToolBox_7"
         imgToolBox_7.Size = New Size(58, 58)
         imgToolBox_7.TabIndex = 32
-        vb6ToolTip.SetToolTip(imgToolBox_7, "設定")
+        vb6ToolTip.SetToolTip(imgToolBox_7, "年度目錄")
         ' 
         ' imgToolBox_8
         ' 
         imgToolBox_8.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_8.ForeColor = SystemColors.WindowText
         imgToolBox_8.Image = CType(resources.GetObject("imgToolBox_8.Image"), Image)
-        imgToolBox_8.Location = New Point(835, -4)
+        imgToolBox_8.Location = New Point(679, -4)
         imgToolBox_8.Name = "imgToolBox_8"
         imgToolBox_8.Size = New Size(58, 58)
         imgToolBox_8.TabIndex = 34
@@ -632,11 +644,11 @@ Partial Class frmMain
         imgToolBox_10.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_10.ForeColor = SystemColors.WindowText
         imgToolBox_10.Image = CType(resources.GetObject("imgToolBox_10.Image"), Image)
-        imgToolBox_10.Location = New Point(939, -4)
+        imgToolBox_10.Location = New Point(574, -4)
         imgToolBox_10.Name = "imgToolBox_10"
         imgToolBox_10.Size = New Size(58, 58)
         imgToolBox_10.TabIndex = 36
-        vb6ToolTip.SetToolTip(imgToolBox_10, "設定")
+        vb6ToolTip.SetToolTip(imgToolBox_10, "相片後製")
         ' 
         ' imgToolBox_11
         ' 
@@ -645,6 +657,7 @@ Partial Class frmMain
         imgToolBox_11.Image = CType(resources.GetObject("imgToolBox_11.Image"), Image)
         imgToolBox_11.Location = New Point(1015, -4)
         imgToolBox_11.Name = "imgToolBox_11"
+        imgToolBox_11.Visible = False
         imgToolBox_11.Size = New Size(58, 58)
         imgToolBox_11.TabIndex = 38
         vb6ToolTip.SetToolTip(imgToolBox_11, "設定")
@@ -654,18 +667,51 @@ Partial Class frmMain
         imgToolBox_12.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_12.ForeColor = SystemColors.WindowText
         imgToolBox_12.Image = CType(resources.GetObject("imgToolBox_12.Image"), Image)
-        imgToolBox_12.Location = New Point(1091, -4)
+        imgToolBox_12.Location = New Point(744, -4)
         imgToolBox_12.Name = "imgToolBox_12"
         imgToolBox_12.Size = New Size(58, 58)
         imgToolBox_12.TabIndex = 40
-        vb6ToolTip.SetToolTip(imgToolBox_12, "設定")
+        vb6ToolTip.SetToolTip(imgToolBox_12, "蒙太奇拼貼")
+        ' 
+        ' imgToolBox_15
+        ' 
+        imgToolBox_15.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
+        imgToolBox_15.ForeColor = SystemColors.WindowText
+        imgToolBox_15.Image = CType(resources.GetObject("imgToolBox_15.Image"), Image)
+        imgToolBox_15.Location = New Point(508, -4)
+        imgToolBox_15.Name = "imgToolBox_15"
+        imgToolBox_15.Size = New Size(58, 58)
+        imgToolBox_15.TabIndex = 80
+        vb6ToolTip.SetToolTip(imgToolBox_15, "那年今日")
+        ' 
+        ' imgToolBox_16
+        ' 
+        imgToolBox_16.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
+        imgToolBox_16.ForeColor = SystemColors.WindowText
+        imgToolBox_16.Image = CType(resources.GetObject("imgToolBox_16.Image"), Image)
+        imgToolBox_16.Location = New Point(876, -4)
+        imgToolBox_16.Name = "imgToolBox_16"
+        imgToolBox_16.Size = New Size(58, 58)
+        imgToolBox_16.TabIndex = 81
+        vb6ToolTip.SetToolTip(imgToolBox_16, "年度回顧")
+        ' 
+        ' imgToolBox_17
+        ' 
+        imgToolBox_17.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
+        imgToolBox_17.ForeColor = SystemColors.WindowText
+        imgToolBox_17.Image = CType(resources.GetObject("imgToolBox_17.Image"), Image)
+        imgToolBox_17.Location = New Point(1046, -4)
+        imgToolBox_17.Name = "imgToolBox_17"
+        imgToolBox_17.Size = New Size(58, 58)
+        imgToolBox_17.TabIndex = 82
+        vb6ToolTip.SetToolTip(imgToolBox_17, "整理清單")
         ' 
         ' imgToolBox_13
         ' 
         imgToolBox_13.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_13.ForeColor = SystemColors.WindowText
         imgToolBox_13.Image = CType(resources.GetObject("imgToolBox_13.Image"), Image)
-        imgToolBox_13.Location = New Point(503, -4)
+        imgToolBox_13.Location = New Point(443, -4)
         imgToolBox_13.Name = "imgToolBox_13"
         imgToolBox_13.Size = New Size(58, 58)
         imgToolBox_13.TabIndex = 44
@@ -676,7 +722,7 @@ Partial Class frmMain
         imgToolBox_14.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_14.ForeColor = SystemColors.WindowText
         imgToolBox_14.Image = CType(resources.GetObject("imgToolBox_14.Image"), Image)
-        imgToolBox_14.Location = New Point(1167, -4)
+        imgToolBox_14.Location = New Point(1177, -4)
         imgToolBox_14.Name = "imgToolBox_14"
         imgToolBox_14.Size = New Size(58, 58)
         imgToolBox_14.TabIndex = 46
@@ -687,7 +733,7 @@ Partial Class frmMain
         imgToolBox_2.Font = New Font("華康細圓體", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(136))
         imgToolBox_2.ForeColor = SystemColors.WindowText
         imgToolBox_2.Image = CType(resources.GetObject("imgToolBox_2.Image"), Image)
-        imgToolBox_2.Location = New Point(607, -4)
+        imgToolBox_2.Location = New Point(377, -4)
         imgToolBox_2.Name = "imgToolBox_2"
         imgToolBox_2.Size = New Size(58, 58)
         imgToolBox_2.TabIndex = 62
@@ -698,18 +744,18 @@ Partial Class frmMain
         lblToolBox_9.AutoSize = True
         lblToolBox_9.BackColor = Color.Transparent
         lblToolBox_9.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_9.Location = New Point(278, 58)
+        lblToolBox_9.Location = New Point(994, 58)
         lblToolBox_9.Name = "lblToolBox_9"
         lblToolBox_9.Size = New Size(53, 12)
         lblToolBox_9.TabIndex = 43
-        lblToolBox_9.Text = "照片資訊"
+        lblToolBox_9.Text = "編輯照片資訊"
         ' 
         ' lblToolBox_0
         ' 
         lblToolBox_0.AutoSize = True
         lblToolBox_0.BackColor = Color.Transparent
         lblToolBox_0.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_0.Location = New Point(34, 58)
+        lblToolBox_0.Location = New Point(1126, 58)
         lblToolBox_0.Name = "lblToolBox_0"
         lblToolBox_0.Size = New Size(29, 12)
         lblToolBox_0.TabIndex = 21
@@ -720,7 +766,7 @@ Partial Class frmMain
         lblToolBox_1.AutoSize = True
         lblToolBox_1.BackColor = Color.Transparent
         lblToolBox_1.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_1.Location = New Point(697, 58)
+        lblToolBox_1.Location = New Point(221, 58)
         lblToolBox_1.Name = "lblToolBox_1"
         lblToolBox_1.Size = New Size(30, 12)
         lblToolBox_1.TabIndex = 23
@@ -729,7 +775,7 @@ Partial Class frmMain
         ' Line2_0
         ' 
         Line2_0.BackColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        Line2_0.Location = New Point(100, 6)
+        Line2_0.Location = New Point(288, 6)
         Line2_0.Name = "Line2_0"
         Line2_0.Size = New Size(1, 72)
         Line2_0.TabIndex = 63
@@ -739,7 +785,7 @@ Partial Class frmMain
         lblToolBox_3.AutoSize = True
         lblToolBox_3.BackColor = Color.Transparent
         lblToolBox_3.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_3.Location = New Point(138, 58)
+        lblToolBox_3.Location = New Point(325, 58)
         lblToolBox_3.Name = "lblToolBox_3"
         lblToolBox_3.Size = New Size(29, 12)
         lblToolBox_3.TabIndex = 25
@@ -750,7 +796,7 @@ Partial Class frmMain
         lblToolBox_4.AutoSize = True
         lblToolBox_4.BackColor = Color.Transparent
         lblToolBox_4.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_4.Location = New Point(774, 58)
+        lblToolBox_4.Location = New Point(89, 58)
         lblToolBox_4.Name = "lblToolBox_4"
         lblToolBox_4.Size = New Size(29, 12)
         lblToolBox_4.TabIndex = 27
@@ -761,7 +807,7 @@ Partial Class frmMain
         lblToolBox_5.AutoSize = True
         lblToolBox_5.BackColor = Color.Transparent
         lblToolBox_5.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_5.Location = New Point(212, 58)
+        lblToolBox_5.Location = New Point(24, 58)
         lblToolBox_5.Name = "lblToolBox_5"
         lblToolBox_5.Size = New Size(32, 12)
         lblToolBox_5.TabIndex = 29
@@ -772,7 +818,7 @@ Partial Class frmMain
         lblToolBox_6.AutoSize = True
         lblToolBox_6.BackColor = Color.Transparent
         lblToolBox_6.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_6.Location = New Point(360, 57)
+        lblToolBox_6.Location = New Point(155, 57)
         lblToolBox_6.Name = "lblToolBox_6"
         lblToolBox_6.Size = New Size(41, 12)
         lblToolBox_6.TabIndex = 31
@@ -783,18 +829,18 @@ Partial Class frmMain
         lblToolBox_7.AutoSize = True
         lblToolBox_7.BackColor = Color.Transparent
         lblToolBox_7.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_7.Location = New Point(430, 58)
+        lblToolBox_7.Location = New Point(824, 58)
         lblToolBox_7.Name = "lblToolBox_7"
         lblToolBox_7.Size = New Size(53, 12)
         lblToolBox_7.TabIndex = 33
-        lblToolBox_7.Text = "照片目錄"
+        lblToolBox_7.Text = "年度目錄"
         ' 
         ' lblToolBox_8
         ' 
         lblToolBox_8.AutoSize = True
         lblToolBox_8.BackColor = Color.Transparent
         lblToolBox_8.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_8.Location = New Point(850, 58)
+        lblToolBox_8.Location = New Point(693, 58)
         lblToolBox_8.Name = "lblToolBox_8"
         lblToolBox_8.Size = New Size(29, 12)
         lblToolBox_8.TabIndex = 35
@@ -803,7 +849,7 @@ Partial Class frmMain
         ' Line2_1
         ' 
         Line2_1.BackColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        Line2_1.Location = New Point(916, 6)
+        Line2_1.Location = New Point(655, 6)
         Line2_1.Name = "Line2_1"
         Line2_1.Size = New Size(1, 72)
         Line2_1.TabIndex = 64
@@ -813,11 +859,11 @@ Partial Class frmMain
         lblToolBox_10.AutoSize = True
         lblToolBox_10.BackColor = Color.Transparent
         lblToolBox_10.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_10.Location = New Point(954, 58)
+        lblToolBox_10.Location = New Point(588, 58)
         lblToolBox_10.Name = "lblToolBox_10"
         lblToolBox_10.Size = New Size(29, 12)
         lblToolBox_10.TabIndex = 37
-        lblToolBox_10.Text = "編輯"
+        lblToolBox_10.Text = "相片後製"
         ' 
         ' lblToolBox_11
         ' 
@@ -826,6 +872,7 @@ Partial Class frmMain
         lblToolBox_11.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
         lblToolBox_11.Location = New Point(1030, 58)
         lblToolBox_11.Name = "lblToolBox_11"
+        lblToolBox_11.Visible = False
         lblToolBox_11.Size = New Size(29, 12)
         lblToolBox_11.TabIndex = 39
         lblToolBox_11.Text = "沖印"
@@ -835,18 +882,51 @@ Partial Class frmMain
         lblToolBox_12.AutoSize = True
         lblToolBox_12.BackColor = Color.Transparent
         lblToolBox_12.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_12.Location = New Point(1106, 58)
+        lblToolBox_12.Location = New Point(758, 58)
         lblToolBox_12.Name = "lblToolBox_12"
         lblToolBox_12.Size = New Size(29, 12)
         lblToolBox_12.TabIndex = 41
-        lblToolBox_12.Text = "郵件"
+        lblToolBox_12.Text = "蒙太奇拼貼"
+        ' 
+        ' lblToolBox_15
+        ' 
+        lblToolBox_15.AutoSize = True
+        lblToolBox_15.BackColor = Color.Transparent
+        lblToolBox_15.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
+        lblToolBox_15.Location = New Point(522, 58)
+        lblToolBox_15.Name = "lblToolBox_15"
+        lblToolBox_15.Size = New Size(29, 12)
+        lblToolBox_15.TabIndex = 83
+        lblToolBox_15.Text = "那年今日"
+        ' 
+        ' lblToolBox_16
+        ' 
+        lblToolBox_16.AutoSize = True
+        lblToolBox_16.BackColor = Color.Transparent
+        lblToolBox_16.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
+        lblToolBox_16.Location = New Point(890, 58)
+        lblToolBox_16.Name = "lblToolBox_16"
+        lblToolBox_16.Size = New Size(29, 12)
+        lblToolBox_16.TabIndex = 84
+        lblToolBox_16.Text = "年度回顧"
+        ' 
+        ' lblToolBox_17
+        ' 
+        lblToolBox_17.AutoSize = True
+        lblToolBox_17.BackColor = Color.Transparent
+        lblToolBox_17.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
+        lblToolBox_17.Location = New Point(1060, 58)
+        lblToolBox_17.Name = "lblToolBox_17"
+        lblToolBox_17.Size = New Size(29, 12)
+        lblToolBox_17.TabIndex = 85
+        lblToolBox_17.Text = "整理清單"
         ' 
         ' lblToolBox_13
         ' 
         lblToolBox_13.AutoSize = True
         lblToolBox_13.BackColor = Color.Transparent
         lblToolBox_13.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_13.Location = New Point(518, 58)
+        lblToolBox_13.Location = New Point(457, 58)
         lblToolBox_13.Name = "lblToolBox_13"
         lblToolBox_13.Size = New Size(29, 12)
         lblToolBox_13.TabIndex = 45
@@ -857,7 +937,7 @@ Partial Class frmMain
         lblToolBox_14.AutoSize = True
         lblToolBox_14.BackColor = Color.Transparent
         lblToolBox_14.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_14.Location = New Point(1170, 58)
+        lblToolBox_14.Location = New Point(1191, 58)
         lblToolBox_14.Name = "lblToolBox_14"
         lblToolBox_14.Size = New Size(53, 12)
         lblToolBox_14.TabIndex = 47
@@ -868,7 +948,7 @@ Partial Class frmMain
         lblToolBox_2.AutoSize = True
         lblToolBox_2.BackColor = Color.Transparent
         lblToolBox_2.ForeColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        lblToolBox_2.Location = New Point(604, 58)
+        lblToolBox_2.Location = New Point(391, 58)
         lblToolBox_2.Name = "lblToolBox_2"
         lblToolBox_2.Size = New Size(65, 12)
         lblToolBox_2.TabIndex = 63
@@ -877,7 +957,7 @@ Partial Class frmMain
         ' Line2_2
         ' 
         Line2_2.BackColor = Color.FromArgb(CByte(128), CByte(128), CByte(128))
-        Line2_2.Location = New Point(584, 6)
+        Line2_2.Location = New Point(957, 6)
         Line2_2.Name = "Line2_2"
         Line2_2.Size = New Size(1, 72)
         Line2_2.TabIndex = 65
@@ -1417,6 +1497,9 @@ Partial Class frmMain
     Friend WithEvents lblToolBox_10 As System.Windows.Forms.Label
     Friend WithEvents lblToolBox_11 As System.Windows.Forms.Label
     Friend WithEvents lblToolBox_12 As System.Windows.Forms.Label
+    Friend WithEvents lblToolBox_15 As System.Windows.Forms.Label
+    Friend WithEvents lblToolBox_16 As System.Windows.Forms.Label
+    Friend WithEvents lblToolBox_17 As System.Windows.Forms.Label
     Friend WithEvents lblToolBox_13 As System.Windows.Forms.Label
     Friend WithEvents lblToolBox_14 As System.Windows.Forms.Label
     Friend WithEvents lblToolBox_2 As System.Windows.Forms.Label
@@ -1433,6 +1516,9 @@ Partial Class frmMain
     Friend WithEvents imgToolBox_10 As Aqua.PngButton
     Friend WithEvents imgToolBox_11 As Aqua.PngButton
     Friend WithEvents imgToolBox_12 As Aqua.PngButton
+    Friend WithEvents imgToolBox_15 As Aqua.PngButton
+    Friend WithEvents imgToolBox_16 As Aqua.PngButton
+    Friend WithEvents imgToolBox_17 As Aqua.PngButton
     Friend WithEvents imgToolBox_13 As Aqua.PngButton
     Friend WithEvents imgToolBox_14 As Aqua.PngButton
     Friend WithEvents imgToolBox_2 As Aqua.PngButton

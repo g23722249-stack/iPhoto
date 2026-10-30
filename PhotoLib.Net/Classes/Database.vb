@@ -258,6 +258,18 @@ Public Class Database
         Return HasColumn(mc_strTableName, name)
     End Function
 
+    ''' <summary>同步備份: SQLite writes what its -wal file holds into the database file (and empties it), so
+    ''' a copy of iPhoto.db alone is complete. Nothing to do for Jet.</summary>
+    Public Sub Checkpoint()
+        If Not m_bolImplement OrElse Not m_bolSqlite Then Return
+        Try
+            Using cmd As DbCmd = NewCmd("PRAGMA wal_checkpoint(TRUNCATE)")
+                cmd.ExecuteNonQuery()
+            End Using
+        Catch ex As DbException
+        End Try
+    End Sub
+
     Public Sub Close()
         If m_lpConnection IsNot Nothing Then
             m_lpConnection.Dispose()

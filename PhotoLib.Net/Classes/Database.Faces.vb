@@ -64,6 +64,30 @@ Partial Public Class Database
         End Using
     End Function
 
+    ''' <summary>年度回顧: how many faces each photo has (not counting "not a face"), and how many of them
+    ''' are named, by file name.</summary>
+    Public Function FaceCountsByFile() As Dictionary(Of String, (Faces As Integer, Named As Integer))
+        Dim result As New Dictionary(Of String, (Faces As Integer, Named As Integer))(StringComparer.OrdinalIgnoreCase)
+        If Not FaceTablesReady Then Return result
+        Using cmd As DbCmd = NewCmd("Select FileName, Count(*) From FaceRegion Where State <> 9 Group By FileName")
+            Using r As DbDataReader = cmd.ExecuteReader()
+                While r.Read()
+                    result(FromStored(AsText(r(0)))) = (CInt(r(1)), 0)
+                End While
+            End Using
+        End Using
+        Using cmd As DbCmd = NewCmd("Select FileName, Count(*) From FaceRegion Where State <> 9 And PersonID > 0 Group By FileName")
+            Using r As DbDataReader = cmd.ExecuteReader()
+                While r.Read()
+                    Dim f As String = FromStored(AsText(r(0)))
+                    Dim c As (Faces As Integer, Named As Integer) = Nothing
+                    If result.TryGetValue(f, c) Then result(f) = (c.Faces, CInt(r(1)))
+                End While
+            End Using
+        End Using
+        Return result
+    End Function
+
     ''' <summary>Replaces the photo's analysis: its FacePhoto row and all its faces (names given to them
     ''' before are dropped with them -- the file changed, so the old boxes don't fit any more).
     ''' <paramref name="faces"/> Nothing = the file couldn't be read (Status 2).</summary>

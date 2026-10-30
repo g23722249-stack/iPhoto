@@ -52,6 +52,8 @@
     <ProjectReference Include="..\PhotoLib.Net\PhotoLib.Net.vbproj" />
     <ProjectReference Include="..\Techno.Net\Techno.Net.vbproj" />
     <ProjectReference Include="..\..\RunTime\Aqua.Net\Aqua.Net.vbproj" />
+    <!-- 蒙太奇拼貼 (tool bar 12): PhotoMontage's editor as a library, C:\專案\PhotoMontage beside this repo -->
+    <ProjectReference Include="..\..\PhotoMontage\src\PhotoMontage.WinForms\PhotoMontage.WinForms.vbproj" />
   </ItemGroup>
 
   <!-- Native LibVLC for Aqua.MediaViewerControl (video). The package copies libvlc\win-x64\ only into

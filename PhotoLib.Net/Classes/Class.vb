@@ -39,6 +39,12 @@ Public Class [Class]
         If m_bolLoad Then Load()
     End Sub
 
+    ''' <summary>Reads the folder again (Load only reads it the first time): after an edited picture came in.</summary>
+    Public Sub Reload()
+        m_bolLoad = False
+        Load()
+    End Sub
+
     ''' <summary>Loads the folder's photos and videos, oldest first (by .Exif date, else file time).
     ''' Only the first call reads the folder. VB6 never summed the file sizes here (the line was
     ''' commented out), so FileLength stays 0.</summary>
@@ -46,8 +52,8 @@ Public Class [Class]
         If Not CheckCreate() Then Return False
         If Not m_bolLoad Then
             m_lpPhoto.Clear()
-            Dim files() As String = Nothing
-            Dim count As Integer = ExactFiles(m_szAlbumPath, GetPhotoPatterns(), files, True)
+            Dim files() As String = EditedPhotos.AlbumFiles(m_szAlbumPath)   ' an edited picture in place of its original
+            Dim count As Integer = files.Length
             count = SortPhotoFileByCreateDateTime(enumSortOrder.Ascending, files, count)
             For i = 0 To count - 1
                 CreatePhotos(files(i))

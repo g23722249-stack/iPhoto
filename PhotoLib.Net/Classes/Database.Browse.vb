@@ -1,4 +1,4 @@
-Imports System.Data
+﻿Imports System.Data
 Imports System.Data.Common
 Imports System.Data.OleDb
 
@@ -169,29 +169,81 @@ Partial Public Class Database
         Return result
     End Function
 
+    Private ReadOnly Property RowColumns As String
+        Get
+            Return "FileName, Exif_Date, Exif_Ranking, Exif_Spot" &
+                   If(m_bolPlaceColumns, ", Exif_City, Exif_Town", "") &
+                   If(m_bolGpsColumns, ", Exif_Latitude, Exif_Longitude", "")
+        End Get
+    End Property
+
     Private Function Rows(ByVal where As String, ByVal orderBy As String, ParamArray values As Object()) As List(Of IndexRow)
         Dim result As New List(Of IndexRow)
         If Not m_bolImplement Then Return result
-        Dim cols As String = "FileName, Exif_Date, Exif_Ranking, Exif_Spot" &
-                             If(m_bolPlaceColumns, ", Exif_City, Exif_Town", "") &
-                             If(m_bolGpsColumns, ", Exif_Latitude, Exif_Longitude", "")
-        Using cmd As DbCmd = NewCommand("Select " & cols & " From " & mc_strTableName & " Where " & where & " Order By " & SortedBy(orderBy, "FileName"), values)
+        Using cmd As DbCmd = NewCommand("Select " & RowColumns & " From " & mc_strTableName & " Where " & where & " Order By " & SortedBy(orderBy, "FileName"), values)
             Using r As DbDataReader = cmd.ExecuteReader()
                 While r.Read()
-                    Dim row As New IndexRow With {
-                        .FileName = FromStored(AsText(r("FileName"))),
-                        .DateText = PadNum(AsText(r("Exif_Date")), 8),
-                        .Ranking = CInt(Val(AsText(r("Exif_Ranking")))),
-                        .Spot = AsText(r("Exif_Spot")).Trim()}
-                    If m_bolPlaceColumns Then
-                        row.City = AsText(r("Exif_City")).Trim()
-                        row.Town = AsText(r("Exif_Town")).Trim()
-                    End If
-                    If m_bolGpsColumns AndAlso r("Exif_Latitude") IsNot DBNull.Value AndAlso r("Exif_Longitude") IsNot DBNull.Value Then
-                        row.Latitude = CDbl(r("Exif_Latitude"))
-                        row.Longitude = CDbl(r("Exif_Longitude"))
-                    End If
-                    result.Add(row)
+                    result.Add(ReadRow(r))
+                End While
+            End Using
+        End Using
+        Return result
+    End Function
+
+    ''' <summary>The RowColumns of the reader's current row.</summary>
+    Private Function ReadRow(ByVal r As DbDataReader) As IndexRow
+        Dim row As New IndexRow With {
+            .FileName = FromStored(AsText(r("FileName"))),
+            .DateText = PadNum(AsText(r("Exif_Date")), 8),
+            .Ranking = CInt(Val(AsText(r("Exif_Ranking")))),
+            .Spot = AsText(r("Exif_Spot")).Trim()}
+        If m_bolPlaceColumns Then
+            row.City = AsText(r("Exif_City")).Trim()
+            row.Town = AsText(r("Exif_Town")).Trim()
+        End If
+        If m_bolGpsColumns AndAlso r("Exif_Latitude") IsNot DBNull.Value AndAlso r("Exif_Longitude") IsNot DBNull.Value Then
+            row.Latitude = CDbl(r("Exif_Latitude"))
+            row.Longitude = CDbl(r("Exif_Longitude"))
+        End If
+        Return row
+    End Function
+
+    '==================================================================================================
+    ' 搜尋 (PhotoSearch)
+    '==================================================================================================
+    ''' <summary>Every indexed photo with the texts a search word can match, and the names given to its
+    ''' faces (face recognition).</summary>
+    Public Function SearchRecords() As List(Of PhotoSearch.Record)
+        Dim result As New List(Of PhotoSearch.Record)
+        If Not m_bolImplement Then Return result
+        Dim faces As New Dictionary(Of String, HashSet(Of String))(StringComparer.OrdinalIgnoreCase)
+        If FaceTablesReady Then
+            Using cmd As DbCmd = NewCmd("Select r.FileName, p.FaceName From FaceRegion AS r Inner Join FacePerson AS p On r.PersonID = p.PersonID Where r.State <> 9")
+                Using r As DbDataReader = cmd.ExecuteReader()
+                    While r.Read()
+                        Dim f As String = FromStored(AsText(r(0))), n As String = AsText(r(1)).Trim()
+                        If n = "" Then Continue While
+                        If Not faces.ContainsKey(f) Then faces(f) = New HashSet(Of String)(StringComparer.CurrentCultureIgnoreCase)
+                        faces(f).Add(n)
+                    End While
+                End Using
+            End Using
+        End If
+        Using cmd As DbCmd = NewCmd("Select " & RowColumns & ", Exif_Title, Exif_Character, Exif_Remark, Exif_KeyWord" &
+                                    If(m_bolPlaceColumns, ", Exif_Country", "") & " From " & mc_strTableName)
+            Using r As DbDataReader = cmd.ExecuteReader()
+                While r.Read()
+                    Dim row As IndexRow = ReadRow(r)
+                    Dim names As HashSet(Of String) = Nothing
+                    faces.TryGetValue(row.FileName, names)
+                    result.Add(New PhotoSearch.Record With {
+                        .Row = row,
+                        .Title = AsText(r("Exif_Title")).Trim(),
+                        .People = AsText(r("Exif_Character")).Trim(),
+                        .FaceNames = If(names Is Nothing, "", String.Join(",", names)),   ' as the people field (FaceNames.Split)
+                        .Place = String.Join(" ", {row.Spot, row.City, row.Town, If(m_bolPlaceColumns, AsText(r("Exif_Country")).Trim(), "")}.Where(Function(s) s <> "")),
+                        .Remark = AsText(r("Exif_Remark")).Trim(),
+                        .KeyWord = AsText(r("Exif_KeyWord")).Trim()})
                 End While
             End Using
         End Using

@@ -21,13 +21,18 @@ Public Module Duplicates
         Public Rating As Integer
         ''' <summary>Suggested to keep (the best of the group).</summary>
         Public Keep As Boolean
+        ''' <summary>Why it is listed, when that isn't plain (整理清單: "模糊（清晰度 42）").</summary>
+        Public Note As String
     End Class
 
     Public Class DupGroup
         Public ReadOnly Files As New List(Of DupFile)
         ''' <summary>True: byte for byte the same; False: very similar pictures.</summary>
         Public Exact As Boolean
+        ''' <summary>The line in the list for a group that isn't one of copies (整理清單: "模糊 5 張：相簿").</summary>
+        Public Title As String
         Public Overrides Function ToString() As String
+            If Title IsNot Nothing Then Return Title
             Return If(Exact, "相同 ", "相似 ") & Files.Count & " 張：" & Path.GetFileName(Files(0).File) & "…"
         End Function
     End Class
@@ -48,9 +53,7 @@ Public Module Duplicates
                 Dim albums() As String = Nothing
                 ExactFolders(section, albums)
                 For Each album In albums.Where(Function(f) Not IsSystemFolder(f))
-                    Dim files() As String = Nothing
-                    ExactFiles(album, GetPhotoPatterns(), files, True)
-                    result.AddRange(files)
+                    result.AddRange(EditedPhotos.AlbumFiles(album))   ' as the album shows them
                 Next
             Next
         Next
@@ -62,7 +65,14 @@ Public Module Duplicates
     Public Function Find(ByVal roots As IEnumerable(Of String), ByVal similar As Boolean,
                          Optional ByVal progress As Action(Of String, Integer, Integer) = Nothing,
                          Optional ByVal cancel As Threading.CancellationToken = Nothing) As List(Of DupGroup)
-        Dim files As List(Of String) = AlbumPhotos(roots)
+        Return FindIn(AlbumPhotos(roots), True, similar, progress, cancel)
+    End Function
+
+    ''' <summary>Find over these files (整理清單: one album, or the whole library); <paramref name="exact"/>
+    ''' and <paramref name="similar"/> pick which groups.</summary>
+    Public Function FindIn(ByVal files As List(Of String), ByVal exact As Boolean, ByVal similar As Boolean,
+                           Optional ByVal progress As Action(Of String, Integer, Integer) = Nothing,
+                           Optional ByVal cancel As Threading.CancellationToken = Nothing) As List(Of DupGroup)
         Dim infos As New Dictionary(Of String, DupFile)(StringComparer.OrdinalIgnoreCase)
         For Each f In files
             Try
@@ -75,7 +85,7 @@ Public Module Duplicates
         Dim inExact As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
 
         ' exact: same size, then same content
-        Dim sameSize = infos.Values.Where(Function(x) x.Size > 0).GroupBy(Function(x) x.Size).Where(Function(g) g.Count() > 1).ToList()
+        Dim sameSize = infos.Values.Where(Function(x) exact AndAlso x.Size > 0).GroupBy(Function(x) x.Size).Where(Function(g) g.Count() > 1).ToList()
         Dim toHash As Integer = sameSize.Sum(Function(g) g.Count()), hashed As Integer = 0
         For Each g In sameSize
             If cancel.IsCancellationRequested Then Exit For
@@ -161,22 +171,27 @@ Public Module Duplicates
     ''' oldest file.</summary>
     Private Sub Describe(ByVal g As DupGroup)
         For Each f In g.Files
-            Try
-                Using fs As New FileStream(f.File, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), img As Image = Image.FromStream(fs, False, False)
-                    f.Width = img.Width
-                    f.Height = img.Height
-                End Using
-            Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is ArgumentException OrElse TypeOf ex Is UnauthorizedAccessException
-            End Try
-            Dim p As New Photo
-            p.Construct(f.File)
-            f.Rating = CInt(Val(p.Exif(enumPhotoExif.peRanking)))
+            FillInfo(f)
         Next
         Dim best As DupFile = g.Files.OrderByDescending(Function(f) f.Rating).ThenByDescending(Function(f) CLng(f.Width) * f.Height).
                                      ThenByDescending(Function(f) f.Size).ThenBy(Function(f) f.Time).First()
         For Each f In g.Files
             f.Keep = f Is best
         Next
+    End Sub
+
+    ''' <summary>The picture size (from the file's header) and the rating (.Exif).</summary>
+    Friend Sub FillInfo(ByVal f As DupFile)
+        Try
+            Using fs As New FileStream(f.File, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), img As Image = Image.FromStream(fs, False, False)
+                f.Width = img.Width
+                f.Height = img.Height
+            End Using
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is ArgumentException OrElse TypeOf ex Is UnauthorizedAccessException
+        End Try
+        Dim p As New Photo
+        p.Construct(f.File)
+        f.Rating = CInt(Val(p.Exif(enumPhotoExif.peRanking)))
     End Sub
 
     Private Function Sha(ByVal file As String) As String
@@ -198,11 +213,13 @@ Public Module Duplicates
         Return Numerics.BitOperations.PopCount(v)
     End Function
 
-    Private Function LoadCache() As Dictionary(Of String, String)
+    ''' <summary>A cache of "key TAB value" lines: these picture hashes, or PhotoQuality's measures.</summary>
+    Friend Function LoadCache(Optional ByVal cachePath As String = Nothing) As Dictionary(Of String, String)
+        If cachePath Is Nothing Then cachePath = CacheFile
         Dim d As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
         Try
-            If File.Exists(CacheFile) Then
-                For Each line In File.ReadLines(CacheFile, Text.Encoding.UTF8)
+            If File.Exists(cachePath) Then
+                For Each line In File.ReadLines(cachePath, Text.Encoding.UTF8)
                     Dim tab As Integer = line.LastIndexOf(ChrW(9))
                     If tab > 0 Then d(line.Substring(0, tab)) = line.Substring(tab + 1)
                 Next
@@ -212,10 +229,11 @@ Public Module Duplicates
         Return d
     End Function
 
-    Private Sub SaveCache(ByVal d As Dictionary(Of String, String))
+    Friend Sub SaveCache(ByVal d As Dictionary(Of String, String), Optional ByVal cachePath As String = Nothing)
+        If cachePath Is Nothing Then cachePath = CacheFile
         Try
-            Directory.CreateDirectory(Path.GetDirectoryName(CacheFile))
-            File.WriteAllLines(CacheFile, d.Select(Function(kv) kv.Key & ChrW(9) & kv.Value), Text.Encoding.UTF8)
+            Directory.CreateDirectory(Path.GetDirectoryName(cachePath))
+            File.WriteAllLines(cachePath, d.Select(Function(kv) kv.Key & ChrW(9) & kv.Value), Text.Encoding.UTF8)
         Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
         End Try
     End Sub

@@ -50,6 +50,20 @@ Public Module IndexSync
                     r.LastError = Path.GetFileName(f) & "：" & ex.Message
                 End Try
             Next
+            ' originals replaced by their edited picture (EditedPhotos), edited outside iPhoto: their row and
+            ' face data go (the edited picture's row was written above)
+            For Each f In rows.Keys
+                If cancel.IsCancellationRequested Then Return r
+                Try
+                    If Not File.Exists(f) OrElse EditedPhotos.HiddenBy(f) Is Nothing Then Continue For
+                    db.Delete(f)
+                    db.DeleteFacePhoto(f)
+                    r.Updated += 1
+                Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is Data.Common.DbException
+                    r.Failed += 1
+                    r.LastError = Path.GetFileName(f) & "：" & ex.Message
+                End Try
+            Next
         End Using
         Try
             Directory.CreateDirectory(Path.GetDirectoryName(StampFile(strDatabase)))

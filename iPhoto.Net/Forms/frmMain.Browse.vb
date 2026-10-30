@@ -4,7 +4,8 @@
 '              its months · 沒有日期. A year is one list, oldest first, with a heading per day ("3月15日
 '              星期五  臺中市 · 12 張", Aqua.MediaList sections); a month scrolls to its first day (the year
 '              is loaded once). The 時間軸 node itself shows the latest year.
-'   地點       the tool bar's 地點 (imgToolBox 13, after 照片目錄; picture and caption in the designer) opens frmMap: the map, with the place
+'              The tool bar's 那年今日 (imgToolBox 15) opens the 那年今日 node.
+'   地點       the tool bar's 地點 (imgToolBox 13; picture and caption in the designer) opens frmMap: the map, with the place
 '              tree 縣市 › 鄉鎮區 › 景點 · 其他地點 (PlaceBrowse) on its left. A place picked there shows
 '              its photos here by date, a heading per day.
 ' The lists are ordinary photo lists (exeFace: files from anywhere, as the face / search lists): viewer,
@@ -140,6 +141,23 @@ Partial Class frmMain
             mlList.ScrollToSection(s)
         End If
         If mlList.Visible Then mlList.Focus()
+    End Sub
+
+    ''' <summary>The tool bar's 那年今日 (imgToolBox 15): 時間軸 › 那年今日 selected in the tree and shown.</summary>
+    Private Sub OpenOnThisDay()
+        If g_lpDatabase Is Nothing OrElse Not g_lpDatabase.Implement Then
+            frmMsgBox.ShowExclamationMessage("那年今日要用到照片索引（設定 › 維護 › 重建索引）。", "那年今日")
+            Return
+        End If
+        Dim time As TreeNode = tvList.Nodes.Cast(Of TreeNode)().FirstOrDefault(Function(n) BrowseKey(n) = TimeKey)
+        If time Is Nothing Then Return
+        FillTimeNode(time)
+        Dim today As TreeNode = time.Nodes.Cast(Of TreeNode)().FirstOrDefault(Function(n) BrowseKey(n) = TimeTodayKey)
+        If today Is Nothing Then Return
+        time.Expand()
+        tvList.SelectedNode = today
+        today.EnsureVisible()
+        BrowseNodeClick(today)
     End Sub
 
     ''' <summary>那年今日: today in the years before, newest first; nothing on the very day widens to ±3 days.</summary>

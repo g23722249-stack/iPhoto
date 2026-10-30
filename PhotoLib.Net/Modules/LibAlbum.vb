@@ -80,10 +80,6 @@ Public Module LibAlbum
         mdUnknown = 90
     End Enum
 
-    Public Structure strSearch
-        Public FileDesc As String
-    End Structure
-
     Public Structure udfApplication
         Public ExeMode As enumExeMode
         Public SectionIndex As Integer

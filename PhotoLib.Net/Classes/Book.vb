@@ -2,8 +2,18 @@ Imports System.IO
 
 ' Port of 電子相簿\Lib\Class\Book.cls: a photo book ("攝影集") -- an *.Alm ini that lists photo files
 ' ([Photos] File=...) plus its [Create] / [Note] values. Shared logic with Class is in PhotoSet.
+' New in the .NET port:
+'   - the .Alm is written in UTF-16 (FileEncoding): VB6 wrote the ANSI code page, which turns a name
+'     with a character Big5 lacks into "?" -- that photo then dropped out of the book. An old ANSI file
+'     is still read (a byte-order mark tells them apart; the Win32 profile API reads both) and becomes
+'     UTF-16 the first time it is saved.
+'   - [Note] Order=Manual keeps the photos in the order the book lists them (MovePhotos), instead of by
+'     date (SortByDate goes back to that).
 Public Class Book
     Inherits PhotoSet
+
+    ''' <summary>How a .Alm (and a .dck) is written.</summary>
+    Public Shared ReadOnly FileEncoding As Text.Encoding = Text.Encoding.Unicode
 
     Private m_szFavoriteAlbumFile As String = ""
 
@@ -54,7 +64,7 @@ Public Class Book
         For i = 0 To count - 1
             files(i) = FullPath(files(i).Trim())
         Next
-        count = SortPhotoFileByCreateDateTime(enumSortOrder.Ascending, files, count)
+        If Not ManualOrder Then count = SortPhotoFileByCreateDateTime(enumSortOrder.Ascending, files, count)
         Dim total As Long = 0
         For i = 0 To count - 1
             CreatePhotos(files(i))
@@ -84,13 +94,14 @@ Public Class Book
         Dim music As String = Note(enumNote.ntMusic)
         Dim remark As String = Note(enumNote.ntRemark)
         Dim cover As String = CoverPhoto
+        Dim manual As Boolean = ManualOrder
 
         If Not fs.DeleteFile(m_szFavoriteAlbumFile) Then
             MsgBox("刪除攝影集設定檔 " & m_szFavoriteAlbumFile & " 失敗...", MsgBoxStyle.Critical, "錯誤")
             Return False
         End If
 
-        Using w As New StreamWriter(m_szFavoriteAlbumFile, False, AnsiText.Encoding)
+        Using w As New StreamWriter(m_szFavoriteAlbumFile, False, FileEncoding)
             w.WriteLine("//建立資料")
             w.WriteLine("[Create]")
             w.WriteLine("Date=" & createDate)
@@ -106,6 +117,7 @@ Public Class Book
             w.WriteLine("Music=" & StoredPath(music))
             w.WriteLine("Remark=" & remark)
             If cover <> "" Then w.WriteLine("Cover=" & StoredPath(cover))   ' 設為相本封面 (new in the .NET port)
+            If manual Then w.WriteLine("Order=Manual")
             w.WriteLine(" ")
             w.WriteLine("//相片")
             w.WriteLine("[Photos]")
@@ -116,5 +128,45 @@ Public Class Book
         End Using
         Return True
     End Function
+
+    ''' <summary>True: the photos stay in the book's own order (MovePhotos); False: by date.</summary>
+    Public Property ManualOrder As Boolean
+        Get
+            If Not CheckCreate() OrElse Not File.Exists(m_szFavoriteAlbumFile) Then Return False
+            Dim ini As New Carbon.IniFile With {.FileName = m_szFavoriteAlbumFile}
+            Return String.Equals(ini.SimpleGetValue("Note", "Order"), "Manual", StringComparison.OrdinalIgnoreCase)
+        End Get
+        Set(value As Boolean)
+            If Not CheckCreate() Then Return
+            Dim ini As New Carbon.IniFile With {.FileName = m_szFavoriteAlbumFile}
+            ini.SimpleSetValue("Note", "Order", If(value, "Manual", ""))
+        End Set
+    End Property
+
+    ''' <summary>The book's photo files, in its order.</summary>
+    Public Function Files() As List(Of String)
+        Return m_lpPhoto.Select(Function(p) p.FileDesc).ToList()
+    End Function
+
+    ''' <summary>Puts <paramref name="moved"/> (in their present order) before <paramref name="before"/>
+    ''' (Nothing: at the end), switches to the book's own order and saves.</summary>
+    Public Sub MovePhotos(ByVal moved As IEnumerable(Of String), ByVal before As String)
+        Dim set_ As New HashSet(Of String)(moved, StringComparer.OrdinalIgnoreCase)
+        If set_.Count = 0 Then Return
+        Dim taken = m_lpPhoto.Where(Function(p) set_.Contains(p.FileDesc)).ToList()
+        If taken.Count = 0 Then Return
+        m_lpPhoto.RemoveAll(Function(p) set_.Contains(p.FileDesc))
+        Dim at As Integer = If(before Is Nothing, -1, m_lpPhoto.FindIndex(Function(p) String.Equals(p.FileDesc, before, StringComparison.OrdinalIgnoreCase)))
+        If at < 0 Then m_lpPhoto.AddRange(taken) Else m_lpPhoto.InsertRange(at, taken)
+        ManualOrder = True
+        Save()
+    End Sub
+
+    ''' <summary>Back to the photos by date (the book's own order is dropped) and saves.</summary>
+    Public Sub SortByDate()
+        ManualOrder = False
+        Save()
+        Load()
+    End Sub
 
 End Class

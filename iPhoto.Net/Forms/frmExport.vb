@@ -19,19 +19,34 @@ Friend Class frmExport
 
     Private ReadOnly m_objExport As New List(Of ExportItem)
 
+    ''' <summary>The files to export instead of the Dock's (攝影集 › 匯出整本, new in the .NET port), in order;
+    ''' their dates from their .Exif.</summary>
+    Friend Property Files As IList(Of String)
+
     Private Sub Form_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        Text = "匯出：" & g_lpDock.Count & " 張相片"
         DeskTop1_SelectedChanged(DeskTop1, EventArgs.Empty)
 
         m_objExport.Clear()
-        For I As Integer = 0 To g_lpDock.Count - 1
-            m_objExport.Add(New ExportItem With {
-                .FileDesc = g_lpDock.FileName(I),
-                .CreateDate = GetCreateDate(g_lpDock.FileName(I), g_lpDock.CreateDate(I)),
-                .CreateTime = GetCreateTime(g_lpDock.FileName(I), g_lpDock.CreateTime(I))})
-        Next
+        If Files IsNot Nothing Then
+            For Each f In Files.Where(Function(x) IO.File.Exists(x))
+                Dim p As New Photo
+                p.Construct(f)
+                m_objExport.Add(New ExportItem With {
+                    .FileDesc = f,
+                    .CreateDate = GetCreateDate(f, p.Exif(enumPhotoExif.peDate)),
+                    .CreateTime = GetCreateTime(f, p.Exif(enumPhotoExif.peTime))})
+            Next
+        Else
+            For I As Integer = 0 To g_lpDock.Count - 1
+                m_objExport.Add(New ExportItem With {
+                    .FileDesc = g_lpDock.FileName(I),
+                    .CreateDate = GetCreateDate(g_lpDock.FileName(I), g_lpDock.CreateDate(I)),
+                    .CreateTime = GetCreateTime(g_lpDock.FileName(I), g_lpDock.CreateTime(I))})
+            Next
+        End If
+        Text = "匯出：" & m_objExport.Count & " 張相片"
         ProgressBar1.Minimum = 0
-        ProgressBar1.Maximum = Math.Max(1, g_lpDock.Count)
+        ProgressBar1.Maximum = Math.Max(1, m_objExport.Count)
         ProgressBar1.Value = 0
     End Sub
 

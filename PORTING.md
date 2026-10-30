@@ -274,6 +274,41 @@ dotnet C:\專案\RunTime\Tools\FrmConverter\bin\Debug\net8.0-windows\FrmConverte
 | Module | `LibManifest` | Lib\Module\LibManifest.Bas | 不移植（由 `Application.EnableVisualStyles` 取代） |
 | Form | `frmMain_1440X900_NEW` | 電子相簿\iPhoto\Form\frmMain1440X900_NEW.frm | 不移植 |
 
+## 預計整合
+
+外部程式改成內建，完成後拿掉工具列對外部程式的依賴：
+
+| 工具列 | 現在 | 預計 |
+|---|---|---|
+| 沖印 | 開啟「設定 › 外掛 › 列印輸出」指定的外部程式（`Config.AppPrint`，iPhoto.Ini `[Application] Print`） | 整合 **PhotoMontage**（`C:\專案\PhotoMontage`）：選好的照片直接排版、列印 |
+| 編輯 | 開啟「設定 › 外掛 › 影像編輯」指定的外部程式（`Config.AppImageEdit`，`[Application] ImageEdit`） | 整合 **PhotoEdit**（`C:\專案\PhotoEdit`）：在 iPhoto 裡開啟照片編輯，存檔後縮圖、`.Exif` 跟著更新 |
+
+- 2026-10：「設定 › 外掛」先拿掉「列印輸出」「影像編輯」兩列（`frmSetup.Plugins.vb`）。設定值仍留在 iPhoto.Ini，工具列照舊開啟原本指定的程式，直到整合完成。
+- 兩個專案和 iPhoto 一樣用 Aqua.Net（`ProjectReference`），整合時以專案參考或共用類別庫的方式加入，不再當外部執行檔啟動。
+- 2026-10：**編輯 → PhotoEdit** 完成（另一個行程，`Modules\PhotoEditLink.vb`、`frmMain.Edit.vb`；匯出的 `_edited` 取代原圖顯示，`PhotoLib.Net\Modules\EditedPhotos.vb`）。
+- 2026-10：**蒙太奇拼貼 → PhotoMontage** 放在工具列第 12 格（取代「郵件」，「設定 › 外掛 › 電子郵件」一併拿掉）。PhotoMontage.WinForms 以專案參考在 iPhoto 行程內執行（`Modules\MontageLink.vb`、`frmMain.Montage.vb`）：
+  「選取照片」畫面由 iPhoto 提供資料（`IPhotoSource`：相簿、攝影集、人物、Dock），可勾多本相簿或逐張勾選；匯出時「選相簿…」選擇存放的相簿，存好後加入索引並顯示。
+- 2026-10：**工具列重新整理**（順序與分隔線在 designer；`|` 是分隔線）：
+  輸入 匯出 幻燈片 Dock | 搜尋 建立攝影集 地點 那年今日 相片後製 | 列印 蒙太奇拼貼 年度目錄 年度回顧 | 編輯照片資訊 整理清單 設定 同步備份。
+  - 改名：照片資訊 → 編輯照片資訊、編輯 → 相片後製（右鍵選單一併）、照片目錄 → 年度目錄（功能不變）。
+  - 拿掉「沖印」（imgToolBox 11 隱藏，索引不變）與整個「設定 › 外掛程式」頁；iPhoto.Ini 的值保留。
+  - 新增 15 **那年今日**（開啟「時間軸 › 那年今日」）、16 **年度回顧**（`frmYearReview`、`PhotoLib YearPicks`：依評價、人物、地點，每月分配、同天輪流，交給蒙太奇拼貼）、
+    17 **整理清單**（`frmCleanup`，原「尋找重複照片」：重複、相似、模糊、太暗或過曝；`PhotoLib PhotoQuality` + `Quartz.ImageQuality`，結果快取在 `%LOCALAPPDATA%\iPhoto\Quality.txt`）。
+- 2026-10：**搜尋改寫**（`frmPhotoSearch`、`frmMain.Search.vb`、`PhotoLib PhotoSearch`；VB6 移植的 `frmSearch` / `frmSearchResult` 與 `g_lpSearch` 拿掉）：
+  一個搜尋框，每個詞都要符合（主題、人物欄、面孔名字、地點、備註、關鍵字、檔名、相簿名）；認得 2024/3、3月、今年、夏天、★4、-詞、"片語"。
+  輸入時提示人名、地點、關鍵字、相簿，記住最近 10 次（`%LOCALAPPDATA%\iPhoto\SearchHistory.txt`）。進階：日期、季節、評價、媒體、GPS、人物、只找 Dock、範圍（相片庫分類、目前相簿、攝影集）、各欄位。
+  結果在主視窗：同一年少於 100 張整年一段，多的每天一段；樹的最後有「搜尋結果」。主視窗右上角的快速搜尋框用同一套。
+- 2026-10：**攝影集**（`frmBookMake` 取代 VB6 移植的 `frmBuildBook`；`frmMain.Books.vb`、`PhotoLib BookSuggest`）：
+  `.Alm` 與 `.dck` 改存 UTF-16（舊的 ANSI 檔照讀，存檔時轉換；ANSI 會把 Big5 沒有的字變成「?」，那張照片就從攝影集消失）。
+  建立攝影集：Dock 空的時候用清單選取的照片；名稱、日期、地點、封面依照片建議；存放位置記住上次的；建好直接打開，問要不要清空 Dock。
+  右鍵「加入攝影集」（新的、其他、最近 5 本直接加入）、「整份清單存成攝影集」；攝影集裡可拖曳或用「這本攝影集」調整順序（`[Note] Order=Manual`），
+  依拍攝時間排序、做成蒙太奇拼貼、匯出整本（`frmExport.Files`）、播放幻燈片。
+- 2026-10：**同步備份改寫**（`frmBackup` 改成程式產生，`Modules\LibBackup.vb` 的 `MirrorBackup` / `BackupDrives` / `BackupSettings`；通用進度視窗 `frmProgress`）：
+  整個生活剪輯鏡像到備份碟或資料夾（備份碟拿到另一台電腦就能直接用）：沒有的複製、較新或大小不同的覆蓋、來源已沒有的刪除、其他略過（時間差 2 秒內算相同）。
+  目的用磁碟名稱與序號記住（換了磁碟代號也找得到）；先「檢查」（磁碟在、可寫入、空間夠、比對結果），刪除很多時再確認；舊的 Lost 資料夾第一次一併清掉。
+  複製先寫成 `~ibk~<檔名>`，完整後刪掉舊檔再改名換上——不能直接改名蓋過舊照片：PC-cillin 會把「改名蓋過既有 .jpg」當成勒索軟體，第二張就把程式結束（實測）。
+  備份前資料庫先 `Database.Checkpoint`（SQLite 的 -wal 寫回 iPhoto.db）。
+
 ## 移植時發現的問題（VB6 原本就有）
 
 已修正（✅）或保留原樣的地方：
@@ -395,4 +430,4 @@ dotnet C:\專案\RunTime\Tools\FrmConverter\bin\Debug\net8.0-windows\FrmConverte
   - RegionUtil.CreateRegionFromBitmap（DropDownList、Buttons、UpDown、Label、IconBox 等的外形裁切）：改用 LockBits 一次讀取像素（原本每個像素呼叫 GetPixel），並把形狀相同的連續列合併成一個矩形（原本每列每段一個矩形）。400×23 的遮罩從約 2–3 ms 降到 0.19 ms。
   - ChildWindowsFollowMain 的視窗掛鉤會收到 UI 執行緒的每一則訊息：改成先只讀訊息編號，不是 WM_SHOWWINDOW 就直接略過，不再每則都複製整個結構。
 - ✅ **Aqua.Net 的 AquaForm / iForm** 的 `SizeMode = Fill` 原本畫成直接拉伸，現在已照 VB6 用九宮格並排（上面 Skin.DrawSized 的修正）。
-- **Aqua.Net.Tests 無法建置**：`Label` 模稜兩可（Aqua.Label 和 WinForms Label）。
+- ✅ **Aqua.Net.Tests 無法建置**：`Label` 模稜兩可（Aqua.Label 和 WinForms Label）；已在 Aqua.Net 的 repo 修正（2026-10）。

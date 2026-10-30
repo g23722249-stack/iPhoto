@@ -314,6 +314,8 @@ Public Class FaceLibrary
         Post(Sub() RaiseEvent Organized(Me, EventArgs.Empty))
     End Sub
 
+    Private Shared ReadOnly ImageExts As String() = {".jpg", ".jpeg", ".png", ".bmp", ".gif"}
+
     ''' <summary>Every picture of every class folder of every album of the roots (Storage's tree).</summary>
     Private Shared Function ListPhotos(ByVal roots As String()) As List(Of String)
         Dim result As New List(Of String)
@@ -324,10 +326,8 @@ Public Class FaceLibrary
                 Dim classes() As String = Nothing
                 For j = 0 To ExactFolders(albums(i), classes) - 1
                     If IsSystemFolder(classes(j)) Then Continue For
-                    Dim photos() As String = Nothing
-                    For k = 0 To ExactFiles(classes(j), "*.JPG;*.JPEG;*.PNG;*.BMP;*.GIF", photos, True) - 1
-                        result.Add(photos(k))
-                    Next
+                    ' the pictures as the album shows them (an edited one in place of its original)
+                    result.AddRange(EditedPhotos.AlbumFiles(classes(j)).Where(Function(f) ImageExts.Contains(IO.Path.GetExtension(f).ToLowerInvariant())))
                 Next
             Next
         Next

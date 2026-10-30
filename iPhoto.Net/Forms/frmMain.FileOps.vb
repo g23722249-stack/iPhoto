@@ -2,16 +2,19 @@
 ' AquaMenu1 in code so the designer file stays as ported). The list takes Ctrl / Shift / Ctrl+A
 ' multi-selection (Aqua MediaList.MultiSelect); the items below work on every selected photo when the
 ' right-clicked one is among them, else on that one (rotate, copy, info, view stay one-photo).
+'   編輯…              (one picture) opens it in PhotoEdit (frmMain.Edit.vb); the edited picture takes its
+'                      place in the album (EditedPhotos)
 '   以檔案總管開啟    the photo's folder with the photo selected (also on the face views and the cover wall)
 '   我的評價           (multi) every selected photo gets the rating
 '   加入 / 移出 Dock   (multi) marks / unmarks the photos (as a double-click does for one)
 '   移動到…            (multi, not in 攝影集) into another album folder: the photo with its .Exif, Restore\
 '                      copy and video Thumb\ picture; PhotoIndex, face rows, the Dock and the photo books
-'                      (.Alm) follow the new path
+'                      (.Alm) follow the new path; PhotoEdit's .pedit.json / .pedx go along, and an edited
+'                      picture takes the original (and earlier edits) it hides with it
 '   設為相本封面       the photo goes on top of the album's cover (PhotoSet.CoverPhoto; the cover is made again)
 '   刪除檔案…          (multi) after a question: to the Recycle Bin, with the side files; PhotoIndex rows,
 '                      face rows and Dock entries go too. Also the Delete key (which, as in VB6, needs
-'                      設定's DeleteAlbumPhotos).
+'                      設定's DeleteAlbumPhotos). An edited picture deleted: its original shows again.
 '   永久刪除…          as 刪除檔案, but deleted outright (no Recycle Bin); the question defaults to 否.
 '   從攝影集移除        (攝影集 only, multi) the photos leave the book (.Alm); the photos themselves stay.
 Partial Class frmMain
@@ -25,6 +28,7 @@ Partial Class frmMain
             Next
             Dim explorer As New Aqua.MenuItem("mnuExplorer", "以檔案總管開啟", 1, Nothing, Nothing)
             If info >= 0 Then .Insert(info + 1, explorer) Else .Add(explorer)
+            .Insert(.IndexOf(explorer), New Aqua.MenuItem("mnuEdit", "相片後製…", 1, Nothing, Nothing))   ' PhotoEdit, frmMain.Edit.vb
             Dim at As Integer = .IndexOf(explorer) + 1
             .Insert(at, New Aqua.MenuItem("mnuMap", "在地圖上看拍攝地點", 1, Nothing, Nothing))
             .Insert(at + 1, New Aqua.MenuItem("mnuNearby", "拍攝地點附近的照片", 1, Nothing, Nothing))
@@ -44,6 +48,7 @@ Partial Class frmMain
             .Add(New Aqua.MenuItem("mnuSelectNone", "全不選", 1, Nothing, Nothing))
             .Add(New Aqua.MenuItem("mnuSelectInvert", "反向選取", 1, Nothing, Nothing))
         End With
+        BooksMenuLoad()   ' 加入攝影集 ... (frmMain.Books.vb)
     End Sub
 
     ''' <summary>The photos an item of the menu works on: all selected when <paramref name="index"/> is
@@ -63,6 +68,9 @@ Partial Class frmMain
         Dim docked As Integer = Targets(mlList.SelectedIndex).Where(Function(i) mlList.Item(i).Marked).Count()
         With AquaMenu1
             .Item("mnuExplorer").Enabled = True
+            .Item("mnuEdit").Visible = True
+            .Item("mnuEdit").Enabled = Not ro AndAlso n = 1 AndAlso m_lpCurrentPhoto IsNot Nothing AndAlso
+                                       m_lpCurrentPhoto.MediaType = enumPhotoMediaType.mdImage
             Dim shot As ShotInfo.Shot = If(m_lpCurrentPhoto Is Nothing, Nothing, ShotInfo.Read(m_lpCurrentPhoto.FileDesc))
             .Item("mnuMap").Enabled = shot IsNot Nothing AndAlso shot.HasPlace
             .Item("mnuNearby").Enabled = shot IsNot Nothing AndAlso shot.HasPlace
@@ -93,11 +101,14 @@ Partial Class frmMain
                 .Item("mnuRotateCounterClockwise").Enabled = anyPicture AndAlso Not ro
             End If
         End With
+        SetBooksMenu(n, ro)   ' frmMain.Books.vb
     End Sub
 
     ''' <summary>Called by AquaMenu1_MenuSelected for the items above; True when it was one of them.</summary>
     Private Function FileOpsMenuSelected(ByVal name As String, ByVal index As Integer) As Boolean
+        If BooksMenuSelected(name, index) Then Return True   ' frmMain.Books.vb
         Select Case name.ToUpperInvariant()
+            Case "MNUEDIT" : EditCurrentPhoto()   ' frmMain.Edit.vb
             Case "MNUEXPLORER" : ShowInExplorer(m_lpCurrentPhoto.FileDesc)
             Case "MNUMAP" : ShowOnMap(m_lpCurrentPhoto.FileDesc)
             Case "MNUNEARBY" : ShowNearby(m_lpCurrentPhoto.FileDesc)
@@ -310,9 +321,13 @@ Partial Class frmMain
     End Sub
 
     ''' <summary>Moves one photo with its side files into <paramref name="folder"/> (a free name when it is
-    ''' taken there) and updates what refers to it; the new path, or Nothing when it didn't move.</summary>
-    Private Function MoveOnePhoto(ByVal src As String, ByVal folder As String) As String
+    ''' taken there) and updates what refers to it; the new path, or Nothing when it didn't move. An
+    ''' edited picture takes the files it hides along (its original, earlier edited versions: EditedPhotos),
+    ''' still hidden behind it there (<paramref name="hidden"/>: one of those, which has no index row).</summary>
+    Private Function MoveOnePhoto(ByVal src As String, ByVal folder As String, Optional ByVal hidden As Boolean = False) As String
         If Not IO.File.Exists(src) Then Return Nothing
+        Dim behind As List(Of String) = If(hidden, New List(Of String), EditedPhotos.HiddenBehind(src))
+        Dim original As String = EditedPhotos.OriginalOf(src)
         Dim srcFolder As String = IO.Path.GetDirectoryName(src), srcBase As String = IO.Path.GetFileNameWithoutExtension(src)
         Dim ext As String = IO.Path.GetExtension(src)
         Dim base As String = srcBase, k As Integer = 1
@@ -333,6 +348,10 @@ Partial Class frmMain
         End Try
         TryMove(IO.Path.Combine(srcFolder, "Restore", srcBase & ext), IO.Path.Combine(folder, "Restore", base & ext))
         TryMove(IO.Path.Combine(srcFolder, "Thumb", srcBase & ".jpg"), IO.Path.Combine(folder, "Thumb", base & ".jpg"))
+        ' PhotoEdit's: the edits it keeps beside the photo, a project of the same name
+        TryMove(src & ".pedit.json", dst & ".pedit.json")
+        TryMove(IO.Path.Combine(srcFolder, srcBase & ".pedx"), IO.Path.Combine(folder, base & ".pedx"))
+        If hidden Then Return dst   ' no index row, face data or Dock entry
         ' what refers to it
         g_lpDatabase.Delete(src)
         Dim p As New Photo
@@ -343,6 +362,19 @@ Partial Class frmMain
             g_lpDock.AddItem(dst, p.Exif(enumPhotoExif.peDate), p.Exif(enumPhotoExif.peTime))
             g_lpDock.Save()
         End If
+        ' the files it hides, behind it again there (by their new names, which may have changed)
+        Dim movedBehind As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+        For Each h In behind
+            Dim moved As String = MoveOnePhoto(h, folder, hidden:=True)
+            If moved IsNot Nothing Then movedBehind(h) = moved
+        Next
+        Dim newOriginal As String = Nothing
+        If original IsNot Nothing Then movedBehind.TryGetValue(original, newOriginal)
+        For Each kv In movedBehind
+            EditedPhotos.SetHiddenBy(kv.Value, dst)
+            If newOriginal IsNot Nothing AndAlso Not String.Equals(kv.Key, original, StringComparison.OrdinalIgnoreCase) Then EditedPhotos.SetOriginal(kv.Value, newOriginal)
+        Next
+        If newOriginal IsNot Nothing Then EditedPhotos.SetOriginal(dst, newOriginal)
         Return dst
     End Function
 
@@ -380,7 +412,7 @@ Partial Class frmMain
                             changed = True
                         End If
                     Next
-                    If changed Then IO.File.WriteAllLines(alm, lines, AnsiText.Encoding)
+                    If changed Then IO.File.WriteAllLines(alm, lines, Book.FileEncoding)   ' read as ANSI or UTF-16, written UTF-16
                 Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException
                 End Try
             Next
@@ -402,6 +434,9 @@ Partial Class frmMain
             what = If(GetMediaType(g_lpFileSystem, files(0)) = enumPhotoMediaType.mdVideo, "這段影片", "這張照片")
         End If
         Dim also As String = If(m_lpAppEnv.ExeMode = enumExeMode.exeFavorites, vbCrLf & "（相片庫裡的原始檔案也會一起刪除）", "")
+        ' edited pictures (PhotoEdit): their originals show again
+        Dim revealed As Integer = files.Where(Function(f) EditedPhotos.OriginalOf(f) IsNot Nothing).Count()
+        If revealed > 0 Then also &= vbCrLf & If(files.Count > 1, "（其中 " & revealed & " 張是編輯過的照片：刪除後改顯示原圖）", "（這是編輯過的照片：刪除後改顯示原圖）")
         Dim names As String = String.Join(vbCrLf, files.Take(3).Select(Function(f) IO.Path.GetFileName(f))) & If(files.Count > 3, vbCrLf & "…", "")
         If permanent Then
             If Not frmQueryMsgBox.ShowMessage("是否確定永久刪除" & what & "？" & vbCrLf & "刪除後無法從資源回收筒還原。" & vbCrLf & names & also,
@@ -434,6 +469,12 @@ Partial Class frmMain
         If failed.Count > 0 Then
             frmMsgBox.ShowCriticalMessage("刪除失敗（檔案可能正在使用中）" & vbCrLf & String.Join(vbCrLf, failed.Take(3)), "刪除檔案")
             RefreshCurrentList(indexes.Min())   ' the files that stayed come back
+            Return
+        End If
+        If revealed > 0 AndAlso TypeOf section Is [Class] Then
+            ' the originals of the deleted edited pictures come back into the album
+            CType(section, [Class]).Reload()
+            RefreshCurrentList(indexes.Min())
             Return
         End If
         SelectAfterRemove(indexes.Min())

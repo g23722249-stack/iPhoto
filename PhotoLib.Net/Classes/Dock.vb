@@ -40,7 +40,8 @@ Public Class Dock
         m_lpFileSystem.DeleteFile(strFileDesc)
         If m_lpDockImage.Count = 0 Then Return
         Dim folder As String = Path.GetDirectoryName(Path.GetFullPath(strFileDesc))   ' paths relative to the .dck (LibraryPath)
-        Using w As New StreamWriter(strFileDesc, False, AnsiText.Encoding)
+        ' UTF-16, so any name survives (VB6 wrote the ANSI code page; reading detects which)
+        Using w As New StreamWriter(strFileDesc, False, Book.FileEncoding)
             For Each d In m_lpDockImage
                 w.WriteLine(LibraryPath.ToRelative(d.FileDesc, folder) & "|" & d.CreateDate & "|" & d.CreateTime)
             Next
@@ -54,7 +55,7 @@ Public Class Dock
         m_lpDockImage.Clear()
         m_lngFilelengthByte = 0
         Dim folder As String = Path.GetDirectoryName(Path.GetFullPath(strFileDesc))
-        For Each line In File.ReadAllLines(strFileDesc, AnsiText.Encoding)
+        For Each line In File.ReadAllLines(strFileDesc, AnsiText.Encoding)   ' a byte-order mark (UTF-16, written now) wins over ANSI
             If line.Trim().Length = 0 Then Continue For
             Dim parts As String() = line.Split("|"c)
             ReDim Preserve parts(2)

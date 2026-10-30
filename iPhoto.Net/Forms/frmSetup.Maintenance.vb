@@ -35,30 +35,35 @@ Partial Class frmSetup
             .Text = "在 iPhoto 以外刪除或搬走的照片，資料庫裡的索引和面孔資料還會留著；" & vbCrLf & "檢查後會先告訴你有幾筆，確定才清除（照片檔案不受影響）。"})
         lblCleanOrphans = AddLink("檢查並清理…", x + 20, 340, big, Color.FromArgb(42, 116, 208))
         lblNameCheck = AddLink("人物欄名字檢查…", x + 250, 340, big, Color.FromArgb(42, 116, 208))
-        lblDuplicates = AddLink("尋找重複照片…", x + 480, 340, big, Color.FromArgb(42, 116, 208))
+        lblDuplicates = AddLink("整理清單…", x + 480, 340, big, Color.FromArgb(42, 116, 208))
         lblPeopleNames = AddLink("全部人物名字…", x + 250, 380, big, Color.FromArgb(42, 116, 208))
 
-        ' the photo lists' thumbnails kept on disk (Modules\ThumbCache.vb): on / off and the limit with 儲存,
-        ' 清除 at once
-        AddHeading("縮圖快取", x, 424, big)
+        ' the photo lists' thumbnails kept on disk (Modules\ThumbCache.vb): on / off and the limit with 儲存;
+        ' 重建 / 清除無效 / 清除 at once (重建 and 清除無效 in the background, going on after 設定 is closed)
+        AddHeading("縮圖快取", x, 410, big)
         chkThumbCache = New Aqua.CheckBox With {
             .TextValue = "保存縮圖，再開相簿很快", .TextGap = chkPrivilege.TextGap, .Font = small, .ForeColor = Color.DimGray,
-            .BackColor = Color.Transparent, .Location = New Point(x + 120, 425),
+            .BackColor = Color.Transparent, .Location = New Point(x + 120, 411),
             .ImageChecked = chkPrivilege.ImageChecked, .ImageUnChecked = chkPrivilege.ImageUnChecked,
             .ImageCheckDisabled = chkPrivilege.ImageCheckDisabled, .ImageUnCheckDisabled = chkPrivilege.ImageUnCheckDisabled,
             .Checked = g_lpConfig.ThumbCache}
         pageMaint.Controls.Add(chkThumbCache)
         vb6ToolTip.SetToolTip(chkThumbCache, "相片清單的縮圖存在相片庫的 System\ThumbCache，跟著相片庫走；" & vbCrLf &
                                              "開過的相簿下次（重開 iPhoto 也一樣）不必再從照片檔產生縮圖。照片改過會自動重做。")
-        pageMaint.Controls.Add(New Label With {.AutoSize = True, .Font = small, .ForeColor = Color.DimGray, .Text = "上限", .Location = New Point(x + 360, 428), .BackColor = Color.Transparent})
-        cboThumbCache = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Font = small, .Location = New Point(x + 400, 424), .Width = 100}
+        pageMaint.Controls.Add(New Label With {.AutoSize = True, .Font = small, .ForeColor = Color.DimGray, .Text = "上限", .Location = New Point(x + 360, 414), .BackColor = Color.Transparent})
+        cboThumbCache = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Font = small, .Location = New Point(x + 400, 410), .Width = 100}
         cboThumbCache.Items.AddRange({"200 MB", "500 MB", "1 GB", "2 GB"})
         Dim at As Integer = Array.IndexOf(ThumbCacheMBs, g_lpConfig.ThumbCacheMB)
         cboThumbCache.SelectedIndex = If(at >= 0, at, 1)
         pageMaint.Controls.Add(cboThumbCache)
-        lblThumbCache = New Label With {.AutoSize = True, .Font = small, .ForeColor = Color.DimGray, .Location = New Point(x + 515, 428), .BackColor = Color.Transparent}
+        lblThumbCache = New Label With {.AutoSize = False, .Size = New Size(200, 20), .Font = small, .ForeColor = Color.DimGray, .Location = New Point(x + 20, 446), .BackColor = Color.Transparent}
         pageMaint.Controls.Add(lblThumbCache)
-        lblClearThumbCache = AddLink("清除縮圖快取", x + 650, 426, big, Color.FromArgb(42, 116, 208))
+        lblRebuildThumbCache = AddLink("重建縮圖快取", x + 230, 444, big, Color.FromArgb(42, 116, 208))
+        lblCleanThumbCache = AddLink("清除無效快取", x + 400, 444, big, Color.FromArgb(42, 116, 208))
+        lblClearThumbCache = AddLink("清除縮圖快取", x + 570, 444, big, Color.FromArgb(42, 116, 208))
+        vb6ToolTip.SetToolTip(lblRebuildThumbCache, "先清除無效的快取，再替相片庫裡還沒有縮圖快取的照片和影片產生縮圖" & vbCrLf &
+                                                    "（照相簿畫面目前的縮圖大小，以及快取裡已經有的大小）。在背景進行，關掉設定也會繼續。")
+        vb6ToolTip.SetToolTip(lblCleanThumbCache, "刪除對不上照片的快取：照片已經刪除、搬走或改過，以及舊格式的快取。")
 
         tabSetup.TabPages.Add(pageMaint)
         ShowThumbCacheState()
@@ -68,20 +73,87 @@ Partial Class frmSetup
     Private chkThumbCache As Aqua.CheckBox
     Private cboThumbCache As ComboBox
     Private lblThumbCache As Label
-    Private WithEvents lblClearThumbCache As Label
+    Private WithEvents lblClearThumbCache, lblRebuildThumbCache, lblCleanThumbCache As Label
+    Private WithEvents m_thumbJobTimer As Timer
     Private Shared ReadOnly ThumbCacheMBs() As Integer = {200, 500, 1024, 2048}
 
-    ''' <summary>How much the thumbnail cache holds now (counted in the background).</summary>
+    ''' <summary>How much the thumbnail cache holds now (counted in the background), or how far 重建 / 清除無效
+    ''' has come while one runs.</summary>
     Private Sub ShowThumbCacheState()
+        If ThumbCache.Busy Then
+            ShowThumbJob()
+            Return
+        End If
+        lblRebuildThumbCache.Text = "重建縮圖快取"
+        lblRebuildThumbCache.Enabled = g_lpConfig.ThumbCache
+        lblCleanThumbCache.Enabled = True
+        lblClearThumbCache.Enabled = True
         lblThumbCache.Text = "計算中…"
         Threading.Tasks.Task.Run(Function() ThumbCache.Bytes()).ContinueWith(
             Sub(t)
                 If IsDisposed Then Return
-                BeginInvoke(Sub() lblThumbCache.Text = "已存 " & (t.Result / 1024.0 / 1024.0).ToString("#,0.0") & " MB")
+                BeginInvoke(Sub() If Not ThumbCache.Busy Then lblThumbCache.Text = "已存 " & (t.Result / 1024.0 / 1024.0).ToString("#,0.0") & " MB")
             End Sub)
     End Sub
 
+    ''' <summary>What the last 重建 / 清除無效 did, when it hasn't been shown yet (it may have ended while 設定 was
+    ''' closed).</summary>
+    Private Sub ShowThumbJobResult()
+        Dim text As String = ThumbCache.TakeResult()
+        If text <> "" Then frmMsgBox.ShowExclamationMessage(text, "縮圖快取")
+    End Sub
+
+    ''' <summary>A job runs: its progress, 「停止」 instead of 重建, the other two off; polled while it runs.</summary>
+    Private Sub ShowThumbJob()
+        lblThumbCache.Text = ThumbCache.Status
+        lblRebuildThumbCache.Text = "停止"
+        lblRebuildThumbCache.Enabled = True
+        lblCleanThumbCache.Enabled = False
+        lblClearThumbCache.Enabled = False
+        If m_thumbJobTimer Is Nothing Then m_thumbJobTimer = New Timer With {.Interval = 300}
+        m_thumbJobTimer.Start()
+    End Sub
+
+    Private Sub m_thumbJobTimer_Tick(sender As Object, e As EventArgs) Handles m_thumbJobTimer.Tick
+        If ThumbCache.Busy Then
+            lblThumbCache.Text = ThumbCache.Status
+            Return
+        End If
+        m_thumbJobTimer.Stop()
+        ShowThumbCacheState()
+        ShowThumbJobResult()
+    End Sub
+
+    ''' <summary>A job that ended while 設定 was closed: what it did, now.</summary>
+    Private Sub ThumbJob_Shown(sender As Object, e As EventArgs) Handles MyBase.Shown
+        If Not ThumbCache.Busy Then ShowThumbJobResult()
+    End Sub
+
+    ''' <summary>設定 closed: the job goes on in the background, only the polling stops.</summary>
+    Private Sub ThumbJob_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+        m_thumbJobTimer?.Stop()
+        m_thumbJobTimer?.Dispose()
+        m_thumbJobTimer = Nothing
+    End Sub
+
+    Private Sub lblRebuildThumbCache_Click(sender As Object, e As EventArgs) Handles lblRebuildThumbCache.Click
+        If Not lblRebuildThumbCache.Enabled Then Return
+        If ThumbCache.Busy Then
+            ThumbCache.StopJob()
+            Return
+        End If
+        Dim main As frmMain = Application.OpenForms.OfType(Of frmMain)().FirstOrDefault()
+        Dim shown = If(main Is Nothing, (Image:=Size.Empty, Video:=Size.Empty), main.mlList.CurrentThumbnailBoxes())
+        If ThumbCache.StartRebuild(shown.Image, shown.Video) Then ShowThumbJob()
+    End Sub
+
+    Private Sub lblCleanThumbCache_Click(sender As Object, e As EventArgs) Handles lblCleanThumbCache.Click
+        If Not lblCleanThumbCache.Enabled OrElse ThumbCache.Busy Then Return
+        If ThumbCache.StartRemoveInvalid() Then ShowThumbJob()
+    End Sub
+
     Private Sub lblClearThumbCache_Click(sender As Object, e As EventArgs) Handles lblClearThumbCache.Click
+        If Not lblClearThumbCache.Enabled OrElse ThumbCache.Busy Then Return
         If Not frmQueryMsgBox.ShowMessage("清除存起來的縮圖？" & vbCrLf & "照片不受影響；之後開相簿時縮圖會重新產生。", "清除縮圖快取") Then Return
         ThumbCache.Clear()
         ShowThumbCacheState()
@@ -170,10 +242,10 @@ Partial Class frmSetup
         End If
     End Sub
 
-    ''' <summary>Duplicate photos in the albums (frmDuplicates).</summary>
+    ''' <summary>整理清單 (frmCleanup): duplicate, similar, blurry and badly exposed photos; the tool bar opens it too.</summary>
     Private Sub lblDuplicates_Click(sender As Object, e As EventArgs) Handles lblDuplicates.Click
         If Not lblDuplicates.Enabled Then Return
-        Using f As New frmDuplicates
+        Using f As New frmCleanup
             f.ShowDialog(Me)
         End Using
     End Sub
