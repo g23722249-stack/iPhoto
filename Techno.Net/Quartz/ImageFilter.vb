@@ -339,6 +339,124 @@ Namespace Quartz
             Return bmp
         End Function
 
+        ''' <summary>拉直 (new in the .NET port): turned by <paramref name="degrees"/> (clockwise positive) about its
+        ''' centre and cut to the largest rectangle of the same shape that the turned picture still fills,
+        ''' so no corner is left empty.</summary>
+        Public Function Straighten(ByVal source As Image, ByVal degrees As Double) As Bitmap
+            If Math.Abs(degrees) < 0.01 Then Return New Bitmap(source)
+            Dim w As Double = source.Width, h As Double = source.Height
+            Dim a As Double = Math.Abs(degrees) * Math.PI / 180
+            Dim c As Double = Math.Cos(a), s As Double = Math.Sin(a)
+            Dim k As Double = Math.Min(w / (w * c + h * s), h / (w * s + h * c))
+            Dim ow As Integer = Math.Max(1, CInt(Math.Floor(w * k))), oh As Integer = Math.Max(1, CInt(Math.Floor(h * k)))
+            Dim bmp As New Bitmap(ow, oh, PixelFormat.Format24bppRgb)
+            Using g As Graphics = Graphics.FromImage(bmp)
+                g.InterpolationMode = Drawing2D.InterpolationMode.HighQualityBicubic
+                g.PixelOffsetMode = Drawing2D.PixelOffsetMode.HighQuality
+                g.SmoothingMode = Drawing2D.SmoothingMode.HighQuality
+                g.TranslateTransform(CSng(ow / 2), CSng(oh / 2))
+                g.RotateTransform(CSng(degrees))
+                g.DrawImage(source, CSng(-w / 2), CSng(-h / 2), CSng(w), CSng(h))
+            End Using
+            Return bmp
+        End Function
+
+        ''' <summary>自動調整 (new in the .NET port): a mild white balance (grey world: each colour's average
+        ''' towards the common one, by at most 15 %), the levels stretched so the darkest and brightest
+        ''' half percent reach black and white, and the middle tones brought towards a normal brightness
+        ''' (a gamma between 0.6 and 1.25). A picture that is fine already changes little.</summary>
+        Public Function AutoEnhance(ByVal source As Image, Optional ByVal progress As Action(Of Integer) = Nothing) As Bitmap
+            Dim bmp As New Bitmap(source.Width, source.Height, PixelFormat.Format24bppRgb)
+            Using g As Graphics = Graphics.FromImage(bmp)
+                g.DrawImage(source, 0, 0, source.Width, source.Height)
+            End Using
+            Dim rect As New Rectangle(0, 0, bmp.Width, bmp.Height)
+            Dim data As BitmapData = bmp.LockBits(rect, ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb)
+            Try
+                Dim stride As Integer = data.Stride
+                Dim buf(stride * bmp.Height - 1) As Byte
+                Marshal.Copy(data.Scan0, buf, 0, buf.Length)
+                progress?.Invoke(10)
+
+                ' sample (about 250 000 pixels): averages, then the brightness histogram after the balance
+                Dim stepPx As Integer = Math.Max(1, CInt(Math.Sqrt(CDbl(bmp.Width) * bmp.Height / 250000)))
+                Dim sumB, sumG, sumR As Double, n As Long
+                For y = 0 To bmp.Height - 1 Step stepPx
+                    Dim row As Integer = y * stride
+                    For x = 0 To bmp.Width - 1 Step stepPx
+                        Dim i As Integer = row + x * 3
+                        sumB += buf(i) : sumG += buf(i + 1) : sumR += buf(i + 2) : n += 1
+                    Next
+                Next
+                If n = 0 Then Return bmp
+                Dim mB As Double = sumB / n, mG As Double = sumG / n, mR As Double = sumR / n
+                Dim grey As Double = (mB + mG + mR) / 3
+                Dim gainOf = Function(m As Double) If(m < 1, 1.0, Math.Max(0.87, Math.Min(1.15, grey / m)))
+                Dim gB As Double = gainOf(mB), gG As Double = gainOf(mG), gR As Double = gainOf(mR)
+
+                Dim hist(255) As Long
+                For y = 0 To bmp.Height - 1 Step stepPx
+                    Dim row As Integer = y * stride
+                    For x = 0 To bmp.Width - 1 Step stepPx
+                        Dim i As Integer = row + x * 3
+                        Dim lum As Double = 0.114 * buf(i) * gB + 0.587 * buf(i + 1) * gG + 0.299 * buf(i + 2) * gR
+                        hist(CInt(Math.Max(0, Math.Min(255, lum)))) += 1
+                    Next
+                Next
+                Dim lo As Integer = 0, hi As Integer = 255, acc As Long = 0
+                For v = 0 To 255
+                    acc += hist(v)
+                    If acc >= n * 0.005 Then
+                        lo = v
+                        Exit For
+                    End If
+                Next
+                acc = 0
+                For v = 255 To 0 Step -1
+                    acc += hist(v)
+                    If acc >= n * 0.005 Then
+                        hi = v
+                        Exit For
+                    End If
+                Next
+                lo = Math.Min(lo, 30) : hi = Math.Max(hi, 190)   ' never a hard stretch (a dark picture is brightened by the gamma)
+                If hi - lo < 20 Then lo = 0 : hi = 255
+                ' the middle brightness after the stretch, towards 0.45
+                Dim mean As Double = 0
+                For v = 0 To 255
+                    mean += hist(v) * Math.Max(0, Math.Min(1, (v - lo) / CDbl(hi - lo)))
+                Next
+                mean /= n
+                Dim gamma As Double = If(mean <= 0.01 OrElse mean >= 0.99, 1.0, Math.Max(0.6, Math.Min(1.25, Math.Log(0.45) / Math.Log(mean))))
+                progress?.Invoke(40)
+
+                Dim lutB(255), lutG(255), lutR(255) As Byte
+                For v = 0 To 255
+                    lutB(v) = Level(v * gB, lo, hi, gamma)
+                    lutG(v) = Level(v * gG, lo, hi, gamma)
+                    lutR(v) = Level(v * gR, lo, hi, gamma)
+                Next
+                For y = 0 To bmp.Height - 1
+                    Dim row As Integer = y * stride
+                    For x = 0 To bmp.Width - 1
+                        Dim i As Integer = row + x * 3
+                        buf(i) = lutB(buf(i)) : buf(i + 1) = lutG(buf(i + 1)) : buf(i + 2) = lutR(buf(i + 2))
+                    Next
+                    If progress IsNot Nothing AndAlso y Mod 200 = 0 Then progress(40 + CInt(55L * y \ Math.Max(1, bmp.Height)))
+                Next
+                Marshal.Copy(buf, 0, data.Scan0, buf.Length)
+            Finally
+                bmp.UnlockBits(data)
+            End Try
+            progress?.Invoke(100)
+            Return bmp
+        End Function
+
+        Private Function Level(ByVal v As Double, ByVal lo As Integer, ByVal hi As Integer, ByVal gamma As Double) As Byte
+            Dim t As Double = Math.Max(0, Math.Min(1, (v - lo) / CDbl(hi - lo)))
+            Return CByte(Math.Round(255 * Math.Pow(t, gamma)))
+        End Function
+
     End Module
 
 End Namespace

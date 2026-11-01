@@ -14,6 +14,12 @@ Imports System.Drawing.Imaging
 ' It also appears over a DISABLED control (WinForms sends a disabled control no mouse events: the parent's
 ' MouseMove is watched instead) and then shows the entry's DisabledHint -- why it can't be used now.
 ' The window never takes the focus (WS_EX_NOACTIVATE) and stays inside the screen's working area.
+' One window serves every HelpTip of the program, so two never show at once. MouseLeave alone missed
+' too much (a quick move off the window, a dialog opened on top, another program brought forward), so
+' while a help is waiting or shown a watch timer checks ten times a second that the mouse is still over
+' the control, that its window is the active one and that nothing else covers that point -- else it goes.
+' An entry marked Simple (its control says it all) is only shown with ShowSimple (設定 › 外觀), or while
+' the control is disabled and the entry says why.
 Public Class HelpTip
     Implements IDisposable
 
@@ -27,6 +33,8 @@ Public Class HelpTip
         Public DisabledHint As String = ""
         ''' <summary>Overrides the icon taken from the control; optional.</summary>
         Public Icon As Image
+        ''' <summary>The control says it all (取消, 上一張, a plain field): shown only with ShowSimple.</summary>
+        Public Simple As Boolean
     End Class
 
     Public Property InitialDelay As Integer = 500
@@ -34,12 +42,42 @@ Public Class HelpTip
     ''' <summary>False turns every help window off (e.g. a setting).</summary>
     Public Property Active As Boolean = True
 
+    ''' <summary>設定 › 外觀「簡單的按鈕也顯示說明」: show Simple entries too (kept in the registry,
+    ''' HKCU\Software\VB and VBA Program Settings\iPhoto\Help). Off at first.</summary>
+    Public Shared Property ShowSimple As Boolean
+        Get
+            If Not s_showSimpleRead Then
+                s_showSimple = GetSetting("iPhoto", "Help", "ShowSimple", "N") = "Y"
+                s_showSimpleRead = True
+            End If
+            Return s_showSimple
+        End Get
+        Set(value As Boolean)
+            s_showSimple = value
+            s_showSimpleRead = True
+            SaveSetting("iPhoto", "Help", "ShowSimple", If(value, "Y", "N"))
+        End Set
+    End Property
+    Private Shared s_showSimple As Boolean
+    Private Shared s_showSimpleRead As Boolean
+
+    ''' <summary>The one help window, and the HelpTip using it now.</summary>
+    Private Shared s_window As HelpWindow
+    Private Shared s_current As HelpTip
+
     Private ReadOnly m_entries As New Dictionary(Of Control, Entry)
     Private ReadOnly m_bars As New Dictionary(Of Aqua.ToolBar, Dictionary(Of Integer, Entry))
     Private ReadOnly m_parents As New HashSet(Of Control)
-    Private ReadOnly m_window As New HelpWindow
     Private WithEvents m_showTimer As New Timer
     Private WithEvents m_hideTimer As New Timer
+    Private WithEvents m_watchTimer As New Timer With {.Interval = 100}
+
+    Private Shared ReadOnly Property Window As HelpWindow
+        Get
+            If s_window Is Nothing OrElse s_window.IsDisposed Then s_window = New HelpWindow
+            Return s_window
+        End Get
+    End Property
 
     ' what the mouse rests on now
     Private m_hoverControl As Control
@@ -163,24 +201,35 @@ Public Class HelpTip
     Private Sub Hover(ByVal c As Control, ByVal bar As Aqua.ToolBar, ByVal index As Integer)
         Unhover()
         If Not Active Then Return
+        If s_current IsNot Nothing AndAlso s_current IsNot Me Then s_current.Unhover()   ' another form's help
+        s_current = Me
         m_hoverControl = c
         m_hoverBar = bar
         m_hoverIndex = index
         m_showTimer.Interval = Math.Max(1, InitialDelay)
         m_showTimer.Start()
+        m_watchTimer.Start()
     End Sub
 
     Private Sub Unhover()
         m_showTimer.Stop()
         m_hideTimer.Stop()
+        m_watchTimer.Stop()
         m_hoverControl = Nothing
         m_hoverBar = Nothing
         m_hoverIndex = -1
-        If m_window.Visible Then m_window.Hide()
+        If s_current Is Me Then
+            s_current = Nothing
+            If s_window IsNot Nothing AndAlso Not s_window.IsDisposed Then s_window.HideHelp()
+        End If
     End Sub
 
     Private Sub m_showTimer_Tick(sender As Object, e As EventArgs) Handles m_showTimer.Tick
         m_showTimer.Stop()
+        If Not StillOver() Then
+            Unhover()
+            Return
+        End If
         Dim entry As Entry = Nothing, icon As Image = Nothing, disabled As Boolean = False
         Dim anchor As Rectangle   ' screen rectangle the window goes under
         If m_hoverControl IsNot Nothing Then
@@ -198,15 +247,89 @@ Public Class HelpTip
         Else
             Return
         End If
-        m_window.ShowEntry(entry, icon, disabled, anchor)
+        ' a simple one only when asked for, or to say why it can't be used now
+        If entry.Simple AndAlso Not ShowSimple AndAlso Not (disabled AndAlso entry.DisabledHint <> "") Then Return
+        s_current = Me
+        Window.ShowEntry(entry, icon, disabled, anchor)
         m_hideTimer.Interval = Math.Max(1000, AutoPopDelay)
         m_hideTimer.Start()
     End Sub
 
     Private Sub m_hideTimer_Tick(sender As Object, e As EventArgs) Handles m_hideTimer.Tick
-        m_hideTimer.Stop()
-        m_window.Hide()
+        Unhover()
     End Sub
+
+    ''' <summary>While a help waits or shows: gone as soon as the mouse is off the control, its window is no
+    ''' longer the active one, or something else (another window, another program) covers that point.</summary>
+    Private Sub m_watchTimer_Tick(sender As Object, e As EventArgs) Handles m_watchTimer.Tick
+        If Not StillOver() Then Unhover()
+    End Sub
+
+    Private Function StillOver() As Boolean
+        Dim why As String = GoneBecause()
+        If why = "" Then Return True
+        LogGone(why)
+        Return False
+    End Function
+
+    ''' <summary>Why the help should go now; "" while the mouse rests on the control.</summary>
+    Private Function GoneBecause() As String
+        Dim c As Control = If(m_hoverControl, CType(m_hoverBar, Control))
+        If c Is Nothing OrElse c.IsDisposed OrElse Not c.IsHandleCreated OrElse Not c.Visible Then Return "control gone"
+        Dim p As Point = Cursor.Position
+        If Not c.RectangleToScreen(c.ClientRectangle).Contains(p) Then Return "mouse off the control"
+        Dim f As Form = c.FindForm()
+        If f Is Nothing Then Return "no form"
+        Dim active As Form = Form.ActiveForm
+        If active IsNot f AndAlso Not (active IsNot Nothing AndAlso active Is s_window) Then
+            Return "form not active (" & If(active Is Nothing, "another program", active.GetType().Name & " " & active.Name) & ")"
+        End If
+        ' covered: what is under the mouse is another program's window or another of this program's
+        ' forms. Windows of this program that aren't forms -- the help window's drop shadow ("SysShadow"),
+        ' a tooltip -- don't count: the shadow lies on the control's edge when the help shows above it
+        ' (the tool bar), and taking it for a cover hid the help as soon as the mouse touched it.
+        Dim under As IntPtr = WindowFromPoint(p)
+        If under = IntPtr.Zero Then Return ""
+        Dim root As IntPtr = GetAncestor(under, GA_ROOT)
+        If root = f.Handle OrElse root = IntPtr.Zero Then Return ""
+        If s_window IsNot Nothing AndAlso Not s_window.IsDisposed AndAlso s_window.IsHandleCreated AndAlso root = s_window.Handle Then Return ""
+        Dim cls As New Text.StringBuilder(64)
+        GetClassName(root, cls, cls.Capacity)
+        If cls.ToString() = "SysShadow" Then Return ""
+        Dim pid As UInteger
+        GetWindowThreadProcessId(root, pid)
+        If pid = CUInt(Environment.ProcessId) AndAlso Not TypeOf Control.FromHandle(root) Is Form Then Return ""
+        Return "covered by " & cls.ToString()
+    End Function
+
+    ''' <summary>Debug builds: why a help went by itself, in %TEMP%\iPhoto_HelpTip.log (to tell a real
+    ''' leave from a wrong one).</summary>
+    <Diagnostics.Conditional("DEBUG")>
+    Private Shared Sub LogGone(ByVal why As String)
+        If why = "mouse off the control" Then Return
+        Try
+            IO.File.AppendAllText(IO.Path.Combine(IO.Path.GetTempPath(), "iPhoto_HelpTip.log"), Now.ToString("HH:mm:ss.fff") & "  " & why & vbCrLf)
+        Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException
+        End Try
+    End Sub
+
+    Private Const GA_ROOT As UInteger = 2
+
+    <Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function WindowFromPoint(ByVal p As Point) As IntPtr
+    End Function
+
+    <Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function GetAncestor(ByVal hwnd As IntPtr, ByVal flags As UInteger) As IntPtr
+    End Function
+
+    <Runtime.InteropServices.DllImport("user32.dll", CharSet:=Runtime.InteropServices.CharSet.Unicode)>
+    Private Shared Function GetClassName(ByVal hwnd As IntPtr, ByVal name As Text.StringBuilder, ByVal size As Integer) As Integer
+    End Function
+
+    <Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function GetWindowThreadProcessId(ByVal hwnd As IntPtr, ByRef pid As UInteger) As UInteger
+    End Function
 
     ''' <summary>The picture a control shows (PictureBox, Aqua image buttons ...), if it has one.</summary>
     Private Shared Function ImageOf(ByVal c As Control) As Image
@@ -224,9 +347,10 @@ Public Class HelpTip
     End Function
 
     Public Sub Dispose() Implements IDisposable.Dispose
+        Unhover()   ' the shared window stays for the other forms
         m_showTimer.Dispose()
         m_hideTimer.Dispose()
-        m_window.Dispose()
+        m_watchTimer.Dispose()
     End Sub
 
     '==================================================================================================
@@ -259,13 +383,39 @@ Public Class HelpTip
         Private m_headerHeight As Integer
         Private m_titleRect, m_textRect, m_hintRect As Rectangle
 
+        ' Shown, moved and hidden with SetWindowPos / ShowWindow, never activated: Form.Show with TopMost set
+        ' activated it all the same (the help window became the active one: the main window lost it --
+        ' a flash -- the watch then took the help away and the main window got it back). Topmost comes
+        ' from WS_EX_TOPMOST; WinForms' Visible stays False, Showing says whether it is up.
+        Private Const SWP_NOSIZE As UInteger = &H1, SWP_NOMOVE As UInteger = &H2, SWP_NOACTIVATE As UInteger = &H10
+        Private Const SWP_SHOWWINDOW As UInteger = &H40
+        Private Const SW_HIDE As Integer = 0
+        Private Shared ReadOnly HWND_TOPMOST As New IntPtr(-1)
+
+        <Runtime.InteropServices.DllImport("user32.dll")>
+        Private Shared Function SetWindowPos(ByVal hwnd As IntPtr, ByVal after As IntPtr, ByVal x As Integer, ByVal y As Integer,
+                                             ByVal cx As Integer, ByVal cy As Integer, ByVal flags As UInteger) As Boolean
+        End Function
+
+        <Runtime.InteropServices.DllImport("user32.dll")>
+        Private Shared Function ShowWindow(ByVal hwnd As IntPtr, ByVal cmd As Integer) As Boolean
+        End Function
+
+        ''' <summary>Up on the screen now.</summary>
+        Public ReadOnly Property Showing As Boolean
+
         Public Sub New()
             FormBorderStyle = FormBorderStyle.None
             ShowInTaskbar = False
             StartPosition = FormStartPosition.Manual
-            TopMost = True
             BackColor = Color.White
             DoubleBuffered = True
+        End Sub
+
+        Public Sub HideHelp()
+            If Not _Showing OrElse Not IsHandleCreated Then Return
+            ShowWindow(Handle, SW_HIDE)
+            _Showing = False
         End Sub
 
         Protected Overrides ReadOnly Property ShowWithoutActivation As Boolean
@@ -307,9 +457,12 @@ Public Class HelpTip
             Dim x As Integer = Math.Max(wa.Left + 4, Math.Min(wa.Right - Width - 4, anchor.Left))
             Dim y As Integer = anchor.Bottom + 6
             If y + Height > wa.Bottom - 4 Then y = Math.Max(wa.Top + 4, anchor.Top - Height - 6)
-            Location = New Point(x, y)
+            Dim w As Integer = Width, h As Integer = Height
+            Dim hwnd As IntPtr = Handle   ' made now if not yet (hidden)
+            SetWindowPos(hwnd, HWND_TOPMOST, x, y, w, h, SWP_NOACTIVATE Or SWP_SHOWWINDOW)
+            _Showing = True
             Invalidate()
-            If Not Visible Then Show() Else Refresh()
+            Update()
         End Sub
 
         Private ReadOnly Property HintText As String

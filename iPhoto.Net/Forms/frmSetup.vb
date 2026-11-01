@@ -47,6 +47,7 @@ Friend Class frmSetup
 
         '字型
         Dim fontChanged As Boolean = SaveFontOption()   ' frmSetup.Font.vb
+        SaveHelpOption()   ' 簡單的按鈕也顯示說明, frmSetup.HelpOption.vb
 
         '風格
         g_lpConfig.Style = If(rbStyle(0).Checked, "0", "1")

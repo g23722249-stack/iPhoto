@@ -309,7 +309,7 @@ Friend NotInheritable Class ChildWindowsFollowMain
         Dim h As IntPtr = hwnd
         While h <> IntPtr.Zero
             Dim c As Control = Control.FromHandle(h)
-            If TypeOf c Is PhotoLib.frmViewerLarge OrElse TypeOf c Is PhotoLib.frmViewerSmall OrElse TypeOf c Is PhotoLib.frmSlideShow Then Return True
+            If TypeOf c Is PhotoLib.frmViewerLarge OrElse TypeOf c Is PhotoLib.frmSlideShow Then Return True
             h = GetWindow(h, GW_OWNER)
         End While
         Return False

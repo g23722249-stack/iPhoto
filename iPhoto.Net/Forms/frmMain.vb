@@ -31,7 +31,7 @@ Friend Class frmMain
     Private m_lpCurrentPhoto As Photo
     Private m_lpAppEnv As udfApplication
 
-    ' frmViewerLarge (screens 1280+ wide) or frmViewerSmall; m_frmViewerForm is the same object as a Form
+    ' frmViewerLarge; m_frmViewerForm is the same object as a Form
     Private m_frmViewer As IPhotoViewer
     Private m_frmViewerForm As Form
 
@@ -66,21 +66,8 @@ Friend Class frmMain
         m_frmViewer.Clear()
         Dim pic As Bitmap = LoadPicture(szFile)
         If pic IsNot Nothing Then m_frmViewer.ShowPicture(szFile, pic, bolFirst, bolLast)
+        ShowViewerState(szFile)   ' its rating and whether it is in the Dock (frmMain.ViewerTools.vb)
     End Sub
-
-    ''' <summary>VB6 quartz.SavePicture(picture, file, quality): JPEG at the given quality.</summary>
-    Private Shared Function SavePicture(ByVal img As Image, ByVal szFile As String, ByVal lQuality As Long) As Boolean
-        Try
-            Dim codec = Imaging.ImageCodecInfo.GetImageEncoders().First(Function(c) c.FormatID = Imaging.ImageFormat.Jpeg.Guid)
-            Using ps As New Imaging.EncoderParameters(1)
-                ps.Param(0) = New Imaging.EncoderParameter(Imaging.Encoder.Quality, lQuality)
-                img.Save(szFile, codec, ps)
-            End Using
-            Return True
-        Catch
-            Return False
-        End Try
-    End Function
 
     ''' <summary>The class (albums mode) or book (favorites mode) the tree has open, or Nothing.</summary>
     Private Function CurrentSection() As PhotoSet
@@ -219,14 +206,11 @@ Friend Class frmMain
             cMonTo = g_lpMonitors.Monitor(idx)
         End If
 
-        If cMonTo.Width >= 1280 Then
-            m_frmViewer = New frmViewerLarge
-        Else
-            m_frmViewer = New frmViewerSmall
-        End If
+        m_frmViewer = New frmViewerLarge   ' on every screen (frmViewerSmall, for screens under 1280 wide, is gone)
         m_frmViewerForm = CType(m_frmViewer, Form)
         AddHandler m_frmViewer.ShowPriorPhoto, AddressOf Viewer_ShowPriorPhoto
         AddHandler m_frmViewer.ShowNextPhoto, AddressOf Viewer_ShowNextPhoto
+        AddViewerToolHandlers()   ' 左轉 / 右轉, 相片後製, Dock, 刪除, 評價 (frmMain.ViewerTools.vb)
 
         m_frmViewerForm.StartPosition = FormStartPosition.Manual
         m_frmViewerForm.Bounds = cMonTo.Bounds       ' the maximised window opens on this screen
@@ -980,7 +964,7 @@ Friend Class frmMain
     End Sub
 
     '==================================================================================================
-    ' Viewer (frmViewerLarge / frmViewerSmall)
+    ' Viewer (frmViewerLarge)
     '==================================================================================================
     Private Sub Viewer_ShowPriorPhoto(sender As Object, e As EventArgs)
         If PlaceStripStep(-1) Then Return   ' 地點 mode: through the viewer's strip (frmMain.PlaceViewer.vb)
@@ -1020,14 +1004,7 @@ Friend Class frmMain
             Case scpResult.scpCancel
 
             Case scpResult.scpSave
-                Dim objMediaItem As Aqua.MediaItem = mlList.SelectedItem
-                If Not m_lpCurrentPhoto.Backup() Then
-                    frmMsgBox.ShowCriticalMessage("建立復原照片失敗...", "")
-                    Return
-                End If
-                If Not g_lpFileSystem.DeleteFile(m_lpCurrentPhoto.FileDesc) Then Return
-                If Not SavePicture(m_frmViewer.Photo, m_lpCurrentPhoto.FileDesc, 100) Then Return
-                objMediaItem.FileName = m_lpCurrentPhoto.FileDesc
+                SaveViewerEdits()   ' as <name>_edited.jpg, the original kept but hidden (frmMain.ViewerTools.vb)
 
             Case scpResult.scpCopy
                 Clipboard.Clear()
@@ -1037,7 +1014,7 @@ Friend Class frmMain
                 Dim strFileDesc As String = frmBrowserFile.GetFile("另存新檔", "圖形檔 (*.Jpg)|*.Jpg", False).Trim()
                 If strFileDesc = "" Then Return
                 If Not g_lpFileSystem.DeleteFile(strFileDesc) Then Return
-                If Not SavePicture(m_frmViewer.Photo, strFileDesc, 100) Then
+                If Not SaveJpegWithExif(m_frmViewer.Photo, strFileDesc, m_lpCurrentPhoto?.FileDesc) Then   ' with the photo's EXIF
                     frmMsgBox.ShowCriticalMessage("另存新檔失敗...", "")
                 End If
         End Select
@@ -1106,6 +1083,7 @@ Friend Class frmMain
         End If
         g_lpDock.Save()
         SetDockProperty()
+        If m_frmViewer IsNot Nothing AndAlso Index = mlList.SelectedIndex Then m_frmViewer.Docked = mlList.Item(Index).Marked   ' 全圖瀏覽's Dock button
     End Sub
 
     Private Sub mlList_ItemMouseDown(Index As Integer, e As MouseEventArgs) Handles mlList.ItemMouseDown

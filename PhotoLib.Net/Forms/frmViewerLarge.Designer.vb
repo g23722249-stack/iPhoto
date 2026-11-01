@@ -129,12 +129,12 @@ Partial Class frmViewerLarge
         Me.picImageBar1.Size = New System.Drawing.Size(671, 73)
         Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("左轉90°", CType(resources.GetObject("picImageBar1.Icon0"), System.Drawing.Image)))
         Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("右轉90°", CType(resources.GetObject("picImageBar1.Icon1"), System.Drawing.Image)))
-        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("紅眼", CType(resources.GetObject("picImageBar1.Icon2"), System.Drawing.Image)))
-        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("裁切", CType(resources.GetObject("picImageBar1.Icon3"), System.Drawing.Image)))
-        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("泛黃", CType(resources.GetObject("picImageBar1.Icon4"), System.Drawing.Image)))
-        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("黑白", CType(resources.GetObject("picImageBar1.Icon5"), System.Drawing.Image)))
-        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("柔焦", CType(resources.GetObject("picImageBar1.Icon6"), System.Drawing.Image)))
-        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("清晰", CType(resources.GetObject("picImageBar1.Icon7"), System.Drawing.Image)))
+        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("裁切", CType(resources.GetObject("picImageBar1.Icon2"), System.Drawing.Image)))
+        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("拉直", CType(resources.GetObject("picImageBar1.Icon3"), System.Drawing.Image)))
+        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("自動調整", CType(resources.GetObject("picImageBar1.Icon4"), System.Drawing.Image)))
+        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("相片後製", CType(resources.GetObject("picImageBar1.Icon5"), System.Drawing.Image)))
+        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("加入 Dock", CType(resources.GetObject("picImageBar1.Icon6"), System.Drawing.Image)))
+        Me.picImageBar1.Items.Add(New Aqua.ToolBar.ToolBarItem("刪除", CType(resources.GetObject("picImageBar1.Icon7"), System.Drawing.Image)))
         Me.picImageBar1.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.picImageBar1.Visible = False
         Me.picImageBar1.Name = "picImageBar1"

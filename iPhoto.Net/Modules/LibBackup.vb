@@ -413,9 +413,23 @@ Friend Module BackupSettings
     Private Const AppName As String = "iPhoto"
     Private Const Section As String = "Backup"
 
+    ''' <summary>The folder chosen, else the library's: the one holding the database's System folder
+    ''' (D:\生活剪輯 -- also when iPhoto runs from its build folder), else where iPhoto is.</summary>
     Friend Function Source() As String
         Dim s As String = GetSetting(AppName, Section, "MirrorSource", "")
-        Return If(s <> "" AndAlso Directory.Exists(s), s, Application.StartupPath.TrimEnd("\"c))
+        If s <> "" AndAlso Directory.Exists(s) Then Return s
+        Try
+            Dim db As String = If(g_lpConfig?.Attached(Config.enumAttachedFile.filDatabase), "")
+            If db <> "" Then
+                Dim d As DirectoryInfo = New FileInfo(Path.GetFullPath(db)).Directory
+                While d IsNot Nothing
+                    If String.Equals(d.Name, "System", StringComparison.OrdinalIgnoreCase) AndAlso d.Parent IsNot Nothing Then Return d.Parent.FullName.TrimEnd("\"c)
+                    d = d.Parent
+                End While
+            End If
+        Catch ex As Exception When TypeOf ex Is ArgumentException OrElse TypeOf ex Is NotSupportedException OrElse TypeOf ex Is PathTooLongException
+        End Try
+        Return Application.StartupPath.TrimEnd("\"c)
     End Function
 
     Friend Sub SetSource(ByVal value As String)

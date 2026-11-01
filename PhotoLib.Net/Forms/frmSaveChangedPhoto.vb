@@ -36,12 +36,14 @@ Public Class frmSaveChangedPhoto
         If Visible Then
             lblTitle.Text = "相片的內容已改變了，要如何處理呢？"
             m_enumResult = scpResult.scpCancel
-            rbExecute_0.Checked = True
+            ' 儲存 first: it keeps the original (<name>_edited.jpg, the original hidden), so nothing is lost by it
+            rbExecute_1.Checked = True
 
             If g_lpConfig IsNot Nothing AndAlso g_lpConfig.ReadOnly Then
                 ' struck out; disabled, the radio button draws its caption grey itself
                 rbExecute_1.Font = New Font(rbExecute_1.Font, rbExecute_1.Font.Style Or FontStyle.Strikeout)
                 rbExecute_1.Enabled = False
+                rbExecute_0.Checked = True
             End If
         End If
         MyBase.OnVisibleChanged(e)

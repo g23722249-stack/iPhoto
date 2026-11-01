@@ -56,7 +56,7 @@ Partial Class frmSaveChangedPhoto
         Me.rbExecute_1.Location = New System.Drawing.Point(74, 119)
         Me.rbExecute_1.Name = "rbExecute_1"
         Me.rbExecute_1.TabIndex = 4
-        Me.rbExecute_1.TextValue = "儲存"
+        Me.rbExecute_1.TextValue = "儲存（原圖保留）"
         Me.rbExecute_1.TextGap = 10
         Me.rbExecute_1.ForeColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(0, Byte), Integer), CType(CType(0, Byte), Integer))
         '

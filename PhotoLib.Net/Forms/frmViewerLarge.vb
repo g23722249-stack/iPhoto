@@ -1,11 +1,12 @@
 ﻿' Port of Lib\Form\frmViewerLarge.frm: the full-screen viewer for screens 1280 wide or more -- a picture
-' with simple editing (rotate, crop, red eye, sepia, grey, soften, sharpen, brightness / contrast, undo),
-' or a video with play / pause, position and volume.
+' with simple editing -- 左轉 / 右轉, 裁切, 拉直, 自動調整, brightness / contrast, undo (the tools are in
+' frmViewerLarge.Tools.vb, with 相片後製 / Dock / 刪除 / 評價) -- or a video with play / pause, position and
+' volume. frmViewerSmall (screens under 1280 wide) is gone: this one is used on every screen.
 '
 ' Layout: in the designer (design size 1280 x 1024). VB6 placed the bars from the screen size at run
 ' time (SetToolBarPosition / SetControlPhotoMode / SetControlVideoMode); the same positions are now
 ' designer values with Anchors, so the maximised form lays itself out on any screen.
-' The toolbar buttons (左轉90° ... 清晰) are picImageBar1.Items in the designer.
+' The toolbar buttons (左轉90° ... 刪除) are picImageBar1.Items in the designer.
 ' Quartz (StdPicture filters, FixSize) -> Techno.Net Quartz.ImageFilter / Quartz.FixSize.
 ' Windows Media Player -> Aqua.MediaViewerControl (Play / Pause / Stop / Duration / CurrentPosition).
 '
@@ -68,8 +69,10 @@ Public Class frmViewerLarge
         Catch
         End Try
 
+        EndTool()                 ' frmViewerLarge.Tools.vb (before the picture goes)
         DisposeImage(m_lpImage)   ' first: the slider handlers below do nothing without a picture
         m_lpImage = Nothing
+        Rating = 0
         ClearUndo()
         m_lastEdit = Nothing
 
@@ -305,6 +308,8 @@ Public Class frmViewerLarge
     Private Sub imgPhoto_MouseDown(sender As Object, e As MouseEventArgs) Handles imgPhoto.MouseDown
         m_bolFaceTookClick = FaceMouseDown(e)   ' a click on a face box (face mode)
         If m_bolFaceTookClick Then Return
+        If BeginCompare(e) Then Return          ' right button: the original while held (Tools.vb)
+        If m_toolMode = ToolMode.Straighten Then Return
         If e.Button = MouseButtons.Left Then
             m_blnDrawing = True
             m_P1 = e.Location
@@ -317,27 +322,31 @@ Public Class frmViewerLarge
 
     Private Sub imgPhoto_MouseMove(sender As Object, e As MouseEventArgs) Handles imgPhoto.MouseMove
         If e.Button <> MouseButtons.Left OrElse Not m_blnDrawing OrElse imgPhoto.Image Is Nothing Then Return
-        AdjustP2(e.X, e.Y, ModifierKeys)
+        If Not AdjustP2ToRatio(e.X, e.Y) Then AdjustP2(e.X, e.Y, ModifierKeys)
         imgPhoto.Invalidate()
-        Dim r As Rectangle = SelectionOnPicture()
-        lblSelPoint.Text = "(" & r.Left & "," & r.Top & ")～(" & r.Right & "," & r.Bottom & ")"
+        ShowCropSize()
     End Sub
 
     Private Sub imgPhoto_MouseUp(sender As Object, e As MouseEventArgs) Handles imgPhoto.MouseUp
         If e.Button = MouseButtons.Left AndAlso m_blnDrawing Then
-            AdjustP2(e.X, e.Y, ModifierKeys)
+            If Not AdjustP2ToRatio(e.X, e.Y) Then AdjustP2(e.X, e.Y, ModifierKeys)
             imgPhoto.Invalidate()
+            ShowCropSize()
         End If
     End Sub
 
     Private Sub imgPhoto_Paint(sender As Object, e As PaintEventArgs) Handles imgPhoto.Paint
         PaintFaces(e.Graphics)
         Dim r As Rectangle = SelectionOnScreen()
-        If r.Width <= 0 AndAlso r.Height <= 0 Then Return
+        If r.Width <= 0 AndAlso r.Height <= 0 Then
+            PaintToolGuides(e.Graphics)
+            Return
+        End If
         Using black As New Pen(Color.Black), white As New Pen(Color.White) With {.DashStyle = Drawing2D.DashStyle.Dash}
             e.Graphics.DrawRectangle(black, r)
             e.Graphics.DrawRectangle(white, r)
         End Using
+        PaintToolGuides(e.Graphics)   ' Tools.vb
     End Sub
 
     ''' <summary>Shift = square, otherwise free (VB6 AdjustP2; its Ctrl mode was never enabled).</summary>
@@ -362,16 +371,6 @@ Public Class frmViewerLarge
     '==================================================================================================
     ' Editing
     '==================================================================================================
-    Private Sub picImageBar1_Click(sender As Object, Index As Integer) Handles picImageBar1.Click
-        If m_lpImage Is Nothing Then Return
-        Select Case Index
-            Case 0 : RotatePicture(-90)   '左轉 90 度
-            Case 1 : RotatePicture(90)    '右轉 90 度
-            Case 3 : CropPicture()
-            Case 2, 4, 5, 6, 7 : FilterPicture(Index)
-        End Select
-    End Sub
-
     Private Sub RotatePicture(ByVal lngAngle As Integer)
         picPhoto.Visible = False
         ApplyEdit(Quartz.ImageFilter.Rotate(m_lpImage, lngAngle), Nothing)
@@ -384,21 +383,6 @@ Public Class frmViewerLarge
         If r.Width <= 0 OrElse r.Height <= 0 Then Return
         ApplyEdit(Quartz.ImageFilter.Crop(m_lpImage, r), Nothing)
         InitialSelection()
-    End Sub
-
-    Private Sub FilterPicture(ByVal Index As Integer)
-        Dim result As Image = Nothing
-        Select Case Index
-            Case 2 '紅眼：需要先框選
-                Dim r As Rectangle = SelectionOnPicture()
-                If r.Width > 0 AndAlso r.Height > 0 Then result = Quartz.ImageFilter.RedEye(m_lpImage, r, AddressOf ShowProgress)
-            Case 4 : result = Quartz.ImageFilter.Colourise(m_lpImage, Color.FromArgb(251, 209, 123), AddressOf ShowProgress) '泛黃
-            Case 5 : result = Quartz.ImageFilter.GrayScale(m_lpImage, AddressOf ShowProgress) '黑白
-            Case 6 : result = Quartz.ImageFilter.Soften(m_lpImage, False, AddressOf ShowProgress) '柔焦
-            Case 7 : result = Quartz.ImageFilter.Sharpen(m_lpImage, False, AddressOf ShowProgress) '清晰
-        End Select
-        pgImage.Visible = False   ' VB6 m_lpQuartz_Complete
-        If result IsNot Nothing Then ApplyEdit(result, Nothing)
     End Sub
 
     ''' <summary>VB6 m_lpQuartz_InitProgress / Progress.</summary>

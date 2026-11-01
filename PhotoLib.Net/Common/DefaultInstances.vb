@@ -76,10 +76,5 @@ Public Module DefaultInstances
         End Get
     End Property
 
-    Public ReadOnly Property Of_frmViewerSmall As frmViewerSmall
-        Get
-            Return My.Forms.frmViewerSmall
-        End Get
-    End Property
 
 End Module

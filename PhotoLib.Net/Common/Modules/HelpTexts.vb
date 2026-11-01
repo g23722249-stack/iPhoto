@@ -22,7 +22,6 @@ Public Module HelpTexts
                              "", "先選取要列印的照片。")},
         {"main.toolbox.9", E("編輯照片資訊", "一次修改多張照片的標題、人物、地點、關鍵字與備註。")},
         {"main.toolbox.10", E("相片後製", "用 PhotoEdit 修飾選取的照片（相片清單按右鍵選「相片後製…」也可以）。", "原圖不會改變；在 PhotoEdit 匯出（原檔名_edited.jpg）後，相簿改顯示修飾後的照片，原圖保留但隱藏。再按相片後製會從原圖接著上次的修改；刪除修飾後的照片會改回顯示原圖。", "從 Dock 拖照片到 PhotoEdit 也能開啟。")},
-        {"main.toolbox.11", E("沖印", "（已移除）")},
         {"main.toolbox.12", E("蒙太奇拼貼", "用選取的照片做拼貼、自由拼貼或馬賽克，可以匯出或列印；沒有選兩張以上時，先開啟「選取照片」。", "選取照片的畫面和相簿一樣：勾選相簿整本加入（可勾多本），或點相簿逐張勾選；人物與 Dock 也可以選。匯出時按「選相簿…」選擇作品存到哪本相簿，存好後會出現在相簿裡。")},
         {"main.toolbox.13", E("地點", "開啟地圖：有拍攝位置的照片顯示在地圖上，左邊依縣市 › 鄉鎮 › 景點瀏覽。", "點左邊的地點，主視窗會列出那裡的照片；地圖上選的照片也可以送到主視窗。", "")},
         {"main.toolbox.14", E("同步備份", "把整個生活剪輯備份到隨身硬碟、另一顆磁碟或 NAS：沒有的複製、較新的覆蓋、來源已經刪掉的從備份刪除，沒有異動的略過。", "先按「檢查」看會做什麼，再開始備份；備份碟拿到另一台電腦就能直接用。")},
@@ -46,14 +45,14 @@ Public Module HelpTexts
         {"main.faceguide", E("面孔功能使用說明", "面孔牆、命名、確認、全圖瀏覽與設定的完整說明，附操作範例。",
                              "說明視窗開著時可以繼續操作主畫面，照著步驟做。")},
         {"main.dock", E("已選取的照片", "Dock 裡的照片張數與大小。匯出、列印、建立攝影集都用這些照片。")},
-        {"viewer.edit.0", E("左轉 90°", "照片逆時針轉 90 度。", "存檔前可以按「復原」取消。")},
-        {"viewer.edit.1", E("右轉 90°", "照片順時針轉 90 度。", "存檔前可以按「復原」取消。")},
-        {"viewer.edit.2", E("紅眼", "去除選取範圍裡的紅眼。", "先在照片上拖曳框出眼睛（按住 Shift 為正方形）。")},
-        {"viewer.edit.3", E("裁切", "只保留選取的範圍。", "先在照片上拖曳框出要保留的部分（按住 Shift 為正方形）。")},
-        {"viewer.edit.4", E("泛黃", "把照片調成懷舊的泛黃色調。")},
-        {"viewer.edit.5", E("黑白", "把照片轉成黑白。")},
-        {"viewer.edit.6", E("柔焦", "讓照片柔和一點。")},
-        {"viewer.edit.7", E("清晰", "讓照片銳利一點。")},
+        {"viewer.edit.0", E("左轉 90°", "照片逆時針轉 90 度，直接存回照片檔。", "無損旋轉：畫質不變，拍攝資訊（相機、GPS、時間）保留；原圖備份在 Restore，可以「恢復到最初狀態」。")},
+        {"viewer.edit.1", E("右轉 90°", "照片順時針轉 90 度，直接存回照片檔。", "無損旋轉：畫質不變，拍攝資訊（相機、GPS、時間）保留；原圖備份在 Restore，可以「恢復到最初狀態」。")},
+        {"viewer.edit.2", E("裁切", "照片上方出現比例列：選自由、原比例、4:3、3:2、16:9 或 1:1，在照片上拖曳框出要保留的範圍，按「裁切」。", "往下拖得比往右長時是直式；框裡有三等分線幫忙構圖。")},
+        {"viewer.edit.3", E("拉直", "照片上方出現角度滑桿（左右各 10 度），對著格線把歪的地平線、建築轉正，按「套用」。", "轉出來的空白邊會自動裁掉。")},
+        {"viewer.edit.4", E("自動調整", "一鍵修正太暗、偏色、灰濛濛的照片。", "在照片上按住滑鼠右鍵可以看原圖，放開回到修改後；不滿意按「復原」。")},
+        {"viewer.edit.5", E("相片後製", "用 PhotoEdit 開啟這張照片，做更多的修飾。", "這裡還沒存的修改會先問要不要存。")},
+        {"viewer.edit.6", E("加入 Dock", "把這張照片加入 Dock（已在 Dock 時是「移出 Dock」）。")},
+        {"viewer.edit.7", E("刪除", "刪除這張照片（會先確認），移到資源回收筒。")},
         {"viewer.face.0", E("顯示 / 隱藏面孔", "在照片上框出每一張臉。點臉可以輸入名字；程式認出的名字旁有 ✓ 確認、✕ 不是此人。",
                             "右鍵點臉：移除名字、不是此人、這不是臉。")},
         {"viewer.face.1", E("新增面孔", "程式沒找到的臉（側臉、戴口罩等）可以自己框出來再命名。",
@@ -145,10 +144,6 @@ Public Module HelpTexts
         {"printpages.0", E("全部", "印全部的頁面。")},
         {"printpages.1", E("本頁", "只印目前預覽的這一頁。")},
         {"printpages.2", E("頁數", "只印指定的頁碼，用逗號分隔，例如 1,3,5。")},
-        {"result.grid", E("找到的照片", "勾選照片後可以加入 Dock 或建立攝影集；按資訊圖示看照片的詳細資料。")},
-        {"result.dock", E("加入 Dockbar", "把勾選的照片加入 Dock。")},
-        {"result.favorite", E("成立攝影輯", "用勾選的照片建立攝影集。")},
-        {"result.research", E("重新尋找", "回到搜尋視窗改條件再找。")},
         {"showphoto.photo", E("照片", "照片的縮圖與評價。")},
         {"batch1.tree", E("選取相本", "勾選要修改資訊的相本；勾選相片庫會勾選它底下所有相本。", "點選相本名稱可以在右邊預覽照片。")},
         {"batch1.preview", E("預覽", "選取相本裡的照片。")},
@@ -163,7 +158,7 @@ Public Module HelpTexts
         {"batch2.unload", E("結束並回到主畫面", "關閉視窗回到主畫面。")},
         {"batch2.index", E("重新編列索引檔", "回主畫面時重建資料庫索引，讓搜尋與日曆找得到剛改的資訊。", "照片多時要花一點時間。")},
         {"savechanged.0", E("放棄改變", "不儲存這次的編輯。")},
-        {"savechanged.1", E("儲存", "覆蓋原來的照片檔。", "原始照片會先備份到同資料夾的 Restore 裡，可以用「恢復到最初狀態」找回。")},
+        {"savechanged.1", E("儲存（原圖保留）", "修改後的照片存成「原檔名_edited.jpg」，相簿改顯示它；原圖保留但隱藏，拍攝資訊一起帶過去。", "刪除修改後的照片，就會改回顯示原圖。")},
         {"savechanged.2", E("複製到剪貼簿", "把編輯後的照片複製到剪貼簿，原檔不變。")},
         {"savechanged.3", E("另存新檔案", "把編輯後的照片存成另一個檔案，原檔不變。")},
         {"backup.source", E("來源", "要備份的資料夾：整個生活剪輯（程式、相片庫、攝影集、資料庫、模型），備份碟拿到另一台電腦就能直接用。")},
@@ -193,11 +188,6 @@ Public Module HelpTexts
         {"setup.sound.2", E("滑鼠移出音效", "滑鼠離開按鈕時播放的聲音（.wav）。")},
         {"setup.sound.3", E("滑鼠移入音效", "滑鼠移到按鈕上時播放的聲音（.wav）。")},
         {"setup.sound.4", E("滑鼠按下音效", "按下按鈕與開啟對話框時播放的聲音（.wav）。")},
-        {"setup.app.0", E("列印輸出程式", "工具列「沖印」開啟的程式。")},
-        {"setup.app.1", E("影像編輯程式", "工具列「編輯」開啟的程式。")},
-        {"setup.app.2", E("影片編輯程式", "影片編輯程式的位置。", "目前 iPhoto 沒有功能用到這個設定（保留自舊版）。")},
-        {"setup.app.3", E("電子郵件程式", "工具列「郵件」開啟的程式。")},
-        {"setup.app.4", E("網頁建置程式", "網頁建置程式的位置。", "目前 iPhoto 沒有功能用到這個設定（保留自舊版）。")},
         {"setup.face.enabled", E("啟用人物辨識", "在照片裡找出人臉並認出是誰；關閉後面孔牆與全圖瀏覽的面孔功能都不會出現。", "下次開啟 iPhoto 生效。")},
         {"setup.face.autoscan", E("開啟時分析新照片", "開啟 iPhoto 後，在背景分析新增或修改過的照片。",
                                   "關閉時，點主畫面左下角的面孔狀態就能手動分析。")},
@@ -228,10 +218,35 @@ Public Module HelpTexts
         Return New HelpTip.Entry With {.Title = title, .Text = text, .Hint = hint, .DisabledHint = disabledHint}
     End Function
 
+    ''' <summary>Help for a control that says it all -- its caption, or what the window shows beside it --
+    ''' shown only with 設定 › 外觀「簡單的按鈕也顯示說明」 (HelpTip.Simple / ShowSimple). The rest
+    ''' explain something the control doesn't: what it acts on, a condition, a format, a deletion.</summary>
+    Private ReadOnly SimpleKeys As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
+        "common.ok", "common.cancel", "common.close",
+        "main.button.3", "main.size",
+        "viewer.edit.6",
+        "viewer.prior", "viewer.next", "viewer.undo", "viewer.brightness", "viewer.contrast",
+        "viewer.play", "viewer.rewind", "viewer.volume", "viewer.position",
+        "field.title", "field.spot", "field.remark", "field.fileinfo",
+        "addition.name", "cover.name", "datetime.new",
+        "dock.list", "keywords.section",
+        "import.foldername", "import.title", "import.date", "import.spot", "import.remark", "import.preview",
+        "photoindex.columns", "photoindex.note.0", "photoindex.note.1", "photoindex.printer", "photoindex.page",
+        "print.printer", "print.copies", "print.page", "print.photos", "printpages.0", "printpages.1",
+        "showphoto.photo",
+        "batch1.preview", "batch2.checkall", "batch2.uncheckall", "batch2.unload",
+        "savechanged.0", "savechanged.2", "savechanged.3",
+        "backup.source", "backup.skip", "backup.target", "backup.check",
+        "setup.slide", "setup.save", "setup.cancel",
+        "setup.sound.0", "setup.sound.1", "setup.sound.2", "setup.sound.3", "setup.sound.4",
+        "export.cancel"}
+
     ''' <summary>The help for <paramref name="key"/>, or Nothing.</summary>
     Public Function [Get](ByVal key As String) As HelpTip.Entry
         Dim e As HelpTip.Entry = Nothing
-        Return If(Table.TryGetValue(key, e), e, Nothing)
+        If Not Table.TryGetValue(key, e) Then Return Nothing
+        e.Simple = SimpleKeys.Contains(key)
+        Return e
     End Function
 
 End Module

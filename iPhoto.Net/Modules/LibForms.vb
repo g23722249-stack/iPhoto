@@ -76,10 +76,5 @@ Friend Module LibForms
         End Get
     End Property
 
-    Friend ReadOnly Property frmViewerSmall As PhotoLib.frmViewerSmall
-        Get
-            Return PhotoLib.DefaultInstances.Of_frmViewerSmall
-        End Get
-    End Property
 
 End Module

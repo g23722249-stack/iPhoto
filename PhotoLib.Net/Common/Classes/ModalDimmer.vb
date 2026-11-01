@@ -23,12 +23,15 @@ Public NotInheritable Class ModalDimmer
     Public Shared ReadOnly NotDimmed As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
         "frmMsgBox", "frmQueryMsgBox", "frmInputString", "frmSubject", "frmBrowserFile", "frmBrowserFolder",
         "frmSaveChangedPhoto", "frmLoading", "frmLogo",
-        "frmViewerLarge", "frmViewerSmall", "frmSlideShow"}
+        "frmViewerLarge", "frmSlideShow"}
 
     ''' <summary>How dark the overlay gets (0..1).</summary>
     Public Property Darkness As Double = 0.6
-    ''' <summary>Fade in / out time (ms).</summary>
+    ''' <summary>Fade in time (ms): the window goes dark as a dialog opens.</summary>
     Public Property FadeTime As Integer = 150
+    ''' <summary>Fade out time (ms): light again as the dialog closes -- twice as quick, so the window is
+    ''' back at once.</summary>
+    Public Property FadeOutTime As Integer = 75
 
     <DllImport("user32.dll")>
     Private Shared Function IsWindowEnabled(hWnd As IntPtr) As Boolean
@@ -116,8 +119,8 @@ Public NotInheritable Class ModalDimmer
     End Sub
 
     Private Sub m_fade_Tick(sender As Object, e As EventArgs) Handles m_fade.Tick
-        Dim stepSize As Double = Darkness * FadeStep / Math.Max(FadeStep, FadeTime)
         Dim o As Double = m_overlay.Opacity
+        Dim stepSize As Double = Darkness * FadeStep / Math.Max(FadeStep, If(o < m_target, FadeTime, FadeOutTime))
         o = If(o < m_target, Math.Min(m_target, o + stepSize), Math.Max(m_target, o - stepSize))
         m_overlay.Opacity = o
         If o = m_target Then

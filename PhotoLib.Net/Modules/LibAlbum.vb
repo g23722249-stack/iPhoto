@@ -336,45 +336,140 @@ Public Module LibAlbum
     '==================================================================================================
     ' Images
     '==================================================================================================
-    ''' <summary>Rotates a JPEG/BMP/GIF file in place by a multiple of 90 degrees (positive = clockwise),
-    ''' saving JPEGs at quality 100 as VB6's Quartz.SavePicture(..., 100) did.</summary>
+    ' EXIF tags the picture functions below look after
+    Private Const TagOrientation As Integer = &H112
+    Private Const TagThumbnailData As Integer = &H501B
+    Private Const TagPixelXDimension As Integer = &HA002
+    Private Const TagPixelYDimension As Integer = &HA003
+
+    ''' <summary>Rotates a JPEG/BMP/GIF file in place by a multiple of 90 degrees (positive = clockwise).
+    ''' New in the .NET port: a JPEG is turned without decoding it again (GDI+'s lossless transform), so the
+    ''' picture loses nothing and keeps its EXIF (camera, GPS, date); one whose size isn't a whole number of
+    ''' JPEG blocks can't be, and is saved again at quality 95 with its EXIF. Either way the EXIF
+    ''' orientation becomes "as stored" (the pixels are now the right way up) and the EXIF thumbnail goes
+    ''' (it would still show the old way; the photo lists then make one from the picture). VB6 saved a new
+    ''' JPEG at quality 100 and lost the EXIF. The file is rewritten in place, not replaced by renaming
+    ''' (security software takes renaming over photos for ransomware, see 同步備份).</summary>
     Public Function RotatePicture(ByVal FileDesc As String, ByVal lngAngle As Long) As Boolean
         Dim turns As Integer = CInt(((lngAngle Mod 360) + 360) Mod 360)
         Dim flip As RotateFlipType
+        Dim transform As EncoderValue
         Select Case turns
-            Case 90 : flip = RotateFlipType.Rotate90FlipNone
-            Case 180 : flip = RotateFlipType.Rotate180FlipNone
-            Case 270 : flip = RotateFlipType.Rotate270FlipNone
+            Case 90 : flip = RotateFlipType.Rotate90FlipNone : transform = EncoderValue.TransformRotate90
+            Case 180 : flip = RotateFlipType.Rotate180FlipNone : transform = EncoderValue.TransformRotate180
+            Case 270 : flip = RotateFlipType.Rotate270FlipNone : transform = EncoderValue.TransformRotate270
             Case 0 : Return True
             Case Else : Return False
         End Select
         Try
-            Dim bmp As Bitmap
-            Dim format As ImageFormat
-            ' load into memory first so the file isn't locked when it is replaced
-            Using fs As New FileStream(FileDesc, FileMode.Open, FileAccess.Read)
-                Using src As Image = Image.FromStream(fs)
-                    format = src.RawFormat
-                    bmp = New Bitmap(src)
-                End Using
-            End Using
-            Using bmp
-                bmp.RotateFlip(flip)
-                If Not g_lpFileSystem.DeleteFile(FileDesc) Then Return False
-                If format.Guid = ImageFormat.Jpeg.Guid Then
-                    Dim codec = ImageCodecInfo.GetImageEncoders().First(Function(c) c.FormatID = ImageFormat.Jpeg.Guid)
-                    Using ep As New EncoderParameters(1)
-                        ep.Param(0) = New EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 100L)
-                        bmp.Save(FileDesc, codec, ep)
-                    End Using
+            Dim result As Byte() = Nothing
+            Using ms As New MemoryStream(File.ReadAllBytes(FileDesc)), src As Image = Image.FromStream(ms, False, False)
+                If src.RawFormat.Guid = ImageFormat.Jpeg.Guid Then
+                    UprightExif(src, -1, -1)
+                    result = LosslessTurn(src, transform)
+                    If result Is Nothing Then
+                        Using bmp As New Bitmap(src)
+                            bmp.RotateFlip(flip)
+                            CopyExif(src, bmp)
+                            result = EncodeJpeg(bmp, 95)
+                        End Using
+                    End If
                 Else
-                    bmp.Save(FileDesc, format)
+                    Dim format As ImageFormat = src.RawFormat
+                    Using bmp As New Bitmap(src), outMs As New MemoryStream()
+                        bmp.RotateFlip(flip)
+                        bmp.Save(outMs, format)
+                        result = outMs.ToArray()
+                    End Using
                 End If
             End Using
+            File.WriteAllBytes(FileDesc, result)
             Return True
-        Catch
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse
+                                   TypeOf ex Is ArgumentException OrElse TypeOf ex Is Runtime.InteropServices.ExternalException OrElse TypeOf ex Is OutOfMemoryException
             Return False
         End Try
+    End Function
+
+    ''' <summary>The JPEG turned without decoding (Nothing when GDI+ can't: a size that isn't a whole number
+    ''' of blocks).</summary>
+    Private Function LosslessTurn(ByVal src As Image, ByVal transform As EncoderValue) As Byte()
+        Try
+            Using ep As New EncoderParameters(1), outMs As New MemoryStream()
+                ep.Param(0) = New EncoderParameter(System.Drawing.Imaging.Encoder.Transformation, CLng(transform))
+                src.Save(outMs, JpegCodec(), ep)
+                Return outMs.ToArray()
+            End Using
+        Catch ex As Exception When TypeOf ex Is Runtime.InteropServices.ExternalException OrElse TypeOf ex Is ArgumentException
+            Return Nothing
+        End Try
+    End Function
+
+    ''' <summary>相片後製 in 全圖瀏覽 (裁切, 拉直, 自動調整, 亮度 / 對比): <paramref name="img"/> saved as a JPEG at
+    ''' quality 95 with the EXIF of <paramref name="exifFrom"/> (the photo it was made from; its size tags
+    ''' follow the new picture). Written in place.</summary>
+    Public Function SaveJpegWithExif(ByVal img As Image, ByVal file As String, ByVal exifFrom As String) As Boolean
+        Try
+            Using bmp As New Bitmap(img)
+                If Not String.IsNullOrEmpty(exifFrom) AndAlso IO.File.Exists(exifFrom) Then
+                    Using ms As New MemoryStream(IO.File.ReadAllBytes(exifFrom)), src As Image = Image.FromStream(ms, False, False)
+                        UprightExif(src, bmp.Width, bmp.Height)
+                        CopyExif(src, bmp)
+                    End Using
+                End If
+                IO.File.WriteAllBytes(file, EncodeJpeg(bmp, 95))
+            End Using
+            Return True
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse
+                                   TypeOf ex Is ArgumentException OrElse TypeOf ex Is Runtime.InteropServices.ExternalException OrElse TypeOf ex Is OutOfMemoryException
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>The EXIF of a picture whose pixels are now the right way up: orientation "as stored", no
+    ''' thumbnail; the size tags set when <paramref name="width"/> &gt; 0.</summary>
+    Private Sub UprightExif(ByVal img As Image, ByVal width As Integer, ByVal height As Integer)
+        Dim ids As Integer() = img.PropertyIdList
+        If ids.Contains(TagThumbnailData) Then img.RemovePropertyItem(TagThumbnailData)
+        If ids.Contains(TagOrientation) Then
+            Dim p As PropertyItem = img.GetPropertyItem(TagOrientation)
+            p.Value = BitConverter.GetBytes(CUShort(1))
+            p.Len = 2
+            img.SetPropertyItem(p)
+        End If
+        If width > 0 Then
+            For Each tag In {(TagPixelXDimension, width), (TagPixelYDimension, height)}
+                If Not ids.Contains(tag.Item1) Then Continue For
+                Dim p As PropertyItem = img.GetPropertyItem(tag.Item1)
+                If p.Type = 3 Then   ' SHORT
+                    p.Value = BitConverter.GetBytes(CUShort(Math.Min(65535, tag.Item2))) : p.Len = 2
+                Else                 ' LONG
+                    p.Value = BitConverter.GetBytes(CUInt(tag.Item2)) : p.Len = 4 : p.Type = 4
+                End If
+                img.SetPropertyItem(p)
+            Next
+        End If
+    End Sub
+
+    Private Sub CopyExif(ByVal src As Image, ByVal dst As Image)
+        For Each p In src.PropertyItems
+            Try
+                dst.SetPropertyItem(p)
+            Catch ex As Exception When TypeOf ex Is ArgumentException OrElse TypeOf ex Is Runtime.InteropServices.ExternalException
+            End Try
+        Next
+    End Sub
+
+    Private Function JpegCodec() As ImageCodecInfo
+        Return ImageCodecInfo.GetImageEncoders().First(Function(c) c.FormatID = ImageFormat.Jpeg.Guid)
+    End Function
+
+    Private Function EncodeJpeg(ByVal img As Image, ByVal quality As Long) As Byte()
+        Using ep As New EncoderParameters(1), ms As New MemoryStream()
+            ep.Param(0) = New EncoderParameter(System.Drawing.Imaging.Encoder.Quality, quality)
+            img.Save(ms, JpegCodec(), ep)
+            Return ms.ToArray()
+        End Using
     End Function
 
     '==================================================================================================
