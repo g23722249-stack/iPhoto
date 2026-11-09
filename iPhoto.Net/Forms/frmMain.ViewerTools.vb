@@ -30,6 +30,7 @@ Partial Class frmMain
     ''' <summary>The viewer shows <paramref name="file"/>'s rating and whether it is in the Dock.</summary>
     Private Sub ShowViewerState(ByVal file As String)
         If m_frmViewer Is Nothing Then Return
+        If ShowVaultViewerState(file) Then Return   ' an encrypted photo (frmMain.Vault.vb)
         Dim p As New Photo
         p.Construct(file)
         m_frmViewer.Rating = CInt(Val(p.Exif(enumPhotoExif.peRanking)))
@@ -38,6 +39,11 @@ Partial Class frmMain
 
     Private Sub RateCurrentPhoto(ByVal rating As Integer)
         If m_lpCurrentPhoto Is Nothing OrElse g_lpConfig.ReadOnly Then Return
+        If VaultCurrent() Then
+            VaultFiles.SetRanking(m_lpCurrentPhoto.FileDesc, rating)
+            If mlList.SelectedItem IsNot Nothing Then mlList.SelectedItem.Ranking = CType(rating, Aqua.MediaItemRanking)
+            Return
+        End If
         m_lpCurrentPhoto.Exif(enumPhotoExif.peRanking) = CStr(rating)
         If mlList.SelectedItem IsNot Nothing Then mlList.SelectedItem.Ranking = CType(rating, Aqua.MediaItemRanking)
         g_lpDatabase?.AddItem(m_lpCurrentPhoto)
@@ -45,6 +51,7 @@ Partial Class frmMain
 
     ''' <summary>The viewer's unsaved edits: the usual question (放棄 / 儲存 / 剪貼簿 / 另存); False when 取消.</summary>
     Private Function AskSaveViewerEdits() As Boolean
+        If VaultCurrent() Then Return True   ' never saved in the clear
         frmSaveChangedPhoto.ShowDialog()
         Select Case frmSaveChangedPhoto.Result
             Case scpResult.scpSave : SaveViewerEdits()

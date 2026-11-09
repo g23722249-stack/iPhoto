@@ -63,6 +63,7 @@ Public Class frmViewerLarge
     End Sub
 
     Public Sub Clear() Implements IPhotoViewer.Clear
+        m_strShownName = Nothing
         KeepFrameForTurn()   ' frmViewerLarge.PageTurn.vb: the photo on screen stays up for the page turn
         Try
             mpViewerVideo.Clear()
@@ -270,7 +271,7 @@ Public Class frmViewerLarge
             lblFileLength.Text = ""
             Return
         End If
-        lblFileName.Text = IO.Path.GetFileName(m_strFileName)
+        lblFileName.Text = If(m_strShownName, IO.Path.GetFileName(m_strFileName))   ' ShowName (frmViewerLarge.Tools.vb)
 
         Dim sz As Size = Size.Empty
         Select Case m_enumMediaMode

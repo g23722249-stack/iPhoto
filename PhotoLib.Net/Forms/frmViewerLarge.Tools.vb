@@ -119,11 +119,33 @@ Partial Class frmViewerLarge
         End Set
     End Property
 
+    Private m_bolEditLocked As Boolean
+
+    ''' <summary>The name shown for the file (an encrypted photo shows its own name, not the vault file's).</summary>
+    Public Sub ShowName(ByVal name As String)
+        m_strShownName = name
+        lblFileName.Text = name
+    End Sub
+
+    ''' <summary>ShowName's name until Clear (the video's size, known later, shows the file's properties again).</summary>
+    Private m_strShownName As String
+
+    Public Property EditLocked As Boolean Implements IPhotoViewer.EditLocked
+        Get
+            Return m_bolEditLocked
+        End Get
+        Set(value As Boolean)
+            m_bolEditLocked = value
+            If value Then EndTool()
+            picImageBar1.Enabled = Not value
+        End Set
+    End Property
+
     '==================================================================================================
     ' The tool bar
     '==================================================================================================
     Private Sub picImageBar1_Click(sender As Object, Index As Integer) Handles picImageBar1.Click
-        If m_lpImage Is Nothing Then Return
+        If m_lpImage Is Nothing OrElse m_bolEditLocked Then Return
         If Index <> 2 AndAlso Index <> 3 Then EndTool()
         Select Case Index
             Case 0, 1

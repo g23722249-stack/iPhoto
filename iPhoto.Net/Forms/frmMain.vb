@@ -52,9 +52,11 @@ Friend Class frmMain
     ''' Nothing when the picture can't be read (damaged / unsupported file, or no memory left for it).</summary>
     Private Shared Function LoadPicture(ByVal szFile As String) As Bitmap
         Try
+            If PhotoVault.IsVaultItem(szFile) Then Return VaultFiles.LoadPicture(szFile)   ' decrypted in memory (frmMain.Vault.vb)
             Return Quartz.LoadPicture(szFile)
         Catch ex As Exception When TypeOf ex Is ArgumentException OrElse TypeOf ex Is OutOfMemoryException OrElse
-                                   TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException
+                                   TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse
+                                   TypeOf ex Is Security.Cryptography.CryptographicException OrElse TypeOf ex Is InvalidOperationException
             Return Nothing
         End Try
     End Function
@@ -345,6 +347,7 @@ Friend Class frmMain
         Dim bolFirst As Boolean = (Index = 0)
         Dim bolLast As Boolean = (Index = mlList.Count - 1)
 
+        If VaultMenuSelected(Menu.Name, Index) Then Return   ' 加密隱藏 / 解密顯示 (frmMain.Vault.vb)
         If FileOpsMenuSelected(Menu.Name, Index) Then Return   ' frmMain.FileOps.vb
         Select Case Menu.Name.ToUpperInvariant()
             Case "MNUCOPY"
@@ -406,6 +409,7 @@ Friend Class frmMain
     End Sub
 
     Private Sub SetMediaListPopupMenu(ByVal objPhoto As Photo)
+        ResetVaultMenu()   ' frmMain.Vault.vb: what an encrypted photo greyed comes back first
         With AquaMenu1
             If objPhoto.MediaType = enumPhotoMediaType.mdImage Then
                 .Item("mnuCopy").Enabled = True
@@ -428,6 +432,7 @@ Friend Class frmMain
             End If
         End With
         SetFileOpsMenu()   ' frmMain.FileOps.vb
+        SetVaultMenu()     ' frmMain.Vault.vb (last: an encrypted photo greys the rest)
     End Sub
 
     '==================================================================================================
@@ -447,6 +452,7 @@ Friend Class frmMain
         AddFaceNode()   ' frmMain.Faces.vb (last, so the 'first node' fallbacks still pick an album)
         AddBrowseNodes()   ' 時間軸 / 地點: frmMain.Browse.vb
         AddSearchNode()    ' 搜尋結果: frmMain.Search.vb
+        AddVaultNode()     ' 加密照片 (unlocked): frmMain.Vault.vb
         If tvList.Nodes.Count > 0 Then
             If LibUserInterface.LoadTreeViewRecentSection(m_lpAppEnv.ExeMode, g_lpStorage, tvList) Then
                 tvList.Focus()
@@ -480,6 +486,7 @@ Friend Class frmMain
         If FaceNodeClick(tvList.SelectedNode) Then Return   ' the 面孔 node and its children
         If BrowseNodeClick(tvList.SelectedNode) Then Return   ' 時間軸 / 地點 (frmMain.Browse.vb)
         If SearchNodeClick(tvList.SelectedNode) Then Return   ' 搜尋結果 (frmMain.Search.vb)
+        If VaultNodeClick(tvList.SelectedNode) Then Return    ' 加密照片 (frmMain.Vault.vb)
 
         If m_lpAppEnv.ExeMode = enumExeMode.exeCalendar Then
             imgButton_Click(imgButton(3), EventArgs.Empty)   ' VB6 passed 1 (batch info) -- 3 is standard mode
@@ -539,6 +546,7 @@ Friend Class frmMain
 
             AddPhotoToMediaList(m_lpAppEnv.ExeMode, g_lpStorage, mlList, sliSize.Value, m_lpAppEnv.SectionIndex, m_lpAppEnv.KeyIndex)
             PhotoEditLink.TakeInEdits()   ' edited pictures the listing just took in: their index rows (frmMain.Edit.vb)
+            AddVaultItemsTo(lpKey)        ' its encrypted photos, while unlocked (frmMain.Vault.vb)
 
             DockedMediaList(g_lpDock, mlList)
             MoveNoteToScreen(m_lpAppEnv.ExeMode, m_lpAppEnv.SectionIndex, m_lpAppEnv.KeyIndex)
@@ -982,6 +990,7 @@ Friend Class frmMain
     ''' the viewer owns and edits it).</summary>
     Private Sub ShowCurrentInViewer(ByVal bolFirst As Boolean, ByVal bolLast As Boolean)
         If m_frmViewer Is Nothing OrElse m_lpCurrentPhoto Is Nothing Then Return
+        If ShowVaultInViewer(bolFirst, bolLast) Then Return   ' an encrypted photo (frmMain.Vault.vb)
         Select Case m_lpCurrentPhoto.MediaType
             Case enumPhotoMediaType.mdImage : ShowPictureInViewer(m_lpCurrentPhoto.FileDesc, bolFirst, bolLast)
             Case enumPhotoMediaType.mdVideo : m_frmViewer.ShowVideo(m_lpCurrentPhoto.FileDesc, bolFirst, bolLast)
@@ -998,6 +1007,7 @@ Friend Class frmMain
         If m_frmViewer Is Nothing Then Return
         If Not m_frmViewer.Changed Then Return
         If mlList.SelectedItem Is Nothing OrElse mlList.SelectedItem.FileName.Trim() = "" Then Return
+        If VaultCurrent() Then Return   ' an encrypted photo is never saved in the clear
 
         frmSaveChangedPhoto.ShowDialog()
         Select Case frmSaveChangedPhoto.Result
@@ -1024,6 +1034,7 @@ Friend Class frmMain
         If ListShowsCards Then Return   ' face wall: FaceWall_ItemDblClick
         If mlList.SelectedItem Is Nothing Then Return
         If Not g_bolDualScreen AndAlso EnterFullView() Then Return   ' 單螢幕: 全圖 here (SingleScreen.vb); Dock is on the right-click menu
+        If PhotoVault.IsVaultItem(mlList.SelectedItem.FileName) Then Return   ' never in the Dock
         mlList.SelectedItem.Marked = Not mlList.SelectedItem.Marked
     End Sub
 
@@ -1067,6 +1078,10 @@ Friend Class frmMain
         If ListShowsCards Then Return   ' face cards are not photos: never docked
         If mlList.Count <= 0 Then Return
         If mlList.Item(Index).FileName.Trim() = "" Then Return
+        If PhotoVault.IsVaultItem(mlList.Item(Index).FileName) Then   ' an encrypted photo never goes in the Dock
+            If mlList.Item(Index).Marked Then mlList.Item(Index).Marked = False
+            Return
+        End If
 
         ' VB6 took the date from the *selected* photo whenever there was one, so marking another item
         ' (double-click / the item's mark) docked it under the wrong date

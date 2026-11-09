@@ -261,6 +261,36 @@ Public Class ExifFile
         End SyncLock
     End Function
 
+    ''' <summary>A copy of the file's whole entry (an old-format side file read as XML); Nothing when it has
+    ''' none. With PutEntry, an entry taken away and brought back as it was (加密隱藏 / 解密顯示).</summary>
+    Public Shared Function GetEntry(ByVal strMediaFile As String) As XElement
+        SyncLock s_lock
+            Dim side As String = SidecarOf(strMediaFile)
+            Dim doc As XDocument = Nothing
+            Select Case Load(side, doc)
+                Case Format.Missing : Return Nothing
+                Case Format.Ini : doc = OpenForWrite(side, strMediaFile)
+            End Select
+            Dim e As XElement = EntryOf(doc, strMediaFile)
+            Return If(e Is Nothing, Nothing, New XElement(e))
+        End SyncLock
+    End Function
+
+    ''' <summary>Puts <paramref name="entry"/> (from GetEntry) back as the file's entry, replacing any it has.</summary>
+    Public Shared Sub PutEntry(ByVal strMediaFile As String, ByVal entry As XElement)
+        If entry Is Nothing Then Return
+        SyncLock s_lock
+            Dim side As String = SidecarOf(strMediaFile)
+            Dim doc As XDocument = OpenForWrite(side)
+            EntryOf(doc, strMediaFile)?.Remove()
+            Dim copy As New XElement(entry)
+            copy.Name = KindOf(strMediaFile)
+            copy.SetAttributeValue("name", Path.GetFileName(strMediaFile))
+            doc.Root.Add(copy)
+            Save(doc, side)
+        End SyncLock
+    End Sub
+
     ''' <summary>True when the side file is in the XML format (False also when there is none).</summary>
     Public Shared Function IsXml(ByVal strSidecar As String) As Boolean
         SyncLock s_lock

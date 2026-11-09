@@ -12,12 +12,25 @@ Friend Class frmPhotoInfo
         ShowDialog()
     End Sub
 
+    ''' <summary>An encrypted photo's information (frmMain.Vault.vb): <paramref name="lpPhoto"/> stands on a
+    ''' temporary side file; the name shown is <paramref name="name"/> and the index is left alone. True
+    ''' when 確定.</summary>
+    Public Function ShowVaultInfo(ByVal lpPhoto As Photo, ByVal name As String) As Boolean
+        m_lpPhoto = lpPhoto
+        m_strVaultName = name
+        ShowDialog()
+        Return m_bolSaved
+    End Function
+
+    Private m_strVaultName As String
+    Private m_bolSaved As Boolean
+
     Private Sub Form_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        lblPath.Text = m_lpPhoto.FolderDesc
-        m_toolTip.SetToolTip(lblPath, m_lpPhoto.FolderDesc)
-        lblFileName.Text = m_lpPhoto.Name
+        lblPath.Text = If(m_strVaultName Is Nothing, m_lpPhoto.FolderDesc, "加密照片")
+        m_toolTip.SetToolTip(lblPath, lblPath.Text)
+        lblFileName.Text = If(m_strVaultName, m_lpPhoto.Name)
         Dim fi As New IO.FileInfo(m_lpPhoto.FileDesc)
-        If fi.Exists Then
+        If fi.Exists AndAlso m_strVaultName Is Nothing Then
             lblFileDateTime.Text = fi.LastWriteTime.ToString("yyyy/M/d tt hh:mm:ss")
             lblFileLength.Text = CLng(fi.Length / 1024) & " K"
         End If
@@ -63,7 +76,9 @@ Friend Class frmPhotoInfo
         m_lpPhoto.Exif(enumPhotoExif.peKeyWord) = txtKeyWord.Text
         SavePlaceFields()   ' frmPhotoInfo.Place.vb: Country / City / Town
 
-        If g_lpDatabase IsNot Nothing AndAlso g_lpDatabase.Implement Then g_lpDatabase.AddItem(m_lpPhoto)
+        ' an encrypted photo has no index row (frmMain.Vault.vb keeps what was written)
+        If m_strVaultName Is Nothing AndAlso g_lpDatabase IsNot Nothing AndAlso g_lpDatabase.Implement Then g_lpDatabase.AddItem(m_lpPhoto)
+        m_bolSaved = True
         Close()
     End Sub
 

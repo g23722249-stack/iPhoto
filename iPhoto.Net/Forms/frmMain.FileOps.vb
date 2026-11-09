@@ -71,7 +71,7 @@ Partial Class frmMain
             .Item("mnuEdit").Visible = True
             .Item("mnuEdit").Enabled = Not ro AndAlso n = 1 AndAlso m_lpCurrentPhoto IsNot Nothing AndAlso
                                        m_lpCurrentPhoto.MediaType = enumPhotoMediaType.mdImage
-            Dim shot As ShotInfo.Shot = If(m_lpCurrentPhoto Is Nothing, Nothing, ShotInfo.Read(m_lpCurrentPhoto.FileDesc))
+            Dim shot As ShotInfo.Shot = If(m_lpCurrentPhoto Is Nothing OrElse VaultCurrent(), Nothing, ShotInfo.Read(m_lpCurrentPhoto.FileDesc))
             .Item("mnuMap").Enabled = shot IsNot Nothing AndAlso shot.HasPlace
             .Item("mnuNearby").Enabled = shot IsNot Nothing AndAlso shot.HasPlace
             .Item("mnuDockAdd").Text = "加入 Dock" & many
@@ -426,6 +426,7 @@ Partial Class frmMain
     ''' Recycle Bin, or with <paramref name="permanent"/> outright (the question then defaults to 否).</summary>
     Private Sub DeletePhotoFiles(ByVal indexes As List(Of Integer), Optional ByVal permanent As Boolean = False)
         If g_lpConfig.ReadOnly OrElse indexes.Count = 0 Then Return
+        If VaultDeleteFiles(indexes) Then Return   ' encrypted photos among them (frmMain.Vault.vb)
         Dim files As List(Of String) = indexes.Select(Function(i) mlList.Item(i).FileName).ToList()
         Dim what As String
         If files.Count > 1 Then

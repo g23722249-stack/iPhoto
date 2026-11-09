@@ -10,6 +10,7 @@ Partial Class frmMain
         If mlList.SelectedIndices.Count > 1 Then
             For Each i In Targets(mlList.SelectedIndex)
                 Dim f As String = mlList.Item(i).FileName
+                If PhotoVault.IsVaultItem(f) Then Continue For   ' an encrypted photo stays in the vault
                 If GetMediaType(g_lpFileSystem, f) = enumPhotoMediaType.mdImage Then initial.Add(f)
             Next
         End If

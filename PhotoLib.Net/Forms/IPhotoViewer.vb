@@ -31,6 +31,9 @@ Public Interface IPhotoViewer
     ''' <summary>Whether the photo is in the Dock: the button says 加入 Dock or 移出 Dock.</summary>
     Property Docked As Boolean
 
+    ''' <summary>True: the tool bar is off (an encrypted photo: it is only looked at).</summary>
+    Property EditLocked As Boolean
+
     ''' <summary>VB6 Create(width, height): the screen size the viewer covers.</summary>
     Sub Create(ByVal Width As Integer, ByVal Height As Integer)
 
