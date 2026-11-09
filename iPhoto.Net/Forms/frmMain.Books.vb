@@ -116,23 +116,24 @@ Partial Class frmMain
         m_lpRecentBookFiles.Clear()
         m_lpRecentBookFiles.AddRange(frmBookMake.RecentBooks().
                                      Where(Function(f) Not inBook OrElse Not String.Equals(f, book.FileName, StringComparison.OrdinalIgnoreCase)).Take(RecentBookItems))
+        ' FindMenu: most of these are second-level items (Item(name) only finds first-level ones)
         With AquaMenu1
-            .Item("mnuBookAdd").Text = "加入攝影集" & many
-            .Item("mnuBookAdd").Enabled = Not ro AndAlso n > 0
-            .Item("mnuBookRecentSep").Visible = m_lpRecentBookFiles.Count > 0
+            .FindMenu("mnuBookAdd").Text = "加入攝影集" & many
+            .FindMenu("mnuBookAdd").Enabled = Not ro AndAlso n > 0
+            .FindMenu("mnuBookRecentSep").Visible = m_lpRecentBookFiles.Count > 0
             For k = 0 To RecentBookItems - 1
-                Dim it As Aqua.MenuItem = .Item("mnuBookRecent" & k)
+                Dim it As Aqua.MenuItem = .FindMenu("mnuBookRecent" & k)
                 it.Visible = k < m_lpRecentBookFiles.Count
                 If it.Visible Then it.Text = IO.Path.GetFileNameWithoutExtension(m_lpRecentBookFiles(k))
             Next
-            .Item("mnuBookFromList").Visible = Not inBook
-            .Item("mnuBookFromList").Text = "整份清單存成攝影集（" & mlList.Count & " 張）…"
-            .Item("mnuBookFromList").Enabled = Not ro AndAlso mlList.Count > 0
-            .Item("mnuBookOps").Visible = inBook
+            .FindMenu("mnuBookFromList").Visible = Not inBook
+            .FindMenu("mnuBookFromList").Text = "整份清單存成攝影集（" & mlList.Count & " 張）…"
+            .FindMenu("mnuBookFromList").Enabled = Not ro AndAlso mlList.Count > 0
+            .FindMenu("mnuBookOps").Visible = inBook
             For Each itemName In {"mnuBookFirst", "mnuBookUp", "mnuBookDown", "mnuBookLast", "mnuBookByDate"}
-                .Item(itemName).Enabled = inBook AndAlso Not ro
+                .FindMenu(itemName).Enabled = inBook AndAlso Not ro
             Next
-            .Item("mnuBookByDate").Enabled = inBook AndAlso Not ro AndAlso book.ManualOrder
+            .FindMenu("mnuBookByDate").Enabled = inBook AndAlso Not ro AndAlso book.ManualOrder
         End With
     End Sub
 
