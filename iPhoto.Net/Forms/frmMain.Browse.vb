@@ -242,7 +242,7 @@ Partial Class frmMain
     Private Sub FillSections(ByVal groups As IEnumerable(Of (Title As String, Rows As List(Of Database.IndexRow))))
         Dim list = groups.Where(Function(g) g.Rows.Count > 0).ToList()
         SetBusy(True)
-        Enabled = False
+        Dim block As New InputBlock(Me)   ' clicks wait (InputBlock.vb; Enabled = False was slow)
         Try
             ClearScreenAlbum()
             With m_lpAppEnv
@@ -272,7 +272,7 @@ Partial Class frmMain
                 mlList.SelectedIndex = 0
             End If
         Finally
-            Enabled = True
+            block.Dispose()
             SetBusy(False)
         End Try
     End Sub

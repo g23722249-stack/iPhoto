@@ -7,14 +7,14 @@ Partial Class frmMain
     ''' <summary>Called by SetFileOpsMenu.</summary>
     Private Sub SetAssignMenu(ByVal many As String, ByVal ro As Boolean)
         With AquaMenu1
-            .Item("mnuSetPlace").Text = "設定拍攝地點" & many & "…"
-            .Item("mnuSetPlace").Enabled = Not ro
-            .Item("mnuAssignPeople").Text = "指定人物" & many & "…"
-            .Item("mnuAssignPeople").Enabled = Not ro
+            .FindMenu("mnuSetPlace").Text = "設定拍攝地點" & many & "…"
+            .FindMenu("mnuSetPlace").Enabled = Not ro
+            .FindMenu("mnuAssignPeople").Text = "指定人物" & many & "…"
+            .FindMenu("mnuAssignPeople").Enabled = Not ro
             Dim n As Integer = mlList.SelectedIndices.Count
-            .Item("mnuSelectAll").Enabled = n < mlList.Count
-            .Item("mnuSelectNone").Enabled = n > 1
-            .Item("mnuSelectInvert").Enabled = mlList.Count > 1
+            .FindMenu("mnuSelectAll").Enabled = n < mlList.Count
+            .FindMenu("mnuSelectNone").Enabled = n > 1
+            .FindMenu("mnuSelectInvert").Enabled = mlList.Count > 1
         End With
     End Sub
 

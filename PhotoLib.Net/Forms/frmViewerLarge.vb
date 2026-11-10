@@ -64,6 +64,8 @@ Public Class frmViewerLarge
 
     Public Sub Clear() Implements IPhotoViewer.Clear
         m_strShownName = Nothing
+        m_lpReadyShown?.Dispose()
+        m_lpReadyShown = Nothing
         KeepFrameForTurn()   ' frmViewerLarge.PageTurn.vb: the photo on screen stays up for the page turn
         Try
             mpViewerVideo.Clear()
@@ -103,7 +105,21 @@ Public Class frmViewerLarge
     End Sub
 
     Public Sub ShowPicture(ByVal FileName As String, ByVal Picture As Image, ByVal FirstPhoto As Boolean, ByVal LastPhoto As Boolean) Implements IPhotoViewer.ShowPicture
+        ShowPicture(FileName, Picture, Nothing, FirstPhoto, LastPhoto)
+    End Sub
+
+    Public ReadOnly Property PictureArea As Size Implements IPhotoViewer.PictureArea
+        Get
+            Return picPhoto.ClientSize
+        End Get
+    End Property
+
+    ''' <summary>A scaled copy read ahead (PicturePrefetch in the main window), used by MovePictureToScreen once.</summary>
+    Private m_lpReadyShown As Image
+
+    Public Sub ShowPicture(ByVal FileName As String, ByVal Picture As Image, ByVal Shown As Image, ByVal FirstPhoto As Boolean, ByVal LastPhoto As Boolean) Implements IPhotoViewer.ShowPicture
         Clear()
+        m_lpReadyShown = Shown
         InitialSelection()
         SetControlPhotoMode()
 
@@ -242,11 +258,19 @@ Public Class frmViewerLarge
         Dim w As Integer = Math.Max(1, fit.Width), h As Integer = Math.Max(1, fit.Height)
         imgPhoto.Bounds = New Rectangle((picPhoto.ClientSize.Width - w) \ 2, (picPhoto.ClientSize.Height - h) \ 2, w, h)
 
-        Dim shown As New Bitmap(w, h)
-        Using g As Graphics = Graphics.FromImage(shown)
-            g.InterpolationMode = Drawing2D.InterpolationMode.HighQualityBicubic
-            g.DrawImage(m_lpImage, 0, 0, w, h)
-        End Using
+        Dim shown As Image = m_lpReadyShown
+        m_lpReadyShown = Nothing
+        If shown IsNot Nothing AndAlso (shown.Width <> w OrElse shown.Height <> h) Then
+            shown.Dispose()   ' read ahead for another size (the window was resized meanwhile)
+            shown = Nothing
+        End If
+        If shown Is Nothing Then
+            shown = New Bitmap(w, h)
+            Using g As Graphics = Graphics.FromImage(shown)
+                g.InterpolationMode = Drawing2D.InterpolationMode.HighQualityBicubic
+                g.DrawImage(m_lpImage, 0, 0, w, h)
+            End Using
+        End If
         SetDisplay(shown)
         m_dblScale = w / m_lpImage.Width
 

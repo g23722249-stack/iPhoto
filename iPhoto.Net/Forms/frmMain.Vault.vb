@@ -161,7 +161,7 @@ Partial Class frmMain
     Private Sub ShowVaultList()
         If Not PhotoVault.IsUnlocked Then Return
         SetBusy(True)
-        Enabled = False
+        Dim block As New InputBlock(Me)   ' clicks wait (InputBlock.vb; Enabled = False was slow)
         Try
             ClearScreenAlbum()
             With m_lpAppEnv
@@ -190,7 +190,7 @@ Partial Class frmMain
                 mlList.SelectedIndex = 0
             End If
         Finally
-            Enabled = True
+            block.Dispose()
             SetBusy(False)
         End Try
     End Sub
@@ -233,7 +233,7 @@ Partial Class frmMain
             m.Enabled = True
         Next
         m_vaultGreyed.Clear()
-        AquaMenu1.Item("mnuDeleteForever").Visible = True
+        AquaMenu1.FindMenu("mnuDeleteForever").Visible = True
     End Sub
 
     ''' <summary>Called last by SetMediaListPopupMenu.</summary>
@@ -242,13 +242,12 @@ Partial Class frmMain
         Dim vaulted As Integer = picked.Where(Function(i) PhotoVault.IsVaultItem(mlList.Item(i).FileName)).Count()
         Dim many As String = If(picked.Count > 1, "（" & picked.Count & " 張）", "")
         With AquaMenu1
-            .Item("mnuEncrypt").Visible = PhotoVault.IsUnlocked AndAlso vaulted = 0
-            .Item("mnuEncrypt").Enabled = Not g_lpConfig.ReadOnly
-            .Item("mnuEncrypt").Text = "加密隱藏" & many & "…"
-            .Item("mnuDecrypt").Visible = vaulted > 0
-            .Item("mnuDecrypt").Enabled = Not g_lpConfig.ReadOnly
-            .Item("mnuDecrypt").Text = "解密顯示" & If(vaulted > 1, "（" & vaulted & " 張）", "")
-            .Item("mnuVaultSep").Visible = .Item("mnuEncrypt").Visible OrElse .Item("mnuDecrypt").Visible
+            .FindMenu("mnuEncrypt").Visible = PhotoVault.IsUnlocked AndAlso vaulted = 0
+            .FindMenu("mnuEncrypt").Enabled = Not g_lpConfig.ReadOnly
+            .FindMenu("mnuEncrypt").Text = "加密隱藏" & many & "…"
+            .FindMenu("mnuDecrypt").Visible = vaulted > 0
+            .FindMenu("mnuDecrypt").Enabled = Not g_lpConfig.ReadOnly
+            .FindMenu("mnuDecrypt").Text = "解密顯示" & If(vaulted > 1, "（" & vaulted & " 張）", "")
             If vaulted = 0 Then Return
             ' an encrypted photo among them: only what it allows
             For i = 0 To .Items.Count - 1
@@ -257,9 +256,9 @@ Partial Class frmMain
                 m.Enabled = False
                 m_vaultGreyed.Add(m)
             Next
-            .Item("mnuDeleteFile").Text = "刪除加密照片" & If(vaulted > 1, "（" & vaulted & " 張）", "") & "…"
-            .Item("mnuDeleteForever").Visible = False
-            .Item("mnuMyRanking").Enabled = Not g_lpConfig.ReadOnly
+            .FindMenu("mnuDeleteFile").Text = "刪除加密照片" & If(vaulted > 1, "（" & vaulted & " 張）", "") & "…"
+            .FindMenu("mnuDeleteForever").Visible = False
+            .FindMenu("mnuMyRanking").Enabled = Not g_lpConfig.ReadOnly
         End With
     End Sub
 

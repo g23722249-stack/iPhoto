@@ -66,9 +66,31 @@ Friend Class frmMain
     Private Sub ShowPictureInViewer(ByVal szFile As String, ByVal bolFirst As Boolean, ByVal bolLast As Boolean)
         If m_frmViewer Is Nothing Then Return
         m_frmViewer.Clear()
-        Dim pic As Bitmap = LoadPicture(szFile)
-        If pic IsNot Nothing Then m_frmViewer.ShowPicture(szFile, pic, bolFirst, bolLast)
+        Dim area As Size = m_frmViewer.PictureArea
+        Dim full As Bitmap = Nothing, shown As Bitmap = Nothing
+        If Not PhotoVault.IsVaultItem(szFile) AndAlso PicturePrefetch.TryTake(szFile, area, full, shown) Then
+            m_frmViewer.ShowPicture(szFile, full, shown, bolFirst, bolLast)   ' read ahead (Modules\PicturePrefetch.vb)
+        Else
+            Dim pic As Bitmap = LoadPicture(szFile)
+            If pic IsNot Nothing Then m_frmViewer.ShowPicture(szFile, pic, bolFirst, bolLast)
+        End If
         ShowViewerState(szFile)   ' its rating and whether it is in the Dock (frmMain.ViewerTools.vb)
+        PrefetchNeighbours(area)
+    End Sub
+
+    ''' <summary>The photos next to the selected one, read ahead for the viewer: the next two and the prior
+    ''' one (pictures only; not encrypted ones, which stay in memory only while shown).</summary>
+    Private Sub PrefetchNeighbours(ByVal area As Size)
+        Dim i As Integer = mlList.SelectedIndex
+        If i < 0 OrElse ListShowsCards Then Return
+        Dim files As New List(Of String)
+        For Each k In {i + 1, i - 1, i + 2}
+            If k < 0 OrElse k >= mlList.Count Then Continue For
+            Dim f As String = mlList.Item(k).FileName
+            If PhotoVault.IsVaultItem(f) OrElse GetMediaType(g_lpFileSystem, f) <> enumPhotoMediaType.mdImage Then Continue For
+            files.Add(f)
+        Next
+        PicturePrefetch.Prefetch(files, area)
     End Sub
 
     ''' <summary>The class (albums mode) or book (favorites mode) the tree has open, or Nothing.</summary>
@@ -222,7 +244,7 @@ Friend Class frmMain
 
         ' 全圖瀏覽 on the right-click menu: two screens too (it brings back a viewer that was closed)
         If Not g_bolDualScreen Then sliSize.Value = 3
-        AquaMenu1.Item("mnuView").Visible = True
+        AquaMenu1.FindMenu("mnuView").Visible = True
     End Sub
 
     ''' <summary>雙螢幕: the viewer again on its screen after Esc or its close button hid it (the right-click
@@ -412,27 +434,28 @@ Friend Class frmMain
         ResetVaultMenu()   ' frmMain.Vault.vb: what an encrypted photo greyed comes back first
         With AquaMenu1
             If objPhoto.MediaType = enumPhotoMediaType.mdImage Then
-                .Item("mnuCopy").Enabled = True
-                .Item("mnuRotateClockwise").Enabled = Not g_lpConfig.ReadOnly
-                .Item("mnuRotateCounterClockwise").Enabled = Not g_lpConfig.ReadOnly
+                .FindMenu("mnuCopy").Enabled = True
+                .FindMenu("mnuRotateClockwise").Enabled = Not g_lpConfig.ReadOnly
+                .FindMenu("mnuRotateCounterClockwise").Enabled = Not g_lpConfig.ReadOnly
             Else
-                .Item("mnuCopy").Enabled = False
-                .Item("mnuRotateClockwise").Enabled = False
-                .Item("mnuRotateCounterClockwise").Enabled = False
+                .FindMenu("mnuCopy").Enabled = False
+                .FindMenu("mnuRotateClockwise").Enabled = False
+                .FindMenu("mnuRotateCounterClockwise").Enabled = False
             End If
 
-            .Item("mnuShowInfo").Enabled = True
+            .FindMenu("mnuShowInfo").Enabled = True
 
             If g_lpConfig.ReadOnly Then
-                .Item("mnuMyRanking").Enabled = False
-                .Item("mnuRevertToOriginal").Enabled = False
+                .FindMenu("mnuMyRanking").Enabled = False
+                .FindMenu("mnuRevertToOriginal").Enabled = False
             Else
-                .Item("mnuMyRanking").Enabled = True
-                .Item("mnuRevertToOriginal").Enabled = g_lpFileSystem.FileExists(objPhoto.RestoreFile)
+                .FindMenu("mnuMyRanking").Enabled = True
+                .FindMenu("mnuRevertToOriginal").Enabled = g_lpFileSystem.FileExists(objPhoto.RestoreFile)
             End If
         End With
         SetFileOpsMenu()   ' frmMain.FileOps.vb
         SetVaultMenu()     ' frmMain.Vault.vb (last: an encrypted photo greys the rest)
+        UpdateMenuGroups() ' frmMain.MenuLayout.vb: the submenus follow their items
     End Sub
 
     '==================================================================================================
@@ -527,7 +550,7 @@ Friend Class frmMain
 
         '搬相片至畫面上
         SetBusy(True)
-        Enabled = False
+        Dim block As New InputBlock(Me)   ' clicks wait (InputBlock.vb; Enabled = False was slow)
         Try
             Dim lpKey As PhotoSet = CurrentSection()
             If lpKey Is Nothing Then
@@ -556,10 +579,10 @@ Friend Class frmMain
             End If
             m_strShownKey = NodeKey(tvList.SelectedNode)
             SetBookDrag(TypeOf lpKey Is Book)   ' a book: its photos can be dragged into another order (frmMain.Books.vb)
-            Enabled = True
+            block.Dispose()
             If mlList.Visible Then mlList.Focus()
         Finally
-            Enabled = True
+            block.Dispose()
             SetBusy(False)
         End Try
     End Sub
@@ -879,7 +902,7 @@ Friend Class frmMain
     Private Sub ImportAlbumFiles()
         If g_lpImport.Count <= 0 Then Return
 
-        Enabled = False
+        Dim block As New InputBlock(Me)   ' clicks wait (InputBlock.vb; Enabled = False was slow)
         SetBusy(True)
         Try
             pnlImport.Visible = True   ' over pnlToolBar (designer z-order)
@@ -942,7 +965,7 @@ Friend Class frmMain
             FaceScanAfterImport()   ' frmMain.Faces.vb
         Finally
             SetBusy(False)
-            Enabled = True
+            block.Dispose()
         End Try
     End Sub
 
@@ -1439,14 +1462,14 @@ Friend Class frmMain
         End With
 
         SetBusy(True)
-        Enabled = False
+        Dim block As New InputBlock(Me)   ' clicks wait (InputBlock.vb; Enabled = False was slow)
         Try
             Dim strFileName() As String = Nothing
             Dim intCount As Integer = g_lpDatabase.LoadDateFile(Calendar1.Year, Calendar1.Month, Calendar1.Day, strFileName)
             If intCount > 0 Then MoveFilesToMediaList(strFileName, intCount)
         Finally
             SetBusy(False)
-            Enabled = True
+            block.Dispose()
         End Try
 
         If mlList.Visible Then mlList.Focus()

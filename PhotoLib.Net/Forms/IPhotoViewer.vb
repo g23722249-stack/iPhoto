@@ -42,6 +42,14 @@ Public Interface IPhotoViewer
     ''' <summary>Shows a picture; the viewer takes ownership of <paramref name="Picture"/>.</summary>
     Sub ShowPicture(ByVal FileName As String, ByVal Picture As Image, ByVal FirstPhoto As Boolean, ByVal LastPhoto As Boolean)
 
+    ''' <summary>As ShowPicture, with <paramref name="Shown"/> -- the picture already scaled to fit
+    ''' PictureArea (read ahead) -- used instead of scaling it here when it is the size needed. The viewer
+    ''' takes ownership of both.</summary>
+    Sub ShowPicture(ByVal FileName As String, ByVal Picture As Image, ByVal Shown As Image, ByVal FirstPhoto As Boolean, ByVal LastPhoto As Boolean)
+
+    ''' <summary>The size a picture is fitted into (for reading ahead a scaled copy).</summary>
+    ReadOnly Property PictureArea As Size
+
     Sub ShowVideo(ByVal FileName As String, ByVal FirstPhoto As Boolean, ByVal LastPhoto As Boolean)
 
 End Interface

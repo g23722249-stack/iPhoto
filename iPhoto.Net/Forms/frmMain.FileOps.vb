@@ -67,38 +67,38 @@ Partial Class frmMain
         Dim many As String = If(n > 1, "（" & n & " 張）", "")
         Dim docked As Integer = Targets(mlList.SelectedIndex).Where(Function(i) mlList.Item(i).Marked).Count()
         With AquaMenu1
-            .Item("mnuExplorer").Enabled = True
-            .Item("mnuEdit").Visible = True
-            .Item("mnuEdit").Enabled = Not ro AndAlso n = 1 AndAlso m_lpCurrentPhoto IsNot Nothing AndAlso
+            .FindMenu("mnuExplorer").Enabled = True
+            .FindMenu("mnuEdit").Visible = True
+            .FindMenu("mnuEdit").Enabled = Not ro AndAlso n = 1 AndAlso m_lpCurrentPhoto IsNot Nothing AndAlso
                                        m_lpCurrentPhoto.MediaType = enumPhotoMediaType.mdImage
             Dim shot As ShotInfo.Shot = If(m_lpCurrentPhoto Is Nothing OrElse VaultCurrent(), Nothing, ShotInfo.Read(m_lpCurrentPhoto.FileDesc))
-            .Item("mnuMap").Enabled = shot IsNot Nothing AndAlso shot.HasPlace
-            .Item("mnuNearby").Enabled = shot IsNot Nothing AndAlso shot.HasPlace
-            .Item("mnuDockAdd").Text = "加入 Dock" & many
-            .Item("mnuDockAdd").Enabled = docked < n
-            .Item("mnuDockRemove").Text = "移出 Dock" & many
-            .Item("mnuDockRemove").Enabled = docked > 0
-            .Item("mnuMoveTo").Text = "移動到…" & many
-            .Item("mnuMoveTo").Visible = Not book
-            .Item("mnuMoveTo").Enabled = Not ro
-            .Item("mnuSetCover").Enabled = Not ro AndAlso n = 1 AndAlso CurrentSection() IsNot Nothing AndAlso
+            .FindMenu("mnuMap").Enabled = shot IsNot Nothing AndAlso shot.HasPlace
+            .FindMenu("mnuNearby").Enabled = shot IsNot Nothing AndAlso shot.HasPlace
+            .FindMenu("mnuDockAdd").Text = "加入 Dock" & many
+            .FindMenu("mnuDockAdd").Enabled = docked < n
+            .FindMenu("mnuDockRemove").Text = "移出 Dock" & many
+            .FindMenu("mnuDockRemove").Enabled = docked > 0
+            .FindMenu("mnuMoveTo").Text = "移動到…" & many
+            .FindMenu("mnuMoveTo").Visible = Not book
+            .FindMenu("mnuMoveTo").Enabled = Not ro
+            .FindMenu("mnuSetCover").Enabled = Not ro AndAlso n = 1 AndAlso CurrentSection() IsNot Nothing AndAlso
                                           (m_lpAppEnv.ExeMode = enumExeMode.exeAlbums OrElse book)
-            .Item("mnuRemoveFromBook").Text = "從攝影集移除" & many
-            .Item("mnuRemoveFromBook").Visible = book
-            .Item("mnuRemoveFromBook").Enabled = book AndAlso Not ro
-            .Item("mnuDeleteFile").Text = "刪除檔案" & many & "…"
-            .Item("mnuDeleteFile").Enabled = Not ro
-            .Item("mnuDeleteForever").Text = "永久刪除" & many & "…"
-            .Item("mnuDeleteForever").Enabled = Not ro
+            .FindMenu("mnuRemoveFromBook").Text = "從攝影集移除" & many
+            .FindMenu("mnuRemoveFromBook").Visible = book
+            .FindMenu("mnuRemoveFromBook").Enabled = book AndAlso Not ro
+            .FindMenu("mnuDeleteFile").Text = "刪除檔案" & many & "…"
+            .FindMenu("mnuDeleteFile").Enabled = Not ro
+            .FindMenu("mnuDeleteForever").Text = "永久刪除" & many & "…"
+            .FindMenu("mnuDeleteForever").Enabled = Not ro
             SetAssignMenu(many, ro)   ' frmMain.Assign.vb
-            .Item("mnuMyRanking").Text = "我的評價" & many
-            .Item("mnuRotateClockwise").Text = "左轉 90°" & many
-            .Item("mnuRotateCounterClockwise").Text = "右轉 90°" & many
+            .FindMenu("mnuMyRanking").Text = "我的評價" & many
+            .FindMenu("mnuRotateClockwise").Text = "左轉 90°" & many
+            .FindMenu("mnuRotateCounterClockwise").Text = "右轉 90°" & many
             If n > 1 Then
                 ' several: turnable when any of them is a picture (the one right-clicked may be a video)
                 Dim anyPicture As Boolean = Targets(mlList.SelectedIndex).Any(Function(i) GetMediaType(g_lpFileSystem, mlList.Item(i).FileName) = enumPhotoMediaType.mdImage)
-                .Item("mnuRotateClockwise").Enabled = anyPicture AndAlso Not ro
-                .Item("mnuRotateCounterClockwise").Enabled = anyPicture AndAlso Not ro
+                .FindMenu("mnuRotateClockwise").Enabled = anyPicture AndAlso Not ro
+                .FindMenu("mnuRotateCounterClockwise").Enabled = anyPicture AndAlso Not ro
             End If
         End With
         SetBooksMenu(n, ro)   ' frmMain.Books.vb
